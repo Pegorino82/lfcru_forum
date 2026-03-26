@@ -295,6 +295,12 @@ else
 	fail "direnv in PATH"
 	note "direnv is not in your shell PATH. Ensure mise activate is configured so mise-installed tools are available."
 fi
+if [ -n "${DIRENV_DIR:-}" ]; then
+	ok "direnv hook active (DIRENV_DIR is set)"
+else
+	fail "direnv hook active (DIRENV_DIR is set)"
+	note "direnv hook is not configured in your shell. Add it — see: https://direnv.net/docs/hook.html"
+fi
 
 section "Core toolchain (required)"
 check_command required "mise installed" mise --version
