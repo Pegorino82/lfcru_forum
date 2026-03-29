@@ -19,19 +19,42 @@
 | Слой | Технология |
 |---|---|
 | Backend | Go + Echo |
-| Шаблоны | templ (типизированные Go-шаблоны) |
+| Шаблоны | `html/template` (stdlib) |
 | Frontend | HTMX + Alpine.js |
 | База данных | PostgreSQL (`pgx` драйвер) |
-| Real-time | WebSocket (gorilla/websocket) + Redis Pub/Sub |
-| Сессии | Redis (httponly + secure cookie) |
+| Миграции | goose (SQL-файлы) |
+| Real-time | SSE (stdlib) + cursor-based догонялка из PG |
+| Сессии | PostgreSQL (httponly + secure cookie) |
+| Поиск | PostgreSQL `tsvector` + GIN-индекс |
 | Контейнеры | Docker + docker compose |
 | Reverse proxy | nginx |
 
 **Ключевые принципы:**
 - SQL только через параметризованные запросы — никогда `fmt.Sprintf` в SQL
-- templ экранирует вывод по умолчанию — защита от XSS
+- `html/template` с ручным экранированием — все пользовательские данные через `{{.}}` (автоэкранирование в HTML-контексте)
 - CSRF-токен для всех POST/PUT/DELETE через middleware
 - Rate-limiting на `/login` против брутфорса
+
+### HTMX vs Alpine.js — разделение ответственности
+
+- **HTMX** — запросы к серверу и подмена фрагментов DOM (`hx-get`, `hx-post`, `hx-swap`, `hx-target`)
+- **Alpine.js** — только клиентский UI-стейт (показать/скрыть, счётчики, валидация форм, `x-show`, `x-data`, `x-on`)
+- Не смешивать `hx-*` и `x-*` на одном элементе без явной причины
+
+### SSE — заметки по реализации
+
+- Fan-out broadcaster: одна горутина слушает PG (`LISTEN/NOTIFY`), рассылает по каналам всем подписчикам
+- Cursor-based догонялка при реконнекте: клиент передаёт `Last-Event-ID`, сервер досылает пропущенные события из PG
+- `LISTEN/NOTIFY` payload ≤ 8000 байт — передавать только ID события, данные клиент получит через cursor
+- nginx: обязательно `proxy_buffering off;` и `X-Accel-Buffering: no` для SSE-эндпоинтов
+- Cleanup: периодическая очистка старых событий из таблицы (cron / pg_cron)
+
+### Полнотекстовый поиск
+
+- Колонка `search_vector tsvector` в таблицах сообщений и статей
+- GIN-индекс по `search_vector`
+- Триггер на INSERT/UPDATE для автоматического обновления вектора
+- Конфигурация: `russian` для ts_config
 
 ---
 
