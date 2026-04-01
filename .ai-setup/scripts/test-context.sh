@@ -13,15 +13,18 @@ warnings=0
 
 # --- Expected items (override via env vars) ---
 
-EXPECTED_SKILLS="${EXPECTED_SKILLS:-adr-writing docmost find-skills fpf-simple gws-calendar gws-calendar-agenda gws-calendar-insert gws-docs gws-docs-write gws-drive gws-drive-upload gws-gmail gws-gmail-forward gws-gmail-reply gws-gmail-reply-all gws-gmail-send gws-gmail-triage gws-meet gws-sheets gws-tasks mcp-builder-ms mcp-server-development playwright-cli playwriter prompt-engeneering tgcli workspace-cli}"
+EXPECTED_SKILLS="${EXPECTED_SKILLS:-docmost fpf-problem-solving gws-calendar gws-calendar-agenda gws-calendar-insert gws-docs gws-docs-write gws-drive gws-drive-upload gws-gmail gws-gmail-forward gws-gmail-reply gws-gmail-reply-all gws-gmail-send gws-gmail-triage gws-meet gws-sheets gws-tasks playwright-cli prompt-engineering tgcli}"
 
-EXPECTED_MCP="${EXPECTED_MCP:-plugin:playwright:playwright chrome-devtools tavily context7}"
+# Optional items — allowed but not required (present = OK, absent = OK)
+OPTIONAL_SKILLS="${OPTIONAL_SKILLS:-ccbox ccbox-insights}"
 
-EXPECTED_PLUGINS="${EXPECTED_PLUGINS:-claude-md-management@claude-plugins-official code-review@claude-plugins-official code-simplifier@claude-plugins-official commit-commands@claude-plugins-official doc-validate@dapi feature-dev@claude-plugins-official frontend-design@claude-plugins-official github-workflow@dapi himalaya@dapi media-upload@dapi playwright-skill@playwright-skill playwright@claude-plugins-official pr-review-fix-loop@dapi pr-review-toolkit@claude-plugins-official ralph-loop@claude-plugins-official superpowers@claude-plugins-official zellij-workflow@dapi}"
+EXPECTED_MCP="${EXPECTED_MCP:-tavily context7}"
+
+EXPECTED_PLUGINS="${EXPECTED_PLUGINS:-}"
 
 EXPECTED_MARKETPLACES="${EXPECTED_MARKETPLACES:-claude-plugins-official dapi playwright-skill}"
 
-EXPECTED_AGENTS="${EXPECTED_AGENTS:-architect-review backend-architect business-analyst business-panel-experts deep-research-agent devops-architect frontend-architect learning-guide performance-engineer pm-agent prompt-engineer python-expert quality-engineer refactoring-expert requirements-analyst root-cause-analyst ruby-pro security-engineer socratic-mentor system-architect tdd-orchestrator technical-writer test-automator unit-test-writer}"
+EXPECTED_AGENTS="${EXPECTED_AGENTS:-backend-architect business-panel-experts deep-research-agent devops-architect frontend-architect learning-guide performance-engineer python-expert quality-engineer refactoring-expert requirements-analyst root-cause-analyst security-engineer socratic-mentor system-architect technical-writer}"
 
 # --- Helpers ---
 
@@ -30,11 +33,11 @@ section() {
 }
 
 ok() {
-	printf '[OK]   %s\n' "$1"
+	printf '\033[32m[OK]\033[0m   %s\n' "$1"
 }
 
 fail() {
-	printf '[FAIL] %s\n' "$1"
+	printf '\033[31m[FAIL]\033[0m %s\n' "$1"
 	failures=$((failures + 1))
 }
 
@@ -47,9 +50,15 @@ diff_lists() {
 	local label="$1"
 	local expected="$2"
 	local actual="$3"
+	local optional="${4:-}"
 
 	local extra
 	extra="$(comm -23 <(to_sorted_lines "$actual") <(to_sorted_lines "$expected"))"
+
+	# Remove optional items from the "extra" list — they are allowed but not required
+	if [ -n "$optional" ] && [ -n "$extra" ]; then
+		extra="$(comm -23 <(printf '%s\n' "$extra" | sort) <(to_sorted_lines "$optional"))"
+	fi
 
 	local missing
 	missing="$(comm -13 <(to_sorted_lines "$actual") <(to_sorted_lines "$expected"))"
@@ -80,7 +89,7 @@ section "Skills (global)"
 
 if command -v npx >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
 	actual_skills="$(npx skills ls -g --json 2>/dev/null | jq -r '.[].name' | sort | tr '\n' ' ')"
-	diff_lists "skills" "$EXPECTED_SKILLS" "$actual_skills"
+	diff_lists "skills" "$EXPECTED_SKILLS" "$actual_skills" "$OPTIONAL_SKILLS"
 else
 	fail "npx or jq not available for skills check"
 fi
@@ -182,7 +191,7 @@ fi
 codex_agents_md="${HOME}/.codex/AGENTS.md"
 if [ -f "$codex_agents_md" ]; then
 	b=$(wc -c <"$codex_agents_md" | tr -d ' ')
-	printf '[INFO] Codex AGENTS.md exists (%s bytes)\n' "$b"
+	printf '\033[34m[INFO]\033[0m Codex AGENTS.md exists (%s bytes)\n' "$b"
 else
 	ok "Codex AGENTS.md does not exist"
 fi
@@ -293,7 +302,7 @@ check_threshold() {
 	if [ "$tokens" -ge "$CONTEXT_FAIL_TOKENS" ]; then
 		fail "$label baseline ~${tokens} tokens (threshold: ${CONTEXT_FAIL_TOKENS})"
 	elif [ "$tokens" -ge "$CONTEXT_WARN_TOKENS" ]; then
-		printf '[WARN] %s baseline ~%s tokens (threshold: %s)\n' "$label" "$tokens" "$CONTEXT_WARN_TOKENS"
+		printf '\033[33m[WARN]\033[0m %s baseline ~%s tokens (threshold: %s)\n' "$label" "$tokens" "$CONTEXT_WARN_TOKENS"
 		warnings=$((warnings + 1))
 	else
 		ok "$label baseline ~${tokens} tokens"

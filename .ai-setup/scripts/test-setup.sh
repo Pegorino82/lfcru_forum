@@ -7,40 +7,28 @@ ORIG_PATH="$PATH"
 PATH="${HOME}/.local/bin:/usr/local/bin:/opt/homebrew/bin:${PATH}"
 export PATH
 
+VERSION="${VERSION:-unknown}"
+
+printf 'ai-setup %s\n' "$VERSION"
+
 required_failures=0
 warnings=0
-
-REQUIRED_SKILLS=(
-	"tgcli"
-	"playwright-cli"
-	"prompt-engeneering"
-	"gws-docs"
-	"gws-docs-write"
-	"gws-drive"
-	"gws-sheets"
-)
-
-DEFAULT_CLAUDE_MARKETPLACE_NAMES="${CLAUDE_MARKETPLACE_NAMES:-dapi}"
-DEFAULT_CLAUDE_EXPECTED_PLUGINS="${CLAUDE_EXPECTED_PLUGINS:-himalaya@dapi pr-review-fix-loop@dapi spec-reviewer@dapi zellij-workflow@dapi}"
-
-read -r -a OPTIONAL_CLAUDE_MARKETPLACES <<<"$DEFAULT_CLAUDE_MARKETPLACE_NAMES"
-read -r -a OPTIONAL_CLAUDE_PLUGINS <<<"$DEFAULT_CLAUDE_EXPECTED_PLUGINS"
 
 section() {
 	printf '\n== %s ==\n' "$1"
 }
 
 ok() {
-	printf '[OK] %s\n' "$1"
+	printf '\033[32m[OK]\033[0m %s\n' "$1"
 }
 
 fail() {
-	printf '[FAIL] %s\n' "$1"
+	printf '\033[31m[FAIL]\033[0m %s\n' "$1"
 	required_failures=$((required_failures + 1))
 }
 
 warn() {
-	printf '[WARN] %s\n' "$1"
+	printf '\033[33m[WARN]\033[0m %s\n' "$1"
 	warnings=$((warnings + 1))
 }
 
@@ -184,98 +172,6 @@ check_direnv_port() {
 	return 1
 }
 
-check_himalaya_accounts() {
-	local output
-
-	if ! command_exists himalaya; then
-		fail "himalaya installed"
-		return 1
-	fi
-
-	if ! output="$(himalaya account list --output json 2>&1)"; then
-		warn "himalaya mail account configured"
-		note "$(compact_output "$output")"
-		return 1
-	fi
-
-	if command_exists jq && printf '%s' "$output" | jq -e 'length > 0' >/dev/null 2>&1; then
-		ok "himalaya mail account configured"
-		return 0
-	fi
-
-	warn "himalaya mail account configured"
-	note "$(compact_output "$output")"
-	return 1
-}
-
-check_skills() {
-	local output
-	local skill
-
-	if ! command_exists npx; then
-		fail "npx available for skills checks"
-		return 1
-	fi
-
-	if ! command_exists jq; then
-		fail "jq available for skills checks"
-		return 1
-	fi
-
-	if ! output="$(npx skills ls -g --json 2>&1)"; then
-		warn "curated skills can be listed"
-		note "$(compact_output "$output")"
-		return 1
-	fi
-
-	for skill in "${REQUIRED_SKILLS[@]}"; do
-		if printf '%s' "$output" | jq -e --arg skill "$skill" 'map(select(.name == $skill)) | length > 0' >/dev/null 2>&1; then
-			ok "skill installed: $skill"
-		else
-			warn "skill installed: $skill"
-		fi
-	done
-}
-
-check_claude_plugins() {
-	local marketplaces_output
-	local plugins_output
-	local name
-
-	if ! command_exists claude; then
-		fail "claude installed"
-		return 1
-	fi
-
-	if ! marketplaces_output="$(claude plugins marketplace list 2>&1)"; then
-		warn "Claude plugin marketplaces can be listed"
-		note "$(compact_output "$marketplaces_output")"
-		return 1
-	fi
-
-	for name in "${OPTIONAL_CLAUDE_MARKETPLACES[@]}"; do
-		if printf '%s' "$marketplaces_output" | grep -Fq "$name"; then
-			ok "Claude marketplace present: $name"
-		else
-			warn "Claude marketplace present: $name"
-		fi
-	done
-
-	if ! plugins_output="$(claude plugins list 2>&1)"; then
-		warn "Claude plugins can be listed"
-		note "$(compact_output "$plugins_output")"
-		return 1
-	fi
-
-	for name in "${OPTIONAL_CLAUDE_PLUGINS[@]}"; do
-		if printf '%s' "$plugins_output" | grep -Fq "$name"; then
-			ok "Claude plugin installed: $name"
-		else
-			warn "Claude plugin installed: $name"
-		fi
-	done
-}
-
 section "Shell integration (required)"
 if command_in_path mise; then
 	ok "mise in PATH"
@@ -306,16 +202,12 @@ section "Core toolchain (required)"
 check_command required "mise installed" mise --version
 check_command required "direnv installed" direnv version
 check_command required "gh installed" gh --version
-check_command required "gitleaks installed" gitleaks version
 check_command required "jq installed" jq --version
 check_command required "node installed" node --version
 check_command required "npx installed" npx --version
 check_port_selector
 check_direnv_port
 check_command required "ruby installed" ruby --version
-check_command required "tmux installed" tmux -V
-check_command required "yarn installed" yarn --version
-check_command required "zellij installed" zellij --version
 
 section "Agent CLIs (required)"
 check_command required "claude installed" claude --version
@@ -326,16 +218,6 @@ section "Account-backed tools"
 check_json_command required "claude authenticated" '.loggedIn == true' claude auth status --json
 check_command required "codex authenticated" codex login status
 check_command required "gh authenticated" gh auth status
-
-section "Optional agent extras"
-check_command optional "tgcli installed" tgcli --help
-check_command optional "gws installed" gws --help
-check_command optional "himalaya installed" himalaya --version
-check_command optional "tgcli authenticated" tgcli auth status
-check_json_command optional "gws authenticated" '(.token_valid // false) == true' gws auth status
-check_himalaya_accounts
-check_skills
-check_claude_plugins
 
 printf '\nSummary: %s required failure(s), %s warning(s)\n' "$required_failures" "$warnings"
 

@@ -3,6 +3,7 @@
 BLUE := \033[0;34m
 NC := \033[0m
 PATH := $(HOME)/.local/bin:/usr/local/bin:/opt/homebrew/bin:$(PATH)
+VERSION ?= 0.2.0
 
 NPM ?= mise exec -- npm
 CLAUDE ?= mise exec -- claude
@@ -21,7 +22,7 @@ GOOGLE_WORKSPACE_SKILLS := \
 	gws-drive \
 	gws-sheets
 
-.PHONY: ai bootstrap mise-package mise-install check check-context codex-context register
+.PHONY: ai bootstrap mise-package mise-install version check extra extra-check check-context codex-context register
 .PHONY: agents-install agents agents-cli agents-skills extra-skills
 .PHONY: agents-skills-install agents-skills-list agents-skills-check-npx
 
@@ -30,11 +31,22 @@ ai: bootstrap
 
 bootstrap: mise-package mise-install
 
+version:
+	@version="$(VERSION)"; \
+	if printf '%s' "$$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?([+][0-9A-Za-z.-]+)?$$'; then \
+		printf '%s\n' "$$version"; \
+	else \
+		echo "❌ VERSION must contain a semver value" >&2; \
+		exit 1; \
+	fi
+
 check:
+	@VERSION=$(VERSION) ./scripts/test-setup.sh
+
+extra-check:
 	@CLAUDE_MARKETPLACE_NAMES="$(CLAUDE_MARKETPLACE_NAMES)" \
 	CLAUDE_EXPECTED_PLUGINS="$(CLAUDE_PLUGINS)" \
-	./scripts/test-setup.sh
-	@./scripts/test-context.sh
+	./scripts/test-extras.sh
 
 check-context:
 	@./scripts/test-context.sh
@@ -105,10 +117,16 @@ agents-skills-check-npx:
 
 agents-skills-install: agents-skills-check-npx
 	@echo "$(BLUE)📦 Installing core skills...$(NC)"
+	@for dir in "$$HOME/.claude/skills" "$$HOME/.codex/skills"; do \
+		if [ -d "$$dir/prompt-engeneering" ]; then \
+			echo "  🗑️  Removing old prompt-engeneering (typo) from $$dir"; \
+			rm -rf "$$dir/prompt-engeneering"; \
+		fi; \
+	done
 	@echo "  📥 Installing playwright-cli from microsoft/playwright-cli"
 	@$(SKILLS) add microsoft/playwright-cli --skill playwright-cli -g $(AGENTS_SKILLS_AGENT_FLAGS) -y
-	@echo "  📥 Installing prompt-engeneering from CodeAlive-AI/prompt-engineering-skill"
-	@$(SKILLS) add CodeAlive-AI/prompt-engineering-skill@prompt-engeneering -g -y
+	@echo "  📥 Installing prompt-engineering from CodeAlive-AI/prompt-engineering-skill"
+	@$(SKILLS) add CodeAlive-AI/prompt-engineering-skill@prompt-engineering -g -y
 	@echo "  📥 Installing ccbox from diskd-ai/ccbox"
 	@$(SKILLS) add diskd-ai/ccbox --skill ccbox -g $(AGENTS_SKILLS_AGENT_FLAGS) -y
 	@echo "  📥 Installing ccbox-insights from diskd-ai/ccbox"
@@ -117,11 +135,13 @@ agents-skills-install: agents-skills-check-npx
 agents-skills-list:
 	@echo "$(BLUE)📋 Core skills:$(NC)"
 	@printf "  playwright-cli (microsoft/playwright-cli)\n"
-	@printf "  prompt-engeneering (CodeAlive-AI/prompt-engineering-skill)\n"
+	@printf "  prompt-engineering (CodeAlive-AI/prompt-engineering-skill)\n"
 	@printf "  ccbox (diskd-ai/ccbox)\n"
 	@printf "  ccbox-insights (diskd-ai/ccbox)\n"
 
 # --- Extra skills and plugins (not installed by default) ---
+
+extra: extra-skills
 
 extra-skills: agents-skills-check-npx
 	@echo "$(BLUE)📦 Installing extra CLIs, skills, and plugins...$(NC)"
