@@ -66,7 +66,7 @@ func main() {
 	authSvc := auth.NewService(userRepo, sessionRepo, attemptRepo, authCfg)
 
 	// Шаблоны
-	renderer, err := tmpl.New(os.DirFS("templates"))
+	renderer, err := tmpl.New(os.DirFS("templates"), "templates/")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load templates: %v\n", err)
 		os.Exit(1)

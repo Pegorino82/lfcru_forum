@@ -1,22 +1,27 @@
 package tmpl
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 	"path/filepath"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
 
-// Renderer wraps html/template for use with Echo.
+// Renderer holds an isolated template set per page file.
 type Renderer struct {
-	templates *template.Template
+	sets map[string]*template.Template
 }
 
-// New parses all .html files found under the given root directory.
-func New(root fs.FS) (*Renderer, error) {
-	t := template.New("")
+// New builds a separate *template.Template for each page file.
+// prefix is prepended to all keys (e.g. "templates/") so that handler names match.
+// Layout files (those inside a "layouts" directory) are included in every set.
+func New(root fs.FS, prefix string) (*Renderer, error) {
+	var layoutPaths []string
+	var pagePaths []string
 
 	err := fs.WalkDir(root, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -25,12 +30,11 @@ func New(root fs.FS) (*Renderer, error) {
 		if d.IsDir() || filepath.Ext(path) != ".html" {
 			return nil
 		}
-		content, err := fs.ReadFile(root, path)
-		if err != nil {
-			return err
-		}
-		if _, err := t.New(path).Parse(string(content)); err != nil {
-			return err
+		dir := filepath.ToSlash(filepath.Dir(path))
+		if dir == "layouts" || strings.HasSuffix(dir, "/layouts") {
+			layoutPaths = append(layoutPaths, path)
+		} else {
+			pagePaths = append(pagePaths, path)
 		}
 		return nil
 	})
@@ -38,10 +42,43 @@ func New(root fs.FS) (*Renderer, error) {
 		return nil, err
 	}
 
-	return &Renderer{templates: t}, nil
+	// Pre-read layout contents.
+	layoutContents := make(map[string]string, len(layoutPaths))
+	for _, lp := range layoutPaths {
+		data, err := fs.ReadFile(root, lp)
+		if err != nil {
+			return nil, err
+		}
+		layoutContents[prefix+lp] = string(data)
+	}
+
+	sets := make(map[string]*template.Template, len(pagePaths))
+	for _, p := range pagePaths {
+		key := prefix + p
+		t := template.New("")
+		for lp, lc := range layoutContents {
+			if _, err := t.New(lp).Parse(lc); err != nil {
+				return nil, fmt.Errorf("parse layout %q: %w", lp, err)
+			}
+		}
+		content, err := fs.ReadFile(root, p)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := t.New(key).Parse(string(content)); err != nil {
+			return nil, fmt.Errorf("parse page %q: %w", p, err)
+		}
+		sets[key] = t
+	}
+
+	return &Renderer{sets: sets}, nil
 }
 
 // Render implements echo.Renderer.
 func (r *Renderer) Render(w io.Writer, name string, data any, _ echo.Context) error {
-	return r.templates.ExecuteTemplate(w, name, data)
+	t, ok := r.sets[name]
+	if !ok {
+		return fmt.Errorf("template %q not found", name)
+	}
+	return t.ExecuteTemplate(w, name, data)
 }
