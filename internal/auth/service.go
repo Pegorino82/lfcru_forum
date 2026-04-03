@@ -63,6 +63,7 @@ type Config struct {
 	RateLimitMax       int
 	SessionGracePeriod time.Duration
 	MaxSessionsPerUser int
+	CookieSecure       bool
 }
 
 type Service struct {
