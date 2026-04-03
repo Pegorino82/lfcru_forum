@@ -37,7 +37,7 @@ func (r *Repo) Create(ctx context.Context, s *Session) (uuid.UUID, error) {
 
 func (r *Repo) GetByID(ctx context.Context, id uuid.UUID) (*Session, error) {
 	const q = `
-		SELECT id, user_id, ip_addr, user_agent, created_at, expires_at
+		SELECT id, user_id, ip_addr::text, user_agent, created_at, expires_at
 		FROM sessions
 		WHERE id = $1 AND expires_at > now()`
 
