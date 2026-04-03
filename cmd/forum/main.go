@@ -10,7 +10,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Pegorino82/lfcru_forum/internal/auth"
+	"github.com/Pegorino82/lfcru_forum/internal/cleanup"
 	"github.com/Pegorino82/lfcru_forum/internal/config"
+	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
+	"github.com/Pegorino82/lfcru_forum/internal/ratelimit"
+	"github.com/Pegorino82/lfcru_forum/internal/session"
+	"github.com/Pegorino82/lfcru_forum/internal/tmpl"
+	"github.com/Pegorino82/lfcru_forum/internal/user"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -30,27 +37,60 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Проверка соединения
 	if err := pool.Ping(context.Background()); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to ping database: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Миграции через goose
+	// Миграции
 	if err := runMigrations(cfg.DatabaseURL); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to run migrations: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Echo server
+	// Репозитории
+	userRepo := user.NewRepo(pool)
+	sessionRepo := session.NewRepo(pool)
+	attemptRepo := ratelimit.NewLoginAttemptRepo(pool)
+
+	// Сервис аутентификации
+	authCfg := auth.Config{
+		BcryptCost:         cfg.BcryptCost,
+		SessionLifetime:    cfg.SessionLifetime,
+		RateLimitWindow:    cfg.RateLimitWindow,
+		RateLimitMax:       cfg.RateLimitMax,
+		SessionGracePeriod: cfg.SessionGracePeriod,
+		MaxSessionsPerUser: cfg.MaxSessionsPerUser,
+		CookieSecure:       cfg.CookieSecure,
+	}
+	authSvc := auth.NewService(userRepo, sessionRepo, attemptRepo, authCfg)
+
+	// Шаблоны
+	renderer, err := tmpl.New(os.DirFS("templates"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to load templates: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Echo
 	e := echo.New()
 	e.HideBanner = true
+	e.Renderer = renderer
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(appMiddleware.CSRFMiddleware())
+	e.Use(auth.LoadSession(authSvc))
 
+	// Маршруты
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
+	auth.NewHandler(authSvc).RegisterRoutes(e)
+
+	// Фоновая очистка
+	bgCtx, bgCancel := context.WithCancel(context.Background())
+	defer bgCancel()
+	go cleanup.Run(bgCtx, sessionRepo, attemptRepo)
 
 	// Graceful shutdown
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -63,6 +103,7 @@ func main() {
 	}()
 
 	<-ctx.Done()
+	bgCancel()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

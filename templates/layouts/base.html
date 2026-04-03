@@ -1,0 +1,73 @@
+{{define "templates/layouts/base.html"}}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LFC.ru — Фан-сайт болельщиков ФК «Ливерпуль»</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+    <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; }
+        nav { background: #c8102e; color: #fff; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+        nav a { color: #fff; text-decoration: none; font-weight: 600; }
+        nav a:hover { text-decoration: underline; }
+        .nav-links { display: flex; gap: 1rem; align-items: center; }
+        .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+        .flash { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+        .flash.error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="/">LFC.ru</a>
+    <div class="nav-links">
+        {{template "nav" .}}
+    </div>
+</nav>
+
+<div class="container">
+    {{template "flash" .}}
+    {{block "content" .}}{{end}}
+</div>
+
+<script>
+// Show flash cookie message and clear it
+(function() {
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+        c = c.trim();
+        if (c.startsWith('flash=')) {
+            const msg = decodeURIComponent(c.slice(6));
+            const el = document.getElementById('flash-msg');
+            if (el && msg) {
+                el.textContent = msg;
+                el.style.display = 'block';
+            }
+            document.cookie = 'flash=; path=/; max-age=-1';
+            break;
+        }
+    }
+})();
+</script>
+</body>
+</html>
+{{end}}
+
+{{define "nav"}}
+{{if .User}}
+    <span>{{.User.Username}}</span>
+    <form method="POST" action="/logout" style="display:inline">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+        <button type="submit" style="background:none;border:none;color:#fff;cursor:pointer;font-weight:600;">Выйти</button>
+    </form>
+{{else}}
+    <a href="/login">Вход</a>
+    <a href="/register">Регистрация</a>
+{{end}}
+{{end}}
+
+{{define "flash"}}
+<div id="flash-msg" class="flash" style="display:none"></div>
+{{end}}

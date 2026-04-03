@@ -1,0 +1,83 @@
+{{define "templates/auth/register.html"}}
+{{template "templates/layouts/base.html" .}}
+{{end}}
+
+{{define "content"}}
+<div style="max-width:480px;margin:0 auto">
+    <h1 style="margin-bottom:1.5rem">Регистрация</h1>
+
+    <form id="register-form"
+          method="POST"
+          action="/register"
+          hx-post="/register"
+          hx-target="#register-form"
+          hx-swap="outerHTML">
+
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+
+        <div style="margin-bottom:1rem">
+            <label for="username">Имя пользователя</label><br>
+            <input
+                id="username"
+                name="username"
+                type="text"
+                value="{{index .Fields "username"}}"
+                autocomplete="username"
+                {{if index .Errors "username"}}aria-invalid="true" aria-describedby="username-error" autofocus{{end}}
+                style="width:100%;padding:0.5rem;margin-top:0.25rem;border:1px solid {{if index .Errors "username"}}#dc3545{{else}}#ccc{{end}};border-radius:4px">
+            {{if index .Errors "username"}}
+            <span id="username-error" class="field-error" style="color:#dc3545;font-size:0.875rem">{{index .Errors "username"}}</span>
+            {{end}}
+        </div>
+
+        <div style="margin-bottom:1rem">
+            <label for="email">Email</label><br>
+            <input
+                id="email"
+                name="email"
+                type="email"
+                value="{{index .Fields "email"}}"
+                autocomplete="email"
+                {{if index .Errors "email"}}aria-invalid="true" aria-describedby="email-error"{{if not (index .Errors "username")}} autofocus{{end}}{{end}}
+                style="width:100%;padding:0.5rem;margin-top:0.25rem;border:1px solid {{if index .Errors "email"}}#dc3545{{else}}#ccc{{end}};border-radius:4px">
+            {{if index .Errors "email"}}
+            <span id="email-error" class="field-error" style="color:#dc3545;font-size:0.875rem">{{index .Errors "email"}}</span>
+            {{end}}
+        </div>
+
+        <div style="margin-bottom:1rem">
+            <label for="password">Пароль</label><br>
+            <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="new-password"
+                {{if index .Errors "password"}}aria-invalid="true" aria-describedby="password-error"{{end}}
+                style="width:100%;padding:0.5rem;margin-top:0.25rem;border:1px solid {{if index .Errors "password"}}#dc3545{{else}}#ccc{{end}};border-radius:4px">
+            {{if index .Errors "password"}}
+            <span id="password-error" class="field-error" style="color:#dc3545;font-size:0.875rem">{{index .Errors "password"}}</span>
+            {{end}}
+        </div>
+
+        <div style="margin-bottom:1.5rem">
+            <label for="password_confirm">Подтверждение пароля</label><br>
+            <input
+                id="password_confirm"
+                name="password_confirm"
+                type="password"
+                autocomplete="new-password"
+                {{if index .Errors "password_confirm"}}aria-invalid="true" aria-describedby="password-confirm-error"{{end}}
+                style="width:100%;padding:0.5rem;margin-top:0.25rem;border:1px solid {{if index .Errors "password_confirm"}}#dc3545{{else}}#ccc{{end}};border-radius:4px">
+            {{if index .Errors "password_confirm"}}
+            <span id="password-confirm-error" class="field-error" style="color:#dc3545;font-size:0.875rem">{{index .Errors "password_confirm"}}</span>
+            {{end}}
+        </div>
+
+        <button type="submit" style="background:#c8102e;color:#fff;border:none;padding:0.6rem 1.5rem;border-radius:4px;cursor:pointer;font-size:1rem">
+            Зарегистрироваться
+        </button>
+
+        <p style="margin-top:1rem">Уже есть аккаунт? <a href="/login">Войти</a></p>
+    </form>
+</div>
+{{end}}
