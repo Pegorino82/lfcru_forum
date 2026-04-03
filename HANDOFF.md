@@ -29,3 +29,4 @@
 - `go mod tidy` убрал прямую зависимость `google/uuid` (нет прямого импорта в момент tidy) → добавлена обратно через `go get`
 - `auth.Config` не содержал `CookieSecure` → добавили поле
 - pgx v5 не умеет сканировать INET в `string` → исправили в `session/repo.go` через `ip_addr::text`
+- **fix/001**: `GET /login` → 500 из-за конфликта `{{define "content"}}` между login.html и register.html → `internal/tmpl/renderer.go` переписан: каждый page-файл получает собственный `*template.Template` (layouts + page); сигнатура `New` расширена параметром `prefix string` для соответствия именам в хендлерах
