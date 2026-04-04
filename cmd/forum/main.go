@@ -12,6 +12,7 @@ import (
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
 	"github.com/Pegorino82/lfcru_forum/internal/cleanup"
+	"github.com/Pegorino82/lfcru_forum/internal/home"
 	"github.com/Pegorino82/lfcru_forum/internal/config"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
 	"github.com/Pegorino82/lfcru_forum/internal/ratelimit"
@@ -85,6 +86,7 @@ func main() {
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
+	e.GET("/", home.ShowHome)
 	auth.NewHandler(authSvc).RegisterRoutes(e)
 
 	// Фоновая очистка
