@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
+	"github.com/Pegorino82/lfcru_forum/internal/tmpl"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
@@ -50,10 +51,12 @@ func (h *Handler) ShowRegister(c echo.Context) error {
 	if UserFromContext(c) != nil {
 		return c.Redirect(http.StatusFound, "/")
 	}
-	return c.Render(http.StatusOK, "templates/auth/register.html", registerData{
-		CSRFToken: appMiddleware.CSRFToken(c),
-		Fields:    map[string]string{},
-	})
+	data := registerData{CSRFToken: appMiddleware.CSRFToken(c), Fields: map[string]string{}}
+	if c.Request().Header.Get("HX-Request") == "true" {
+		r := c.Echo().Renderer.(*tmpl.Renderer)
+		return r.RenderPartial(c.Response(), "templates/auth/register.html", "content", data)
+	}
+	return c.Render(http.StatusOK, "templates/auth/register.html", data)
 }
 
 func (h *Handler) Register(c echo.Context) error {
@@ -114,9 +117,12 @@ func (h *Handler) ShowLogin(c echo.Context) error {
 	if UserFromContext(c) != nil {
 		return c.Redirect(http.StatusFound, "/")
 	}
-	return c.Render(http.StatusOK, "templates/auth/login.html", loginData{
-		CSRFToken: appMiddleware.CSRFToken(c),
-	})
+	data := loginData{CSRFToken: appMiddleware.CSRFToken(c)}
+	if c.Request().Header.Get("HX-Request") == "true" {
+		r := c.Echo().Renderer.(*tmpl.Renderer)
+		return r.RenderPartial(c.Response(), "templates/auth/login.html", "content", data)
+	}
+	return c.Render(http.StatusOK, "templates/auth/login.html", data)
 }
 
 func (h *Handler) Login(c echo.Context) error {
