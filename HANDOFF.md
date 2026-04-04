@@ -17,11 +17,16 @@
 - **Шаг 8**: Фоновые задачи — `cleanup.Run` (goroutine с ticker)
 - Всё подключено в `main.go`, сервер стартует и отдаёт страницы
 - **Шаг 9**: Интеграционные тесты — `internal/auth/integration_test.go` (17 сценариев), `internal/ratelimit/repo_test.go` (6 сценариев); build tag `integration`; запуск: `DATABASE_URL=... go test -tags integration ./internal/...`
+- **Фича 002 (базовый layout)**: реализована полностью
+  - `internal/tmpl/renderer.go`: `truncate` FuncMap + `RenderPartial` метод
+  - `templates/layouts/base.html`: `<header>`, `<footer>`, skip-link, `<main id="content">`, `.main-nav`, `aria-label` на nav, `.nav-username` с truncate
+  - `internal/home/handler.go` + `templates/home/index.html`: `GET /` home handler с HTMX partial поддержкой
+  - `internal/auth/handler.go`: `ShowLogin` и `ShowRegister` теперь рендерят partial при `HX-Request: true`
+  - `internal/layout/layout_test.go`: 12 интеграционных тестов (build tag `integration`), все зелёные
 
 ## Что сделать следующим
 
-- [rspec](memory-bank/features/001/rspec.md)
-- Реализовать следующую фичу согласно PROJECT.md (форум: разделы, темы, сообщения)
+- Реализовать следующую фичу согласно `PROJECT.md` (форум: разделы, темы, сообщения)
 
 ## Проблемы и решения
 
