@@ -110,6 +110,10 @@ func (h *Handler) Register(c echo.Context) error {
 
 	setSessionCookie(c, sess.ID.String(), h.svc.cfg.CookieSecure)
 	setFlash(c, "Регистрация прошла успешно!")
+	if c.Request().Header.Get("HX-Request") == "true" {
+		c.Response().Header().Set("HX-Redirect", "/")
+		return c.NoContent(http.StatusOK)
+	}
 	return c.Redirect(http.StatusSeeOther, "/")
 }
 
@@ -157,7 +161,12 @@ func (h *Handler) Login(c echo.Context) error {
 
 	setSessionCookie(c, sess.ID.String(), h.svc.cfg.CookieSecure)
 	setFlash(c, "Вы вошли в систему!")
-	return c.Redirect(http.StatusSeeOther, safeRedirect(c.QueryParam("next")))
+	target := safeRedirect(c.QueryParam("next"))
+	if c.Request().Header.Get("HX-Request") == "true" {
+		c.Response().Header().Set("HX-Redirect", target)
+		return c.NoContent(http.StatusOK)
+	}
+	return c.Redirect(http.StatusSeeOther, target)
 }
 
 func (h *Handler) Logout(c echo.Context) error {
