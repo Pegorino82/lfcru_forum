@@ -13,8 +13,11 @@ import (
 	"time"
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
+	"github.com/Pegorino82/lfcru_forum/internal/forum"
 	"github.com/Pegorino82/lfcru_forum/internal/home"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
+	"github.com/Pegorino82/lfcru_forum/internal/match"
+	"github.com/Pegorino82/lfcru_forum/internal/news"
 	"github.com/Pegorino82/lfcru_forum/internal/ratelimit"
 	"github.com/Pegorino82/lfcru_forum/internal/session"
 	"github.com/Pegorino82/lfcru_forum/internal/tmpl"
@@ -108,7 +111,7 @@ func newSvc(pool *pgxpool.Pool) *auth.Service {
 
 // ─── Echo server setup ───────────────────────────────────────────────────────
 
-func newServer(t *testing.T, svc *auth.Service) *echo.Echo {
+func newServer(t *testing.T, pool *pgxpool.Pool, svc *auth.Service) *echo.Echo {
 	t.Helper()
 	renderer, err := tmpl.New(os.DirFS(templatesPath), "templates/")
 	if err != nil {
@@ -122,7 +125,8 @@ func newServer(t *testing.T, svc *auth.Service) *echo.Echo {
 	e.Use(appMiddleware.CSRFMiddleware())
 	e.Use(auth.LoadSession(svc))
 
-	e.GET("/", home.ShowHome)
+	homeHandler := home.NewHandler(news.NewRepo(pool), match.NewRepo(pool), forum.NewRepo(pool))
+	e.GET("/", homeHandler.ShowHome)
 	auth.NewHandler(svc).RegisterRoutes(e)
 
 	return e
@@ -156,7 +160,7 @@ func TestLayoutStructure(t *testing.T) {
 	pool := testDB(t)
 	svc := newSvc(pool)
 	truncateTables(t, pool)
-	e := newServer(t, svc)
+	e := newServer(t, pool, svc)
 
 	t.Run("header присутствует", func(t *testing.T) {
 		rec := doRequest(t, e, "/login")

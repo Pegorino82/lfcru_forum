@@ -23,10 +23,19 @@
   - `internal/home/handler.go` + `templates/home/index.html`: `GET /` home handler с HTMX partial поддержкой
   - `internal/auth/handler.go`: `ShowLogin` и `ShowRegister` теперь рендерят partial при `HX-Request: true`
   - `internal/layout/layout_test.go`: 12 интеграционных тестов (build tag `integration`), все зелёные
+- **Фича 003 (главная страница)**:
+  - Миграции `004_create_news.sql` и `005_create_forum_and_matches.sql` (matches, forum_sections, forum_topics, forum_posts + триггер)
+  - `internal/news/model.go` + `repo.go` — `LatestPublished(ctx, limit)`
+  - `internal/match/model.go` + `repo.go` — `NextUpcoming(ctx, asOf)`
+  - `internal/forum/model.go` + `repo.go` — `LatestActive(ctx, limit)`
+  - `internal/home/handler.go` рефакторен в структуру `Handler` с тремя репозиториями
+  - `templates/home/index.html` — три секции (новости, матч, форум) с empty-state + inline CSS
+  - `cmd/forum/main.go` обновлён: инициализация новых репозиториев и `home.NewHandler`
+  - Интеграционные тесты: `internal/news/repo_test.go` (4), `internal/match/repo_test.go` (4), `internal/forum/repo_test.go` (7), `internal/home/handler_test.go` (4) — все зелёные
 
 ## Что сделать следующим
 
-- Реализовать следующую фичу согласно `PROJECT.md` (форум: разделы, темы, сообщения)
+- Реализовать следующую фичу согласно `PROJECT.md`
 
 ## Проблемы и решения
 
@@ -35,3 +44,6 @@
 - `auth.Config` не содержал `CookieSecure` → добавили поле
 - pgx v5 не умеет сканировать INET в `string` → исправили в `session/repo.go` через `ip_addr::text`
 - **fix/001**: `GET /login` → 500 из-за конфликта `{{define "content"}}` между login.html и register.html → `internal/tmpl/renderer.go` переписан: каждый page-файл получает собственный `*template.Template` (layouts + page); сигнатура `New` расширена параметром `prefix string` для соответствия именам в хендлерах
+- **fix/003-1**: `$$`-функция в `005_create_forum_and_matches.sql` не парсилась goose → добавлены `-- +goose StatementBegin` / `-- +goose StatementEnd` вокруг `CREATE FUNCTION`
+- **fix/003-2**: Тесты использовали `password_hash` — реальная колонка называется `pass_hash BYTEA` → исправлено во всех тестах
+- **fix/003-3**: Параллельный `goose.Up()` из разных пакетов вызывает race condition → интеграционные тесты запускать с `-p 1`; добавлена заметка в CLAUDE.md

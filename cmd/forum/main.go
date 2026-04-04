@@ -12,9 +12,12 @@ import (
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
 	"github.com/Pegorino82/lfcru_forum/internal/cleanup"
-	"github.com/Pegorino82/lfcru_forum/internal/home"
 	"github.com/Pegorino82/lfcru_forum/internal/config"
+	"github.com/Pegorino82/lfcru_forum/internal/forum"
+	"github.com/Pegorino82/lfcru_forum/internal/home"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
+	"github.com/Pegorino82/lfcru_forum/internal/match"
+	"github.com/Pegorino82/lfcru_forum/internal/news"
 	"github.com/Pegorino82/lfcru_forum/internal/ratelimit"
 	"github.com/Pegorino82/lfcru_forum/internal/session"
 	"github.com/Pegorino82/lfcru_forum/internal/tmpl"
@@ -82,11 +85,19 @@ func main() {
 	e.Use(appMiddleware.CSRFMiddleware())
 	e.Use(auth.LoadSession(authSvc))
 
+	// Репозитории для главной страницы
+	newsRepo := news.NewRepo(pool)
+	matchRepo := match.NewRepo(pool)
+	topicRepo := forum.NewRepo(pool)
+
+	// Хэндлер главной страницы
+	homeHandler := home.NewHandler(newsRepo, matchRepo, topicRepo)
+
 	// Маршруты
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
-	e.GET("/", home.ShowHome)
+	e.GET("/", homeHandler.ShowHome)
 	auth.NewHandler(authSvc).RegisterRoutes(e)
 
 	// Фоновая очистка

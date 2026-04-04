@@ -3,6 +3,84 @@
 {{end}}
 
 {{define "content"}}
-<h1>Добро пожаловать на LFC.ru</h1>
-<p>Фан-сайт болельщиков ФК «Ливерпуль»</p>
+<style>
+.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1rem 0; }
+.home-news  { grid-column: 1 / 2; grid-row: 1 / 2; }
+.home-match { grid-column: 2 / 3; grid-row: 1 / 2; }
+.home-forum { grid-column: 1 / -1; grid-row: 2 / 3; }
+.news-list, .forum-list { list-style: none; padding: 0; margin: 0; }
+.news-list li, .forum-list li { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+.news-list time, .forum-meta { color: #666; font-size: 0.875rem; }
+.match-card { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 1rem; text-align: center; }
+.match-opponent { font-size: 1.25rem; font-weight: bold; }
+.match-tournament { color: #666; font-size: 0.875rem; }
+.empty-state { color: #999; font-style: italic; }
+section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px solid #c8102e; padding-bottom: 0.5rem; }
+@media (max-width: 768px) {
+  .home-grid { grid-template-columns: 1fr; }
+  .home-news, .home-match, .home-forum { grid-column: 1 / -1; }
+}
+</style>
+
+<div class="home-grid">
+
+  <section class="home-news" aria-labelledby="news-heading">
+    <h2 id="news-heading">Последние новости</h2>
+    {{if .News}}
+      <ul class="news-list">
+        {{range .News}}
+        <li>
+          <a href="/news/{{.ID}}">{{.Title}}</a>
+          {{if .PublishedAt}}
+          <time datetime="{{.PublishedAt.Format "2006-01-02"}}">
+            {{.PublishedAt.Format "02.01.2006"}}
+          </time>
+          {{end}}
+        </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty-state">На сайте еще не добавлены новости</p>
+    {{end}}
+  </section>
+
+  <section class="home-match" aria-labelledby="match-heading">
+    <h2 id="match-heading">Ближайший матч</h2>
+    {{if .NextMatch}}
+      <div class="match-card">
+        <p class="match-opponent">{{.NextMatch.Opponent}}</p>
+        <p class="match-date">
+          <time datetime="{{.NextMatch.MatchDate.Format "2006-01-02T15:04:05Z07:00"}}">
+            {{.NextMatch.MatchDate.Format "02.01.2006 15:04"}} МСК
+          </time>
+        </p>
+        <p class="match-tournament">{{.NextMatch.Tournament}}</p>
+      </div>
+    {{else}}
+      <p class="empty-state">Ближайших матчей нет</p>
+    {{end}}
+  </section>
+
+  <section class="home-forum" aria-labelledby="forum-heading">
+    <h2 id="forum-heading">Последнее на форуме</h2>
+    {{if .Topics}}
+      <ul class="forum-list">
+        {{range .Topics}}
+        <li>
+          <a href="/forum/topics/{{.ID}}">{{.Title}}</a>
+          <span class="forum-meta">
+            {{.LastPostByName}} —
+            <time datetime="{{.LastPostAt.Format "2006-01-02T15:04:05Z07:00"}}">
+              {{.LastPostAt.Format "02.01.2006 15:04"}}
+            </time>
+          </span>
+        </li>
+        {{end}}
+      </ul>
+    {{else}}
+      <p class="empty-state">В форуме пока нет активных обсуждений</p>
+    {{end}}
+  </section>
+
+</div>
 {{end}}

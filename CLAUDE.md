@@ -126,7 +126,8 @@ Handler (HTTP) → Service (бизнес-логика) → Repo (SQL/pgx) → Po
 | # | Фича | Spec | Статус |
 |---|---|---|---|
 | 001 | Аутентификация (регистрация, вход, выход, сессии, rate-limit) | `memory-bank/features/001/rspec.md` | Реализовано |
-| 002 | Базовый layout (хэдер с навигацией, футер, sticky footer, skip-link, a11y) | `memory-bank/features/002/rspec.md` | В работе |
+| 002 | Базовый layout (хэдер с навигацией, футер, sticky footer, skip-link, a11y) | `memory-bank/features/002/rspec.md` | Реализовано |
+| 003 | Главная страница (новости, ближайший матч, активность форума) | `memory-bank/features/003/rspec.md` | Реализовано |
 
 ---
 
@@ -164,8 +165,10 @@ docker run --rm \
   --network lfcru_forum_default \
   -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru?sslmode=disable" \
   golang:1.23-alpine \
-  go test -tags integration ./internal/...
+  go test -tags integration -p 1 ./internal/...
 ```
+
+> Флаг `-p 1` обязателен: каждый пакет самостоятельно вызывает `goose.Up()`, и параллельный запуск вызывает race condition при первичном применении миграций.
 
 **Только один пакет** (пример — layout):
 ```bash
