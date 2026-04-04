@@ -9,28 +9,54 @@
     <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; }
+        body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222;
+               display: flex; flex-direction: column; min-height: 100vh; }
         nav { background: #c8102e; color: #fff; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
         nav a { color: #fff; text-decoration: none; font-weight: 600; }
         nav a:hover { text-decoration: underline; }
         .nav-links { display: flex; gap: 1rem; align-items: center; }
-        .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+        .main-nav { display: flex; gap: 1rem; }
+        .nav-username { max-width: 120px; overflow: hidden; text-overflow: ellipsis;
+                        white-space: nowrap; display: inline-block; }
+        .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; flex: 1; }
         .flash { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
         .flash.error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        footer { background: #333; color: #ccc; padding: 1rem 1.5rem;
+                 text-align: center; font-size: 0.875rem; }
+        footer a { color: #fff; }
+        .skip-link { position: absolute; top: -40px; left: 0; background: #c8102e;
+                     color: #fff; padding: 0.5rem 1rem; z-index: 100; transition: top 0.1s; }
+        .skip-link:focus { top: 0; }
+        @media (max-width: 768px) {
+          .main-nav { display: none; }
+        }
     </style>
 </head>
 <body>
-<nav>
-    <a href="/">LFC.ru</a>
-    <div class="nav-links">
-        {{template "nav" .}}
-    </div>
-</nav>
+  <a href="#content" class="skip-link">Перейти к содержимому</a>
 
-<div class="container">
+  <header>
+    <nav aria-label="Основная навигация">
+      <a href="/" class="logo">LFC.ru</a>
+      <div class="main-nav">
+        <a href="#" class="nav-link">Форум</a>
+        <a href="#" class="nav-link">Новости</a>
+      </div>
+      <div class="nav-links">
+        {{template "nav" .}}
+      </div>
+    </nav>
+  </header>
+
+  <main id="content" class="container" tabindex="-1">
     {{template "flash" .}}
     {{block "content" .}}{{end}}
-</div>
+  </main>
+
+  <footer>
+    <p>© 2026 LFC.ru — фан-сайт болельщиков ФК «Ливерпуль»</p>
+    <p>Не является официальным сайтом Liverpool FC</p>
+  </footer>
 
 <script>
 // Show flash cookie message and clear it
@@ -57,13 +83,13 @@
 
 {{define "nav"}}
 {{if .User}}
-    <span>{{.User.Username}}</span>
+    <span class="nav-username" title="{{.User.Username}}">{{truncate .User.Username 20}}</span>
     <form method="POST" action="/logout" style="display:inline">
         <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
         <button type="submit" style="background:none;border:none;color:#fff;cursor:pointer;font-weight:600;">Выйти</button>
     </form>
 {{else}}
-    <a href="/login">Вход</a>
+    <a href="/login">Войти</a>
     <a href="/register">Регистрация</a>
 {{end}}
 {{end}}
