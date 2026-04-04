@@ -1,6 +1,6 @@
 # brief
 ## 1
-- @memory-bank/features/001/brief.md проверь на  полноту и однозначность.
+- @memory-bank/features/002/brief.md проверь на  полноту и однозначность.
 Критерии:
 1. Проблема конкретна и измерима (не «улучшить», а конкретная метрика или боль)
 2. Назван стейкхолдер или пользователь, для которого решаем
@@ -25,21 +25,25 @@
 
 # rspec
 ## 1
-- напиши спеку на основании @memory-bank/features/001/brief.md и сохрани в @memory-bank/features/001/rspec.md
+- напиши спеку на основании @memory-bank/features/002/brief.md и сохрани в @memory-bank/features/002/rspec.md
 документы должны соответсовать подходу sdd
 
-- /spec-reviewer:spec-review -s memory-bank/features/001/rspec.md
+- /spec-reviewer:spec-review -s memory-bank/features/002/rspec.md
 
 ## 2
 в @memory-bank/features/001/rspec.md в ## 12 есть отложенные улучшения, внеси их в spec
 
 # plan
-- сделай Implementation Plan на основе @memory-bank/features/001/rspec.md. результат сохрани в @memory-bank/features/001/implementation_plan.md
+- сделай Implementation Plan на основе @memory-bank/features/002/rspec.md. результат сохрани в @memory-bank/features/002/implementation_plan.md
 
 - актуализируй @memory-bank/features/001/plan.md согласно @memory-bank/features/001/rspec.md
 
-- @memory-bank/features/001/plan.md.
+- @memory-bank/features/002/plan.md.
 Проверь этот план на совместимость с текущей кодовой базой. Какие файлы затронешь? Есть ли конфликты? Осуществимо ли это?
 
 # implementation
-- начинай реализацию согласно @memory-bank/features/001/plan.md.
+- начинай реализацию согласно @memory-bank/features/002/plan.md.
+
+# CLOUDE.md
+Посмотри @memory-bank/features/001/rspec.md @memory-bank/features/002/rspec.md
+Надо добавить в @CLOUDE.md секцию с архитектурой проекта.
