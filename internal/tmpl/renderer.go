@@ -11,6 +11,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+var funcMap = template.FuncMap{
+	"truncate": func(s string, n int) string {
+		r := []rune(s)
+		if len(r) <= n {
+			return s
+		}
+		return string(r[:n]) + "…"
+	},
+}
+
 // Renderer holds an isolated template set per page file.
 type Renderer struct {
 	sets map[string]*template.Template
@@ -55,7 +65,7 @@ func New(root fs.FS, prefix string) (*Renderer, error) {
 	sets := make(map[string]*template.Template, len(pagePaths))
 	for _, p := range pagePaths {
 		key := prefix + p
-		t := template.New("")
+		t := template.New("").Funcs(funcMap)
 		for lp, lc := range layoutContents {
 			if _, err := t.New(lp).Parse(lc); err != nil {
 				return nil, fmt.Errorf("parse layout %q: %w", lp, err)
@@ -81,4 +91,13 @@ func (r *Renderer) Render(w io.Writer, name string, data any, _ echo.Context) er
 		return fmt.Errorf("template %q not found", name)
 	}
 	return t.ExecuteTemplate(w, name, data)
+}
+
+// RenderPartial рендерит именованный блок из template set страницы.
+func (r *Renderer) RenderPartial(w io.Writer, pageKey, blockName string, data any) error {
+	t, ok := r.sets[pageKey]
+	if !ok {
+		return fmt.Errorf("template %q not found", pageKey)
+	}
+	return t.ExecuteTemplate(w, blockName, data)
 }
