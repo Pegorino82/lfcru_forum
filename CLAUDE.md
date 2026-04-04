@@ -58,6 +58,78 @@
 
 ---
 
+## Архитектура
+
+### Структура каталогов
+
+```
+cmd/forum/main.go          — точка входа: конфиг, pgxpool, миграции, DI, Echo, graceful shutdown
+
+internal/
+├── config/config.go       — загрузка конфигурации из env-переменных (с дефолтами)
+├── auth/
+│   ├── handler.go         — HTTP-хэндлеры (Register, Login, Logout, ShowRegister, ShowLogin)
+│   ├── service.go         — бизнес-логика: валидация, bcrypt, rate-limit, создание сессий
+│   ├── errors.go          — sentinel-ошибки (ErrDuplicateEmail, ErrRateLimited и т.д.)
+│   ├── middleware.go       — LoadSession (cookie → user в контексте), RequireAuth, UserFromContext
+│   ├── service_test.go    — юнит-тесты сервиса (моки репозиториев)
+│   └── integration_test.go — интеграционные тесты (testcontainers + PostgreSQL)
+├── user/
+│   ├── model.go           — структура User
+│   └── repo.go            — UserRepo (Create, GetByEmail, GetByID) + маппинг unique violation
+├── session/
+│   ├── model.go           — структура Session (UUID, UserID, IP, UA, ExpiresAt)
+│   └── repo.go            — SessionRepo (Create, GetByID, Delete, Touch, CountByUser, DeleteOldestByUser, DeleteExpired)
+├── ratelimit/
+│   ├── repo.go            — LoginAttemptRepo (Record, Count, Cleanup)
+│   └── repo_test.go       — интеграционные тесты rate-limit
+├── cleanup/cleanup.go     — фоновая горутина: очистка истёкших сессий (1ч) и старых login_attempts (10м)
+├── middleware/csrf.go     — CSRF-middleware (токен в cookie + проверка POST/PUT/DELETE)
+└── tmpl/renderer.go       — кастомный echo.Renderer: изолированный template set на каждую страницу
+
+migrations/                — SQL-миграции (goose): 001_users, 002_sessions, 003_login_attempts
+
+templates/
+├── layouts/base.html      — базовый layout: nav, flash, content-блок, HTMX + Alpine.js
+└── auth/
+    ├── login.html         — форма входа
+    └── register.html      — форма регистрации
+```
+
+### Слои и зависимости
+
+```
+Handler (HTTP) → Service (бизнес-логика) → Repo (SQL/pgx) → PostgreSQL
+```
+
+- **Handler** — парсит запрос, вызывает Service, рендерит шаблон или редирект. Зависит только от Service.
+- **Service** — принимает интерфейсы репозиториев (`UserRepo`, `SessionRepo`, `AttemptRepo`). Содержит валидацию, хеширование, rate-limit логику, политику сессий.
+- **Repo** — прямые SQL-запросы через `pgxpool.Pool`. Маппит PG-ошибки в доменные sentinel-ошибки.
+- **Middleware** — `LoadSession` (загрузка пользователя из cookie), `RequireAuth` (редирект на /login), `CSRF`.
+
+### DI и инициализация (cmd/forum/main.go)
+
+1. `config.Load()` — env-переменные с дефолтами
+2. `pgxpool.New()` — пул соединений к PostgreSQL
+3. `goose.Up()` — автоматические миграции при старте
+4. Создание репозиториев → Service → Handler
+5. Echo: middleware (Logger, Recover, CSRF, LoadSession) → маршруты
+6. `cleanup.Run()` — фоновая горутина очистки
+7. Graceful shutdown по SIGINT/SIGTERM
+
+### Шаблонизация
+
+Кастомный `tmpl.Renderer` создаёт **изолированный `*template.Template` на каждый page-файл** (layouts парсятся в каждый set). Это предотвращает конфликты `{{define}}` блоков между страницами. Хэндлер рендерит по полному пути: `"templates/auth/login.html"`.
+
+### Реализованные фичи
+
+| # | Фича | Spec | Статус |
+|---|---|---|---|
+| 001 | Аутентификация (регистрация, вход, выход, сессии, rate-limit) | `memory-bank/features/001/rspec.md` | Реализовано |
+| 002 | Базовый layout (хэдер с навигацией, футер, sticky footer, skip-link, a11y) | `memory-bank/features/002/rspec.md` | В работе |
+
+---
+
 ## Общее
 - Отвечай на **русском языке**
 - Каждый сеанс решает **ровно одну задачу** — не рефакторь без запроса
