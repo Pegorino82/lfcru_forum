@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"errors"
 	"net/http"
 	"net/url"
@@ -78,7 +79,7 @@ func (h *Handler) Register(c echo.Context) error {
 		var verr ValidationErrors
 		switch {
 		case errors.As(err, &verr):
-			return c.Render(http.StatusUnprocessableEntity,
+			return h.renderForm(c, http.StatusUnprocessableEntity,
 				"templates/auth/register.html", registerData{
 					CSRFToken: appMiddleware.CSRFToken(c),
 					Errors:    verr,
@@ -88,14 +89,14 @@ func (h *Handler) Register(c echo.Context) error {
 					},
 				})
 		case errors.Is(err, ErrDuplicateEmail):
-			return c.Render(http.StatusConflict,
+			return h.renderForm(c, http.StatusConflict,
 				"templates/auth/register.html", registerData{
 					CSRFToken: appMiddleware.CSRFToken(c),
 					Errors:    ValidationErrors{"email": "Пользователь с таким email уже зарегистрирован"},
 					Fields:    map[string]string{"username": in.Username, "email": in.Email},
 				})
 		case errors.Is(err, ErrDuplicateUsername):
-			return c.Render(http.StatusConflict,
+			return h.renderForm(c, http.StatusConflict,
 				"templates/auth/register.html", registerData{
 					CSRFToken: appMiddleware.CSRFToken(c),
 					Errors:    ValidationErrors{"username": "Это имя уже занято"},
@@ -148,7 +149,7 @@ func (h *Handler) Login(c echo.Context) error {
 		case errors.Is(err, ErrRateLimited):
 			return c.String(http.StatusTooManyRequests, "Слишком много попыток. Попробуйте позже.")
 		case errors.Is(err, ErrInvalidCredentials):
-			return c.Render(http.StatusUnprocessableEntity,
+			return h.renderForm(c, http.StatusUnprocessableEntity,
 				"templates/auth/login.html", loginData{
 					CSRFToken: appMiddleware.CSRFToken(c),
 					Error:     "Неверный email или пароль",
@@ -178,6 +179,19 @@ func (h *Handler) Logout(c echo.Context) error {
 	}
 	clearSessionCookie(c)
 	return c.Redirect(http.StatusSeeOther, "/")
+}
+
+// renderForm renders a full page or only the "content" partial for HTMX requests.
+func (h *Handler) renderForm(c echo.Context, code int, page string, data any) error {
+	if c.Request().Header.Get("HX-Request") == "true" {
+		r := c.Echo().Renderer.(*tmpl.Renderer)
+		var buf bytes.Buffer
+		if err := r.RenderPartial(&buf, page, "content", data); err != nil {
+			return err
+		}
+		return c.HTMLBlob(code, buf.Bytes())
+	}
+	return c.Render(code, page, data)
 }
 
 // --- helpers ---
