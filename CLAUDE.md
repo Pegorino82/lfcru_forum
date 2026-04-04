@@ -145,6 +145,40 @@ Handler (HTTP) → Service (бизнес-логика) → Repo (SQL/pgx) → Po
 
 Деплой: VPS + docker compose + nginx (reverse proxy).
 
+### Запуск тестов
+
+App-контейнер — бинарный образ без Go. Тесты запускаются через отдельный `golang`-контейнер с монтированием исходников.
+
+**Юнит-тесты** (без БД):
+```bash
+docker run --rm \
+  -v "$(pwd)":/app -w /app \
+  golang:1.23-alpine \
+  go test ./...
+```
+
+**Интеграционные тесты** (нужна запущенная БД из `docker-compose.dev.yml`):
+```bash
+docker run --rm \
+  -v "$(pwd)":/app -w /app \
+  --network lfcru_forum_default \
+  -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru?sslmode=disable" \
+  golang:1.23-alpine \
+  go test -tags integration ./internal/...
+```
+
+**Только один пакет** (пример — layout):
+```bash
+docker run --rm \
+  -v "$(pwd)":/app -w /app \
+  --network lfcru_forum_default \
+  -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru?sslmode=disable" \
+  golang:1.23-alpine \
+  go test -tags integration -v ./internal/layout/...
+```
+
+> Имя сети `lfcru_forum_default` формируется автоматически из имени директории проекта (`lfcru_forum`) и суффикса `_default`.
+
 ## Рабочий процесс
 
 **В начале сеанса:**
