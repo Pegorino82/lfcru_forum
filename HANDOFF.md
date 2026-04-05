@@ -39,6 +39,8 @@
 
 ## Проблемы и решения
 
+- **fix/auth-htmx-422**: HTMX 1.9 не делает swap на 4xx по умолчанию → ошибки логина/регистрации не показывались. Исправлено двумя изменениями: (1) `htmx:beforeSwap` listener в `base.html` разрешает swap на 422/409; (2) добавлен `renderForm` хелпер в `auth/handler.go` — для HTMX-запросов возвращает только partial (`content`-блок), а не полный HTML-документ.
+
 - `goose.Up` падал на пустой директории → добавили проверку "no migration files found" с graceful skip
 - `go mod tidy` убрал прямую зависимость `google/uuid` (нет прямого импорта в момент tidy) → добавлена обратно через `go get`
 - `auth.Config` не содержал `CookieSecure` → добавили поле
