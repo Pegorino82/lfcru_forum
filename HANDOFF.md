@@ -33,9 +33,22 @@
   - `cmd/forum/main.go` обновлён: инициализация новых репозиториев и `home.NewHandler`
   - Интеграционные тесты: `internal/news/repo_test.go` (4), `internal/match/repo_test.go` (4), `internal/forum/repo_test.go` (7), `internal/home/handler_test.go` (4) — все зелёные
 
+- **Фича 004 (страница статьи + комментарии) — Итерация 1 (data layer):** завершена, коммит `b9afb32`
+  - `migrations/006_create_news_comments.sql` — таблица `news_comments` с snapshot-колонками и self-ref FK
+  - `internal/news/repo.go` — добавлен `GetPublishedByID` (nil,nil для 404/draft)
+  - `internal/user/repo.go` — добавлен `GetByUsernames` (case-insensitive, batch)
+  - `internal/comment/` — пакет: `model.go`, `errors.go`, `repo.go` (ListByNewsID + Create с транзакцией depth≤1)
+  - Интеграционные тесты: comment/repo (11), news/GetPublishedByID (3) — зелёные
+
 ## Что сделать следующим
 
-- Реализовать следующую фичу согласно `PROJECT.md`
+- **Фича 004 — Итерация 2 (HTTP layer)** по плану `memory-bank/features/004/plan.md`:
+  - `internal/comment/service.go` — Create + RenderMentions (@mention → span)
+  - `internal/news/handler.go` — ShowArticle + CreateComment
+  - `templates/news/article.html` — шаблон с Alpine.js + HTMX
+  - `internal/tmpl/renderer.go` — добавить FuncMap `deref`
+  - `internal/auth/handler.go` — redirect по `?next=` после логина
+  - `cmd/forum/main.go` — регистрация роутов
 
 ## Проблемы и решения
 
@@ -49,3 +62,4 @@
 - **fix/003-1**: `$$`-функция в `005_create_forum_and_matches.sql` не парсилась goose → добавлены `-- +goose StatementBegin` / `-- +goose StatementEnd` вокруг `CREATE FUNCTION`
 - **fix/003-2**: Тесты использовали `password_hash` — реальная колонка называется `pass_hash BYTEA` → исправлено во всех тестах
 - **fix/003-3**: Параллельный `goose.Up()` из разных пакетов вызывает race condition → интеграционные тесты запускать с `-p 1`; добавлена заметка в CLAUDE.md
+- **004-iter1/seed-contamination**: `TestLatestPublished_Empty` и `TestLatestPublished_ExcludesDrafts` падают из-за seed-данных в тестовой БД (добавлены в `f34f9ba`). `cleanNews` чистит только записи test-пользователя. Pre-existing проблема, не связана с фичей 004.
