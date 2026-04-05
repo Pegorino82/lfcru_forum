@@ -150,6 +150,8 @@ Handler (HTTP) → Service (бизнес-логика) → Repo (SQL/pgx) → Po
 
 App-контейнер — бинарный образ без Go. Тесты запускаются через отдельный `golang`-контейнер с монтированием исходников.
 
+> **Важно:** интеграционные тесты подключаются к тестовой БД `lfcru_test`, а не к `lfcru`. Это предотвращает уничтожение данных разработки при запуске тестов. Тестовая БД создаётся автоматически скриптом `scripts/init-test-db.sql` при первом запуске postgres-контейнера.
+
 **Юнит-тесты** (без БД):
 ```bash
 docker run --rm \
@@ -163,7 +165,7 @@ docker run --rm \
 docker run --rm \
   -v "$(pwd)":/app -w /app \
   --network lfcru_forum_default \
-  -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru?sslmode=disable" \
+  -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru_test?sslmode=disable" \
   golang:1.23-alpine \
   go test -tags integration -p 1 ./internal/...
 ```
@@ -175,7 +177,7 @@ docker run --rm \
 docker run --rm \
   -v "$(pwd)":/app -w /app \
   --network lfcru_forum_default \
-  -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru?sslmode=disable" \
+  -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru_test?sslmode=disable" \
   golang:1.23-alpine \
   go test -tags integration -v ./internal/layout/...
 ```
