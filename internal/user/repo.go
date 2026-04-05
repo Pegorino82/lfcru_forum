@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -78,6 +79,41 @@ func (r *Repo) GetByID(ctx context.Context, id int64) (*User, error) {
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
 	return u, nil
+}
+
+// GetByUsernames возвращает активных пользователей по списку username (case-insensitive).
+// При пустом входе возвращает пустой слайс без запроса к БД.
+func (r *Repo) GetByUsernames(ctx context.Context, usernames []string) ([]User, error) {
+	if len(usernames) == 0 {
+		return []User{}, nil
+	}
+	lower := make([]string, len(usernames))
+	for i, u := range usernames {
+		lower[i] = strings.ToLower(u)
+	}
+	rows, err := r.db.Query(ctx, `
+		SELECT id, username
+		FROM users
+		WHERE lower(username) = ANY($1)
+		AND is_active = true
+	`, lower)
+	if err != nil {
+		return nil, fmt.Errorf("get users by usernames: %w", err)
+	}
+	defer rows.Close()
+
+	var result []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Username); err != nil {
+			return nil, err
+		}
+		result = append(result, u)
+	}
+	if result == nil {
+		result = []User{}
+	}
+	return result, rows.Err()
 }
 
 func mapUniqueViolation(err error) error {

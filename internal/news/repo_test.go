@@ -158,6 +158,83 @@ func TestLatestPublished_ExcludesDrafts(t *testing.T) {
 	}
 }
 
+func TestGetPublishedByID_Found(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	var newsID int64
+	err := pool.QueryRow(ctx,
+		`INSERT INTO news (title, content, is_published, author_id, published_at) VALUES ($1, $2, true, $3, now()) RETURNING id`,
+		"Тестовая статья", "Полный текст статьи", authorID,
+	).Scan(&newsID)
+	if err != nil {
+		t.Fatalf("insert news: %v", err)
+	}
+
+	repo := news.NewRepo(pool)
+	n, err := repo.GetPublishedByID(ctx, newsID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if n == nil {
+		t.Fatal("expected *News, got nil")
+	}
+	if n.ID != newsID {
+		t.Errorf("expected ID %d, got %d", newsID, n.ID)
+	}
+	if n.Title != "Тестовая статья" {
+		t.Errorf("unexpected title: %q", n.Title)
+	}
+	if n.Content != "Полный текст статьи" {
+		t.Errorf("unexpected content: %q", n.Content)
+	}
+}
+
+func TestGetPublishedByID_NotFound(t *testing.T) {
+	pool := setupPool(t)
+	insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	repo := news.NewRepo(pool)
+	n, err := repo.GetPublishedByID(context.Background(), 999999)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if n != nil {
+		t.Errorf("expected nil, got %+v", n)
+	}
+}
+
+func TestGetPublishedByID_Draft(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	var newsID int64
+	err := pool.QueryRow(ctx,
+		`INSERT INTO news (title, is_published, author_id) VALUES ($1, false, $2) RETURNING id`,
+		"черновик", authorID,
+	).Scan(&newsID)
+	if err != nil {
+		t.Fatalf("insert draft: %v", err)
+	}
+
+	repo := news.NewRepo(pool)
+	n, err := repo.GetPublishedByID(ctx, newsID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if n != nil {
+		t.Errorf("draft should return nil, got %+v", n)
+	}
+}
+
 func TestLatestPublished_SortedDesc(t *testing.T) {
 	pool := setupPool(t)
 	authorID := insertUser(t, pool)
