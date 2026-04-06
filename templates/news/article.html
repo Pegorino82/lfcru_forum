@@ -118,10 +118,11 @@
       Ответить
     </button>
     <div class="reply-form" x-show="replyTo === {{.ID}}" x-cloak>
-      <form hx-post="/news/{{$.NewsID}}/comments"
+      <form @submit="replyTo = null"
+            hx-post="/news/{{$.NewsID}}/comments"
             hx-target="#comments-list"
             hx-swap="outerHTML"
-            hx-on:htmx:after-request="if(event.detail.successful){ this.reset(); window.dispatchEvent(new CustomEvent('comment-posted')); }">
+            hx-on:htmx:after-request="if(event.detail.successful){ this.reset(); }">
         <input type="hidden" name="_csrf" value="{{$.CSRFToken}}">
         <input type="hidden" name="parent_id" value="{{.ID}}">
         <div class="reply-quote">
