@@ -19,6 +19,12 @@ var funcMap = template.FuncMap{
 		}
 		return string(r[:n]) + "…"
 	},
+	"deref": func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	},
 }
 
 // Renderer holds an isolated template set per page file.

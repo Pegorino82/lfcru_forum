@@ -1,6 +1,9 @@
 package comment
 
-import "time"
+import (
+	"html/template"
+	"time"
+)
 
 // Comment — запись комментария в БД.
 type Comment struct {
@@ -24,6 +27,6 @@ type CommentView struct {
 	ParentAuthor   *string // из snapshot; сохраняется даже при удалении родителя
 	ParentSnippet  *string // из snapshot; сохраняется даже при удалении родителя
 	Content        string
-	ContentHTML    string // заполняется в сервисе через RenderMentions
+	ContentHTML    template.HTML // заполняется в сервисе через RenderMentions
 	CreatedAt      time.Time
 }

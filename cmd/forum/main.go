@@ -12,6 +12,7 @@ import (
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
 	"github.com/Pegorino82/lfcru_forum/internal/cleanup"
+	"github.com/Pegorino82/lfcru_forum/internal/comment"
 	"github.com/Pegorino82/lfcru_forum/internal/config"
 	"github.com/Pegorino82/lfcru_forum/internal/forum"
 	"github.com/Pegorino82/lfcru_forum/internal/home"
@@ -56,6 +57,10 @@ func main() {
 	userRepo := user.NewRepo(pool)
 	sessionRepo := session.NewRepo(pool)
 	attemptRepo := ratelimit.NewLoginAttemptRepo(pool)
+	newsRepo := news.NewRepo(pool)
+	matchRepo := match.NewRepo(pool)
+	topicRepo := forum.NewRepo(pool)
+	commentRepo := comment.NewRepo(pool)
 
 	// Сервис аутентификации
 	authCfg := auth.Config{
@@ -68,6 +73,9 @@ func main() {
 		CookieSecure:       cfg.CookieSecure,
 	}
 	authSvc := auth.NewService(userRepo, sessionRepo, attemptRepo, authCfg)
+
+	// Сервис комментариев
+	commentSvc := comment.NewService(commentRepo, userRepo)
 
 	// Шаблоны
 	renderer, err := tmpl.New(os.DirFS("templates"), "templates/")
@@ -85,20 +93,13 @@ func main() {
 	e.Use(appMiddleware.CSRFMiddleware())
 	e.Use(auth.LoadSession(authSvc))
 
-	// Репозитории для главной страницы
-	newsRepo := news.NewRepo(pool)
-	matchRepo := match.NewRepo(pool)
-	topicRepo := forum.NewRepo(pool)
-
-	// Хэндлер главной страницы
-	homeHandler := home.NewHandler(newsRepo, matchRepo, topicRepo)
-
-	// Маршруты
+	// Хэндлеры и маршруты
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
-	e.GET("/", homeHandler.ShowHome)
+	e.GET("/", home.NewHandler(newsRepo, matchRepo, topicRepo).ShowHome)
 	auth.NewHandler(authSvc).RegisterRoutes(e)
+	news.NewHandler(newsRepo, commentRepo, commentSvc).RegisterRoutes(e)
 
 	// Фоновая очистка
 	bgCtx, bgCancel := context.WithCancel(context.Background())
