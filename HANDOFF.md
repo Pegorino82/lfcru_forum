@@ -40,15 +40,22 @@
   - `internal/comment/` — пакет: `model.go`, `errors.go`, `repo.go` (ListByNewsID + Create с транзакцией depth≤1)
   - Интеграционные тесты: comment/repo (11), news/GetPublishedByID (3) — зелёные
 
+- **Фича 004 (страница статьи + комментарии) — Итерация 2 (HTTP layer):** завершена, коммит `5c593aa`
+  - `internal/comment/model.go` — `ContentHTML` изменён на `template.HTML`
+  - `internal/comment/service.go` — `Service.Create` (trim/validate) + `Service.RenderMentions` (@mention → span, XSS-safe)
+  - `internal/comment/service_test.go` — 5 юнит-тестов Create + 5 юнит-тестов RenderMentions
+  - `internal/tmpl/renderer.go` — добавлен FuncMap `deref func(*string) string`
+  - `internal/news/handler.go` — `ShowArticle` + `CreateComment` (HTMX + non-HTMX, гость → /login)
+  - `internal/news/handler_test.go` — 15 интеграционных тестов (все зелёные)
+  - `templates/news/article.html` — шаблон статьи + комментарии + reply-форма (Alpine.js + HTMX)
+  - `cmd/forum/main.go` — comment repo/service, news handler, роуты `GET /news/:id` и `POST /news/:id/comments`
+
 ## Что сделать следующим
 
-- **Фича 004 — Итерация 2 (HTTP layer)** по плану `memory-bank/features/004/plan.md`:
-  - `internal/comment/service.go` — Create + RenderMentions (@mention → span)
-  - `internal/news/handler.go` — ShowArticle + CreateComment
-  - `templates/news/article.html` — шаблон с Alpine.js + HTMX
-  - `internal/tmpl/renderer.go` — добавить FuncMap `deref`
-  - `internal/auth/handler.go` — redirect по `?next=` после логина
-  - `cmd/forum/main.go` — регистрация роутов
+Фича 004 полностью реализована. Следующий шаг:
+
+- **Фича 005** или любая другая из roadmap по `memory-bank/features/`
+- Либо проверить UI в браузере: `docker compose -f docker-compose.dev.yml up` и открыть `/news/{id}`
 
 ## Проблемы и решения
 
@@ -63,3 +70,4 @@
 - **fix/003-2**: Тесты использовали `password_hash` — реальная колонка называется `pass_hash BYTEA` → исправлено во всех тестах
 - **fix/003-3**: Параллельный `goose.Up()` из разных пакетов вызывает race condition → интеграционные тесты запускать с `-p 1`; добавлена заметка в CLAUDE.md
 - **004-iter1/seed-contamination**: `TestLatestPublished_Empty` и `TestLatestPublished_ExcludesDrafts` падают из-за seed-данных в тестовой БД (добавлены в `f34f9ba`). `cleanNews` чистит только записи test-пользователя. Pre-existing проблема, не связана с фичей 004.
+- **004-iter2/csrf-in-tests**: POST-тесты получали 403 — CSRF middleware требует `_csrf` куку + form-поле с одинаковым токеном. Исправлено в `doPost` хелпере: GET → извлечь `_csrf` из Set-Cookie, включить в куку + форму POST.
