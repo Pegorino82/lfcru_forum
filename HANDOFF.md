@@ -80,9 +80,9 @@
   - `templates/news/article.html` — шаблон статьи + комментарии + reply-форма (Alpine.js + HTMX)
   - `cmd/forum/main.go` — comment repo/service, news handler, роуты `GET /news/:id` и `POST /news/:id/comments`
 
-## Итерация 2 (005) — HTTP Layer + Templates (в процессе)
+## Итерация 2 (005) — HTTP Layer + Templates завершена ✅
 
-**Commit:** feat(005-iter2) (ещё не создан)
+**Commit:** feat(005-iter2) @ 020019e
 
 ### Что сделано:
 
@@ -122,6 +122,18 @@
 - Запустить все тесты и убедиться, что зелёные
 - Создать коммит feat(005-iter2)
 - Обновить HANDOFF.md с финальными результатами
+
+## fix: forum reply form (commit 112fed4)
+
+**Проблема:** форма ответа на пост отправлялась GET-запросом с данными в query string.
+
+**Причина:** reply-форма была внутри `<template x-if="replyTo !== null">`. Alpine вставляет элемент в DOM после инициализации HTMX → `hx-post` не обрабатывается → нативный GET-сабмит.
+
+**Решение:** перешли на паттерн из `article.html` — inline reply-форма для каждого поста с `x-show="replyTo === {{.ID}}"` + `x-cloak`. Форма всегда в DOM, HTMX инициализирует при загрузке. `@submit="replyTo = null"` сбрасывает состояние синхронно до HTMX-свопа (так Alpine инициализирует новые элементы скрытыми).
+
+Также: `handler.go CreatePost` теперь передаёт `Topic`/`CanReply`/`CSRFToken` в partial, `base.html` получил `[x-cloak]` стиль.
+
+---
 
 ## Проблемы и решения
 
