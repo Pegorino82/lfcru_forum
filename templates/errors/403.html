@@ -1,0 +1,70 @@
+{{define "templates/errors/403.html"}}
+{{template "templates/layouts/base.html" .}}
+{{end}}
+
+{{define "content"}}
+<style>
+.error-page {
+  max-width: 600px;
+  margin: 3rem auto;
+  text-align: center;
+  padding: 2rem;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+.error-code {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #c8102e;
+  margin-bottom: 0.5rem;
+}
+.error-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #222;
+}
+.error-description {
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.error-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+.btn {
+  display: inline-block;
+  background: #c8102e;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.btn:hover {
+  background: #a80822;
+}
+.btn-secondary {
+  background: #999;
+}
+.btn-secondary:hover {
+  background: #777;
+}
+</style>
+
+<div class="error-page">
+  <div class="error-code">403</div>
+  <h1 class="error-title">Недостаточно прав</h1>
+  <p class="error-description">
+    У вас нет доступа к этой странице. Возможно, требуются права модератора или администратора.
+  </p>
+  <div class="error-actions">
+    <a href="/" class="btn">На главную</a>
+    <a href="/forum" class="btn btn-secondary">На форум</a>
+  </div>
+</div>
+{{end}}

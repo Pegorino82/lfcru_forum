@@ -63,6 +63,34 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+// RequireRole checks if the authenticated user has one of the allowed roles.
+// If not authenticated, redirects to /login (RequireAuth should be applied first).
+// If role not allowed, renders 403.html with status 403.
+func RequireRole(renderer echo.Renderer, allowedRoles ...string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			u := UserFromContext(c)
+			if u == nil {
+				return c.Redirect(http.StatusFound, "/login")
+			}
+
+			// Check if user role is in allowed list
+			allowed := false
+			for _, role := range allowedRoles {
+				if u.Role == role {
+					allowed = true
+					break
+				}
+			}
+			if !allowed {
+				return c.Render(http.StatusForbidden, "templates/errors/403.html", map[string]interface{}{})
+			}
+
+			return next(c)
+		}
+	}
+}
+
 func clearSessionCookie(c echo.Context) {
 	c.SetCookie(&http.Cookie{
 		Name:   "session_id",

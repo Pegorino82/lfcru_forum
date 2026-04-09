@@ -1,0 +1,141 @@
+{{define "templates/forum/section.html"}}
+{{template "templates/layouts/base.html" .}}
+{{end}}
+
+{{define "content"}}
+<style>
+.section-page {
+  padding: 1rem 0;
+}
+.breadcrumbs {
+  font-size: 0.9375rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+.breadcrumbs a {
+  color: #0066cc;
+  text-decoration: none;
+}
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+.breadcrumbs span {
+  margin: 0 0.5rem;
+}
+h1 {
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #c8102e;
+  padding-bottom: 0.5rem;
+}
+.topics-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.topic-row {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.topic-row:hover {
+  border-color: #c8102e;
+}
+.topic-info {
+  flex: 1;
+}
+.topic-info a {
+  color: #0066cc;
+  text-decoration: none;
+  font-weight: 500;
+}
+.topic-info a:hover {
+  text-decoration: underline;
+}
+.topic-meta {
+  font-size: 0.875rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+.topic-stats {
+  text-align: right;
+  font-size: 0.875rem;
+  color: #999;
+  min-width: 100px;
+}
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+  font-style: italic;
+}
+.btn {
+  display: inline-block;
+  background: #c8102e;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+  margin-top: 1.5rem;
+}
+.btn:hover {
+  background: #a80822;
+}
+</style>
+
+<div class="section-page">
+  <div class="breadcrumbs">
+    <a href="/forum">Форум</a>
+    <span>›</span>
+    <span>{{.Section.Title}}</span>
+  </div>
+
+  <h1>{{.Section.Title}}</h1>
+
+  {{if .Topics}}
+    <ul class="topics-list">
+      {{range .Topics}}
+      <li class="topic-row">
+        <div class="topic-info">
+          <a href="/forum/topics/{{.ID}}">{{.Title}}</a>
+          <div class="topic-meta">
+            {{.AuthorUsername}}
+            {{if .CreatedAt}}
+            •
+            <time datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+              {{.CreatedAt.Format "02.01.2006"}}
+            </time>
+            {{end}}
+          </div>
+        </div>
+        <div class="topic-stats">
+          Сообщений: {{.PostCount}}<br>
+          {{if .LastPostAt}}
+          <time datetime="{{.LastPostAt.Format "2006-01-02T15:04:05Z07:00"}}">
+            {{.LastPostAt.Format "02.01.2006 15:04"}}
+          </time>
+          {{else}}
+          —
+          {{end}}
+        </div>
+      </li>
+      {{end}}
+    </ul>
+  {{else}}
+    <p class="empty-state">В разделе пока нет тем</p>
+  {{end}}
+
+  {{if .CanManage}}
+  <a href="/forum/sections/{{.Section.ID}}/topics/new" class="btn">Создать тему</a>
+  {{end}}
+</div>
+{{end}}

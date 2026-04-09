@@ -77,6 +77,9 @@ func main() {
 	// Сервис комментариев
 	commentSvc := comment.NewService(commentRepo, userRepo)
 
+	// Сервис форума
+	forumSvc := forum.NewService(topicRepo)
+
 	// Шаблоны
 	renderer, err := tmpl.New(os.DirFS("templates"), "templates/")
 	if err != nil {
@@ -100,6 +103,25 @@ func main() {
 	e.GET("/", home.NewHandler(newsRepo, matchRepo, topicRepo).ShowHome)
 	auth.NewHandler(authSvc).RegisterRoutes(e)
 	news.NewHandler(newsRepo, commentRepo, commentSvc).RegisterRoutes(e)
+
+	// Forum routes
+	forumHandler := forum.NewHandler(forumSvc, renderer)
+
+	// Moderator-only routes (require auth + role)
+	modGroup := e.Group("", auth.RequireAuth, auth.RequireRole(renderer, "moderator", "admin"))
+	modGroup.GET("/forum/sections/new", forumHandler.NewSection)
+	modGroup.POST("/forum/sections", forumHandler.CreateSection)
+	modGroup.GET("/forum/sections/:id/topics/new", forumHandler.NewTopic)
+	modGroup.POST("/forum/sections/:id/topics", forumHandler.CreateTopic)
+
+	// Public routes
+	e.GET("/forum", forumHandler.Index)
+	e.GET("/forum/sections/:id", forumHandler.ShowSection)
+	e.GET("/forum/topics/:id", forumHandler.ShowTopic)
+
+	// Auth-only routes
+	authGroup := e.Group("", auth.RequireAuth)
+	authGroup.POST("/forum/topics/:id/posts", forumHandler.CreatePost)
 
 	// Фоновая очистка
 	bgCtx, bgCancel := context.WithCancel(context.Background())

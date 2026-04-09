@@ -30,6 +30,11 @@ func (s *Service) ListSections(ctx context.Context) ([]SectionView, error) {
 	return s.repo.ListSections(ctx)
 }
 
+// GetSection возвращает раздел по ID (nil, nil если не найдено).
+func (s *Service) GetSection(ctx context.Context, id int64) (*Section, error) {
+	return s.repo.GetSection(ctx, id)
+}
+
 // GetSectionWithTopics возвращает раздел и его темы.
 func (s *Service) GetSectionWithTopics(ctx context.Context, id int64) (*Section, []TopicView, error) {
 	section, err := s.repo.GetSection(ctx, id)

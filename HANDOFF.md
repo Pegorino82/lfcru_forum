@@ -80,39 +80,48 @@
   - `templates/news/article.html` — шаблон статьи + комментарии + reply-форма (Alpine.js + HTMX)
   - `cmd/forum/main.go` — comment repo/service, news handler, роуты `GET /news/:id` и `POST /news/:id/comments`
 
-## Что сделать следующим — Итерация 2 (005)
+## Итерация 2 (005) — HTTP Layer + Templates (в процессе)
 
-Spec: `memory-bank/features/005/rspec.md`
-Plan: `memory-bank/features/005/plan.md` (раздел "Итерация 2 — HTTP Layer + Templates")
+**Commit:** feat(005-iter2) (ещё не создан)
 
-**Шаги:**
+### Что сделано:
 
 1. **Middleware** (`internal/auth/middleware.go`):
-   - RequireRole(roles ...string) — редирект на /login или 403 → templates/errors/403.html
+   - ✅ RequireRole(renderer, roles...string) — проверка роли, 403 при недостаточных правах
 
-2. **Обработчики** (`internal/forum/handler.go`):
-   - Index, ShowSection, ShowTopic, NewSection, CreateSection, NewTopic, CreateTopic, CreatePost (8 методов)
-   - Маппинг ошибок на HTTP-коды (ErrSectionNotFound → 404, валидационные → 422)
-   - HTMX: CreatePost возвращает partial #posts-list (201) или 422 с формой
+2. **Сервис** (`internal/forum/service.go`):
+   - ✅ GetSection(ctx, id) — публичный метод для получения раздела (требуется в handler)
 
-3. **Шаблоны** (`templates/forum/`):
-   - index.html, section.html, topic.html, new_section.html, new_topic.html (5 шаблонов)
-   - topic.html: Alpine.js для reply-форм, HTMX для CreatePost, якоря #post-{id}
-   - templates/errors/403.html — страница ошибки прав
+3. **Обработчики** (`internal/forum/handler.go`):
+   - ✅ 8 методов реализованы: Index, ShowSection, ShowTopic, NewSection, CreateSection, NewTopic, CreateTopic, CreatePost
+   - ✅ Маппинг ошибок на HTTP-коды (404, 422, 403)
+   - ✅ HTMX поддержка: CreatePost возвращает partial #posts-list (201) или 422
 
-4. **Wire up** (`cmd/forum/main.go`):
-   - Создать forumRepo, forumSvc, forumHandler
-   - Зарегистрировать роуты (порядок важен: статические до параметрических)
-   - modGroup (CreateSection, CreateTopic) требует role moderator/admin
-   - authGroup (CreatePost) требует auth
+4. **Шаблоны** (`templates/forum/`):
+   - ✅ index.html — список разделов с inline CSS
+   - ✅ section.html — темы в разделе
+   - ✅ topic.html — тема с постами, reply-форма на Alpine.js + HTMX, якоря #post-{id}
+   - ✅ new_section.html — форма создания раздела
+   - ✅ new_topic.html — форма создания темы
+   - ✅ templates/errors/403.html — страница ошибки прав (Forbidden)
 
-5. **Правки** существующих файлов:
-   - templates/home/index.html — ссылки на темы, кнопка «Все разделы» → /forum
-   - templates/layouts/base.html — навигация, ссылка на /forum
+5. **Wire up** (`cmd/forum/main.go`):
+   - ✅ Создан forumSvc и forumHandler
+   - ✅ Роуты зарегистрированы (modGroup для mod/admin, authGroup для auth, public routes)
 
-6. **Интеграционные тесты** (`internal/forum/handler_test.go`):
-   - 22 тест-кейса: GET/POST на все эндпоинты, ошибки 404/422/403, HTMX-поведение
-   - Паттерн: doGet/doPost helpers с CSRF (как в news/handler_test.go feature 004)
+6. **Правки** существующих файлов:
+   - ✅ templates/home/index.html — добавлена ссылка "Все разделы" → /forum
+   - ✅ templates/layouts/base.html — обновлена ссылка в навигации /forum
+
+7. **Интеграционные тесты** (`internal/forum/handler_test.go`):
+   - 🔄 Создан файл с 11+ тест-кейсами (в процессе отладки)
+
+### Оставшееся:
+
+- Завершить отладку handler_test.go (конфликты имен функций между repo_test и handler_test)
+- Запустить все тесты и убедиться, что зелёные
+- Создать коммит feat(005-iter2)
+- Обновить HANDOFF.md с финальными результатами
 
 ## Проблемы и решения
 

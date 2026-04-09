@@ -1,0 +1,136 @@
+{{define "templates/forum/new_topic.html"}}
+{{template "templates/layouts/base.html" .}}
+{{end}}
+
+{{define "content"}}
+<style>
+.form-page {
+  max-width: 600px;
+  margin: 2rem auto;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 2rem;
+}
+.breadcrumbs {
+  font-size: 0.9375rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+.breadcrumbs a {
+  color: #0066cc;
+  text-decoration: none;
+}
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+.breadcrumbs span {
+  margin: 0 0.5rem;
+}
+.form-page h1 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #c8102e;
+  padding-bottom: 0.75rem;
+}
+.form-group {
+  margin-bottom: 1.5rem;
+}
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #c8102e;
+  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
+}
+.form-error {
+  background: #ffebee;
+  border: 1px solid #ef5350;
+  color: #d32f2f;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+.btn {
+  background: #c8102e;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.95rem;
+}
+.btn:hover {
+  background: #a80822;
+}
+.btn-secondary {
+  background: #999;
+}
+.btn-secondary:hover {
+  background: #777;
+}
+a.btn-secondary {
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+</style>
+
+<div class="form-page">
+  {{if .Section}}
+  <div class="breadcrumbs">
+    <a href="/forum">Форум</a>
+    <span>›</span>
+    <a href="/forum/sections/{{.Section.ID}}">{{.Section.Title}}</a>
+    <span>›</span>
+    <span>Новая тема</span>
+  </div>
+  {{end}}
+
+  <h1>Создать тему</h1>
+
+  {{if .FormError}}
+  <div class="form-error">{{.FormError}}</div>
+  {{end}}
+
+  <form method="POST" action="/forum/sections/{{.Section.ID}}/topics">
+    <div class="form-group">
+      <label for="title">Заголовок темы <span style="color: red;">*</span></label>
+      <input type="text" id="title" name="title" required maxlength="255"
+             placeholder="Введите заголовок темы"
+             value="{{if .FormContent}}{{.FormContent.title}}{{end}}">
+    </div>
+
+    <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+
+    <div class="form-actions">
+      <button type="submit" class="btn">Создать тему</button>
+      <a href="/forum/sections/{{.Section.ID}}" class="btn btn-secondary">Отмена</a>
+    </div>
+  </form>
+</div>
+{{end}}

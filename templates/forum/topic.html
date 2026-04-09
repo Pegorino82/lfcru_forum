@@ -1,0 +1,330 @@
+{{define "templates/forum/topic.html"}}
+{{template "templates/layouts/base.html" .}}
+{{end}}
+
+{{define "content"}}
+<style>
+.topic-page {
+  padding: 1rem 0;
+}
+.breadcrumbs {
+  font-size: 0.9375rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+.breadcrumbs a {
+  color: #0066cc;
+  text-decoration: none;
+}
+.breadcrumbs a:hover {
+  text-decoration: underline;
+}
+.breadcrumbs span {
+  margin: 0 0.5rem;
+}
+h1 {
+  font-size: 1.75rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #c8102e;
+  padding-bottom: 0.5rem;
+}
+#posts-list {
+  margin: 1.5rem 0;
+}
+.post {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+.post.reply {
+  margin-left: 2rem;
+  border-left: 3px solid #c8102e;
+}
+.post-author {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.post-date {
+  color: #666;
+  font-size: 0.875rem;
+}
+.post-content {
+  line-height: 1.6;
+  margin: 0.75rem 0;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+.post-quote {
+  background: #f5f5f5;
+  border-left: 3px solid #c8102e;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.9375rem;
+  color: #666;
+}
+.post-quote-author {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.post-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+}
+.post-actions button {
+  background: none;
+  border: none;
+  color: #0066cc;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0;
+}
+.post-actions button:hover {
+  text-decoration: underline;
+}
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+  font-style: italic;
+}
+.post-form {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 2rem;
+}
+.post-form h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+.form-group {
+  margin-bottom: 1rem;
+}
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  font-size: 0.9375rem;
+}
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+}
+.form-group textarea:focus {
+  outline: none;
+  border-color: #c8102e;
+  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
+}
+.form-error {
+  color: #d32f2f;
+  background: #ffebee;
+  border: 1px solid #ef5350;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+.form-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.btn {
+  background: #c8102e;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn:hover {
+  background: #a80822;
+}
+.btn-secondary {
+  background: #999;
+}
+.btn-secondary:hover {
+  background: #777;
+}
+.login-prompt {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 2rem;
+  text-align: center;
+}
+.login-prompt p {
+  margin: 0 0 0.75rem 0;
+}
+.login-prompt a {
+  color: #0066cc;
+  text-decoration: none;
+  font-weight: 600;
+}
+.login-prompt a:hover {
+  text-decoration: underline;
+}
+.reply-form {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-left: 3px solid #c8102e;
+}
+.reply-form h4 {
+  margin-top: 0;
+  font-size: 0.95rem;
+}
+.reply-form-quote {
+  background: #f5f5f5;
+  border-left: 3px solid #c8102e;
+  padding: 0.75rem;
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+}
+</style>
+
+<div class="topic-page" x-data="{ replyTo: null, replyAuthor: '' }">
+  <div class="breadcrumbs">
+    <a href="/forum">Форум</a>
+    <span>›</span>
+    {{if .Section}}
+    <a href="/forum/sections/{{.Section.ID}}">{{.Section.Title}}</a>
+    <span>›</span>
+    {{end}}
+    <span>{{.Topic.Title}}</span>
+  </div>
+
+  <h1>{{.Topic.Title}}</h1>
+
+  {{if .Posts}}
+    <div id="posts-list">
+      {{range .Posts}}
+      <div class="post {{if .ParentID}}reply{{end}}" id="post-{{.ID}}">
+        <div class="post-author">
+          <span>{{.AuthorUsername}}</span>
+          {{if $.CanReply}}<button type="button" @click="replyTo = {{.ID}}; replyAuthor = '{{.AuthorUsername}}'">Ответить</button>{{end}}
+        </div>
+        <time class="post-date" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+          {{.CreatedAt.Format "02.01.2006 15:04"}}
+        </time>
+        {{if .ParentAuthor}}
+        <div class="post-quote">
+          <div class="post-quote-author">{{.ParentAuthor}}:</div>
+          <div>{{.ParentSnippet}}</div>
+        </div>
+        {{end}}
+        <div class="post-content">{{.Content}}</div>
+      </div>
+      {{end}}
+    </div>
+  {{else}}
+    <p class="empty-state">В теме пока нет сообщений</p>
+  {{end}}
+
+  {{if .CanReply}}
+  <!-- Main reply form -->
+  <div class="post-form" id="post-form">
+    <form hx-post="/forum/topics/{{.Topic.ID}}/posts"
+          hx-target="#posts-list"
+          hx-swap="beforeend"
+          hx-on::before-request="htmx.find('#post-content').value = ''"
+          @submit="replyTo = null">
+      {{if .FormError}}
+      <div class="form-error">{{.FormError}}</div>
+      {{end}}
+      <div class="form-group">
+        <label for="post-content">Ваше сообщение</label>
+        <textarea id="post-content" name="content" required
+                  maxlength="20000" placeholder="Введите текст вашего сообщения...">{{if .FormContent}}{{.FormContent.content}}{{end}}</textarea>
+      </div>
+      {{if .FormContent.parent_id}}
+      <input type="hidden" name="parent_id" value="{{.FormContent.parent_id}}">
+      {{end}}
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+      <div class="form-actions">
+        <button type="submit" class="btn">Отправить</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Reply form template -->
+  <template x-if="replyTo !== null">
+    <div class="reply-form" @submit="replyTo = null">
+      <h4>Ответ на сообщение <span x-text="replyAuthor"></span></h4>
+      <form hx-post="/forum/topics/{{.Topic.ID}}/posts"
+            hx-target="#posts-list"
+            hx-swap="beforeend"
+            @submit="replyTo = null">
+        <div class="form-group">
+          <label for="reply-content">Ваш ответ</label>
+          <textarea id="reply-content" name="content" required maxlength="20000"
+                    placeholder="Введите текст ответа..."></textarea>
+        </div>
+        <input type="hidden" name="parent_id" x-bind:value="replyTo">
+        <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+        <div class="form-actions">
+          <button type="submit" class="btn">Отправить ответ</button>
+          <button type="button" class="btn btn-secondary" @click="replyTo = null">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </template>
+
+  <script>
+  // Dispatch event when post added via HTMX
+  htmx.on('#posts-list', 'postAdded', function() {
+    window.dispatchEvent(new Event('reset-reply'));
+  });
+  // Listen for reset event
+  window.addEventListener('reset-reply', function() {
+    document.querySelector('[x-data*="replyTo"]').__x.$data.replyTo = null;
+  });
+  </script>
+  {{else}}
+  <div class="login-prompt">
+    <p>Чтобы участвовать в обсуждении, <a href="/login">войдите в аккаунт</a> или <a href="/register">зарегистрируйтесь</a></p>
+  </div>
+  {{end}}
+</div>
+{{end}}
+
+{{define "posts-list"}}
+{{range .Posts}}
+<div class="post {{if .ParentID}}reply{{end}}" id="post-{{.ID}}">
+  <div class="post-author">
+    <span>{{.AuthorUsername}}</span>
+  </div>
+  <time class="post-date" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+    {{.CreatedAt.Format "02.01.2006 15:04"}}
+  </time>
+  {{if .ParentAuthor}}
+  <div class="post-quote">
+    <div class="post-quote-author">{{.ParentAuthor}}:</div>
+    <div>{{.ParentSnippet}}</div>
+  </div>
+  {{end}}
+  <div class="post-content">{{.Content}}</div>
+</div>
+{{end}}
+{{end}}
