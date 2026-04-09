@@ -4,7 +4,37 @@
 
 ---
 
-## Что сделано
+## Итерация 1 (005) — Data Layer завершена ✅
+
+### Что сделано (005-iter1)
+
+**Commit:** feat(005-iter1)
+
+1. **Миграции 007 и 008** — добавлены колонки и триггеры:
+   - `forum_sections`: description, topic_count + триггер для счётчика тем
+   - `forum_posts`: parent_id, parent_author_snapshot, parent_content_snapshot
+
+2. **Модели и ошибки** (internal/forum/):
+   - Section, Post, SectionView, TopicView, PostView
+   - 10 sentinel-ошибок (ErrSectionNotFound, ErrParentNotFound, ErrReplyToReply, валидационные)
+
+3. **Репозиторий** — 8 новых методов:
+   - ListSections, GetSection, ListTopicsBySection, GetTopic, ListPostsByTopic
+   - CreateSection, CreateTopic, CreatePost (с транзакцией, snapshot, проверка depth ≤ 1)
+   - Маппинг PG-ошибок (23503 FK → ErrSectionNotFound/ErrParentNotFound)
+
+4. **Сервис** — валидация + делегирование репо:
+   - Использует интерфейс RepoInterface для mockability
+   - CreateSection/CreateTopic/CreatePost с валидацией строк и рун
+
+5. **Тесты**:
+   - Юнит-тесты (service_test.go): 13 тест-кейсов с mock-репо
+   - Интеграционные (repo_test.go): 22 тест-кейса (ListSections, GetSection, ListTopicsBySection, CreateTopic, CreatePost с ошибками)
+   - **Все зелёные** ✅
+
+---
+
+## Что сделано в предыдущих итерациях (004)
 
 - **Шаг 0**: Скаффолдинг — `go.mod`, `cmd/forum/main.go`, `internal/config/config.go`, `Dockerfile`, `docker-compose.dev.yml`, `.env.example`
 - **Шаг 1**: Миграции — `users`, `sessions`, `login_attempts` через goose
@@ -50,12 +80,39 @@
   - `templates/news/article.html` — шаблон статьи + комментарии + reply-форма (Alpine.js + HTMX)
   - `cmd/forum/main.go` — comment repo/service, news handler, роуты `GET /news/:id` и `POST /news/:id/comments`
 
-## Что сделать следующим
+## Что сделать следующим — Итерация 2 (005)
 
-Фича 004 полностью реализована. Следующий шаг:
+Spec: `memory-bank/features/005/rspec.md`
+Plan: `memory-bank/features/005/plan.md` (раздел "Итерация 2 — HTTP Layer + Templates")
 
-- **Фича 005** или любая другая из roadmap по `memory-bank/features/`
-- Либо проверить UI в браузере: `docker compose -f docker-compose.dev.yml up` и открыть `/news/{id}`
+**Шаги:**
+
+1. **Middleware** (`internal/auth/middleware.go`):
+   - RequireRole(roles ...string) — редирект на /login или 403 → templates/errors/403.html
+
+2. **Обработчики** (`internal/forum/handler.go`):
+   - Index, ShowSection, ShowTopic, NewSection, CreateSection, NewTopic, CreateTopic, CreatePost (8 методов)
+   - Маппинг ошибок на HTTP-коды (ErrSectionNotFound → 404, валидационные → 422)
+   - HTMX: CreatePost возвращает partial #posts-list (201) или 422 с формой
+
+3. **Шаблоны** (`templates/forum/`):
+   - index.html, section.html, topic.html, new_section.html, new_topic.html (5 шаблонов)
+   - topic.html: Alpine.js для reply-форм, HTMX для CreatePost, якоря #post-{id}
+   - templates/errors/403.html — страница ошибки прав
+
+4. **Wire up** (`cmd/forum/main.go`):
+   - Создать forumRepo, forumSvc, forumHandler
+   - Зарегистрировать роуты (порядок важен: статические до параметрических)
+   - modGroup (CreateSection, CreateTopic) требует role moderator/admin
+   - authGroup (CreatePost) требует auth
+
+5. **Правки** существующих файлов:
+   - templates/home/index.html — ссылки на темы, кнопка «Все разделы» → /forum
+   - templates/layouts/base.html — навигация, ссылка на /forum
+
+6. **Интеграционные тесты** (`internal/forum/handler_test.go`):
+   - 22 тест-кейса: GET/POST на все эндпоинты, ошибки 404/422/403, HTMX-поведение
+   - Паттерн: doGet/doPost helpers с CSRF (как в news/handler_test.go feature 004)
 
 ## Проблемы и решения
 
