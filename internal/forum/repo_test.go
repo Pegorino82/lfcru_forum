@@ -88,15 +88,30 @@ func insertTopic(t *testing.T, pool *pgxpool.Pool, sectionID, authorID int64, ti
 	return id
 }
 
-func insertPost(t *testing.T, pool *pgxpool.Pool, topicID, authorID int64, content string) {
+func insertPost(t *testing.T, pool *pgxpool.Pool, topicID, authorID int64, content string) int64 {
 	t.Helper()
-	_, err := pool.Exec(context.Background(),
-		`INSERT INTO forum_posts (topic_id, author_id, content) VALUES ($1, $2, $3)`,
+	var id int64
+	err := pool.QueryRow(context.Background(),
+		`INSERT INTO forum_posts (topic_id, author_id, content) VALUES ($1, $2, $3) RETURNING id`,
 		topicID, authorID, content,
-	)
+	).Scan(&id)
 	if err != nil {
 		t.Fatalf("insertPost: %v", err)
 	}
+	return id
+}
+
+func insertReply(t *testing.T, pool *pgxpool.Pool, topicID, authorID, parentID int64, content string) int64 {
+	t.Helper()
+	var id int64
+	err := pool.QueryRow(context.Background(),
+		`INSERT INTO forum_posts (topic_id, author_id, parent_id, content) VALUES ($1, $2, $3, $4) RETURNING id`,
+		topicID, authorID, parentID, content,
+	).Scan(&id)
+	if err != nil {
+		t.Fatalf("insertReply: %v", err)
+	}
+	return id
 }
 
 func cleanForum(t *testing.T, pool *pgxpool.Pool) {
@@ -476,9 +491,50 @@ func TestListPostsByTopic_Sorting(t *testing.T) {
 	if len(posts) != 2 {
 		t.Fatalf("expected 2 posts, got %d", len(posts))
 	}
-	// Should be sorted by created_at ASC
 	if posts[0].Content != "post1" || posts[1].Content != "post2" {
 		t.Errorf("incorrect sorting")
+	}
+}
+
+func TestListPostsByTopic_RepliesGroupedAfterParent(t *testing.T) {
+	pool := setupPool(t)
+	cleanForum(t, pool)
+	defer cleanForum(t, pool)
+
+	ctx := context.Background()
+	authorID := insertUser(t, pool, "groupposts@example.com", "groupposts")
+	sectionID := insertSection(t, pool)
+	topicID := insertTopic(t, pool, sectionID, authorID, "topic")
+
+	// post1 → post2 → post3 (root posts in order)
+	// reply_to_post1 added last, should appear right after post1
+	idPost1 := insertPost(t, pool, topicID, authorID, "post1")
+	time.Sleep(10 * time.Millisecond)
+	insertPost(t, pool, topicID, authorID, "post2")
+	time.Sleep(10 * time.Millisecond)
+	insertPost(t, pool, topicID, authorID, "post3")
+	time.Sleep(10 * time.Millisecond)
+	insertReply(t, pool, topicID, authorID, idPost1, "reply_to_post1")
+
+	repo := forum.NewRepo(pool)
+	posts, err := repo.ListPostsByTopic(ctx, topicID)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(posts) != 4 {
+		t.Fatalf("expected 4 posts, got %d", len(posts))
+	}
+	// Expected order: post1, reply_to_post1, post2, post3
+	contents := make([]string, len(posts))
+	for i, p := range posts {
+		contents[i] = p.Content
+	}
+	expected := []string{"post1", "reply_to_post1", "post2", "post3"}
+	for i, want := range expected {
+		if contents[i] != want {
+			t.Errorf("pos %d: got %q, want %q (order: %v)", i, contents[i], want, contents)
+			break
+		}
 	}
 }
 

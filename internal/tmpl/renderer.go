@@ -91,12 +91,18 @@ func New(root fs.FS, prefix string) (*Renderer, error) {
 }
 
 // Render implements echo.Renderer.
+// name может содержать "#blockName" суффикс для рендера именованного блока из page set:
+// "templates/forum/topic.html#posts-list" → pageKey="templates/forum/topic.html", block="posts-list".
 func (r *Renderer) Render(w io.Writer, name string, data any, _ echo.Context) error {
-	t, ok := r.sets[name]
+	pageKey, blockName, hasBlock := strings.Cut(name, "#")
+	t, ok := r.sets[pageKey]
 	if !ok {
-		return fmt.Errorf("template %q not found", name)
+		return fmt.Errorf("template %q not found", pageKey)
 	}
-	return t.ExecuteTemplate(w, name, data)
+	if hasBlock {
+		return t.ExecuteTemplate(w, blockName, data)
+	}
+	return t.ExecuteTemplate(w, pageKey, data)
 }
 
 // RenderPartial рендерит именованный блок из template set страницы.
