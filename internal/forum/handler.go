@@ -300,10 +300,13 @@ func (h *Handler) CreatePost(c echo.Context) error {
 	// Success
 	isHTMX := c.Request().Header.Get("HX-Request") == "true"
 	if isHTMX {
-		// HTMX: return updated posts list + trigger
-		_, posts, _ := h.svc.GetTopicWithPosts(ctx, topicID)
+		// HTMX: return updated posts list
+		topic, posts, _ := h.svc.GetTopicWithPosts(ctx, topicID)
 		data := map[string]interface{}{
-			"Posts": posts,
+			"Posts":     posts,
+			"Topic":     topic,
+			"CanReply":  true,
+			"CSRFToken": appMiddleware.CSRFToken(c),
 		}
 		c.Response().Header().Set("HX-Trigger", "postAdded")
 		return c.Render(http.StatusCreated, "templates/forum/topic.html#posts-list", data)
