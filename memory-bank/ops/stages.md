@@ -1,6 +1,6 @@
 ---
 title: Stages And Non-Local Environments
-doc_kind: engineering
+doc_kind: ops
 doc_function: canonical
 purpose: Описание non-local окружений LFC.ru — только production на VPS.
 derived_from:
@@ -28,7 +28,7 @@ nginx (reverse proxy, TLS) → app container (:8080) → postgres container
 ```
 
 - nginx пробрасывает запросы на app, обеспечивает TLS.
-- SSE-эндпоинты требуют `proxy_buffering off` и `X-Accel-Buffering: no` в nginx конфиге.
+- SSE-эндпоинты требуют `proxy_buffering off` и `X-Accel-Buffering: no` в nginx конфиге. Конфиг nginx управляется на VPS вне репозитория; при изменениях SSE-роутинга необходимо вручную обновить nginx-конфиг на сервере.
 - Сессии хранятся в PostgreSQL (не в памяти) — рестарт контейнера не сбрасывает сессии.
 
 ## Common Operations

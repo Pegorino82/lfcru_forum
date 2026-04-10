@@ -16,5 +16,5 @@ audience: humans_and_agents
 - [Testing Policy](testing-policy.md) — правила тестирования, обязательные automated tests, sufficient coverage. Отвечает на вопрос: когда feature обязана иметь test cases и когда допустим manual-only verify.
 - [Autonomy Boundaries](autonomy-boundaries.md) — границы автономии агента: автопилот, супервизия, эскалация. Отвечает на вопрос: что агент может делать сам, а где должен остановиться и спросить.
 - [Coding Style](coding-style.md) — конвенции оформления кода, tooling и правила локальной сложности.
-- [Git Workflow](git-workflow.md) — git-конвенции: commits, ветки, PR и optional worktrees.
+- [Git Workflow](git-workflow.md) — git-конвенции: commits, ветки, PR.
 - [ADR](../adr/README.md) — instantiated Architecture Decision Records проекта.

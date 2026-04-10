@@ -1,10 +1,10 @@
 ---
 title: Git Workflow
 doc_kind: engineering
-doc_function: convention
+doc_function: canonical
 purpose: Git-конвенции проекта LFC.ru forum — коммиты, ветки, PR.
 derived_from:
-  - ../../CLAUDE.md
+  - ../dna/governance.md
 status: active
 audience: humans_and_agents
 ---

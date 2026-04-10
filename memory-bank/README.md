@@ -1,17 +1,17 @@
 ---
-title: Template Documentation Index
-doc_kind: project
+title: Documentation Index
+doc_kind: governance
 doc_function: index
-purpose: Корневая навигация по шаблонному memory-bank. Читать сначала, чтобы понять структуру и точки адаптации под конкретный проект.
+purpose: Корневая навигация по memory-bank проекта LFC.ru forum. Читать сначала, чтобы найти нужный раздел документации.
+derived_from:
+  - dna/principles.md
 status: active
 audience: humans_and_agents
 ---
 
 # Documentation Index
 
-Каталог `memory-bank/` содержит переносимый шаблон проектной документации для разработки ПО. После копирования в downstream-репозиторий адаптируй `domain/`, `engineering/` и `ops/` под реальный стек, процессы и ограничения проекта.
-
-Конкретные instantiated примеры вынесены в корневой каталог `examples/`.
+Каталог `memory-bank/` содержит проектную документацию LFC.ru forum: продуктовый контекст, архитектуру, инженерные конвенции и операционные процессы.
 
 ## Аннотированный индекс
 

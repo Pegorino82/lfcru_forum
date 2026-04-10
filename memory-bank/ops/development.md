@@ -1,6 +1,6 @@
 ---
 title: Development Environment
-doc_kind: engineering
+doc_kind: ops
 doc_function: canonical
 purpose: Локальная разработка LFC.ru — запуск приложения, тестов и работа с базой данных.
 derived_from:

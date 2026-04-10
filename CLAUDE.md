@@ -38,6 +38,9 @@
 | Тест-политика, sufficient coverage | `memory-bank/engineering/testing-policy.md` |
 | Автономия, эскалация, супервизия | `memory-bank/engineering/autonomy-boundaries.md` |
 | Запуск, тесты, Docker-команды | `memory-bank/ops/development.md` |
+| Env vars, конфигурация, секреты | `memory-bank/ops/config.md` |
+| Production, staging, окружения | `memory-bank/ops/stages.md` |
+| Релиз, деплой, rollback | `memory-bank/ops/release.md` |
 | Маршрутизация задач, типы workflow | `memory-bank/flows/workflows.md` |
 | Feature lifecycle, gates | `memory-bank/flows/feature-flow.md` |
 | Реализованные фичи | `memory-bank/features/README.md` |

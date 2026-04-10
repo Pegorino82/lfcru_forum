@@ -1,11 +1,16 @@
 ---
 title: Configuration Guide
-doc_kind: engineering
+doc_kind: ops
 doc_function: canonical
 purpose: Конфигурация LFC.ru — env vars, defaults и правила секретов.
 derived_from:
   - ../dna/governance.md
 status: active
+canonical_for:
+  - environment_variables
+  - config_defaults
+  - config_naming_convention
+  - secrets_policy
 audience: humans_and_agents
 ---
 

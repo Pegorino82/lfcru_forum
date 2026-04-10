@@ -1,6 +1,6 @@
 ---
 title: Release And Deployment
-doc_kind: engineering
+doc_kind: ops
 doc_function: canonical
 purpose: Релизный процесс LFC.ru — сборка Docker-образа, деплой на VPS, rollback.
 derived_from:

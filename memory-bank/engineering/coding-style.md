@@ -1,7 +1,7 @@
 ---
 title: Coding Style
 doc_kind: engineering
-doc_function: convention
+doc_function: canonical
 purpose: Конвенции оформления кода проекта LFC.ru forum.
 derived_from:
   - ../dna/governance.md
