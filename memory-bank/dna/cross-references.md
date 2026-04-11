@@ -1,5 +1,6 @@
 ---
 doc_kind: governance
+title: Cross-references
 doc_function: canonical
 purpose: Правила двусторонней навигации между кодом и документацией.
 derived_from:

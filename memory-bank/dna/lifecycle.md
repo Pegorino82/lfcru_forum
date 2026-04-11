@@ -1,5 +1,6 @@
 ---
 doc_kind: governance
+title: Document Lifecycle
 doc_function: canonical
 purpose: Maintenance rules и sync checklist для governed-документов.
 derived_from:

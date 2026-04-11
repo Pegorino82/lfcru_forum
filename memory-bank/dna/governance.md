@@ -1,5 +1,6 @@
 ---
 doc_kind: governance
+title: Document Governance
 doc_function: canonical
 purpose: SSoT implementation и правила dependency tree. Отвечает на вопрос — кто владеет каким фактом.
 derived_from:

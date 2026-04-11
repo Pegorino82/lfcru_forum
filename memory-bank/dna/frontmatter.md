@@ -1,5 +1,6 @@
 ---
 doc_kind: governance
+title: Frontmatter Schema
 doc_function: canonical
 purpose: Schema обязательных и условных полей YAML frontmatter.
 derived_from:

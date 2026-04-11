@@ -1,5 +1,6 @@
 ---
 doc_kind: governance
+title: DNA Index
 doc_function: index
 purpose: Точка входа в DNA — оглавление governance-документов.
 derived_from:

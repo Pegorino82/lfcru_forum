@@ -1,5 +1,6 @@
 ---
 doc_kind: governance
+title: Principles
 doc_function: canonical
 purpose: Фундаментальные принципы документации проекта. Корневой документ dependency tree.
 status: active

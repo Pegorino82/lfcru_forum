@@ -2,7 +2,7 @@
 title: Operations Index
 doc_kind: ops
 doc_function: index
-purpose: Навигация по операционной документации шаблона. Читать при адаптации dev/prod workflow, релизов, конфигурации и runbooks под проект.
+purpose: Навигация по операционной документации проекта. Читать при работе с dev/prod workflow, релизами, конфигурацией и runbooks проекта.
 derived_from:
   - ../dna/governance.md
 status: active

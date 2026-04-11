@@ -43,6 +43,7 @@
 | Релиз, деплой, rollback | `memory-bank/ops/release.md` |
 | Маршрутизация задач, типы workflow | `memory-bank/flows/workflows.md` |
 | Feature lifecycle, gates | `memory-bank/flows/feature-flow.md` |
+| Git workflow, коммиты, PR | `memory-bank/engineering/git-workflow.md` |
 | Реализованные фичи | `memory-bank/features/README.md` |
 
 ---
