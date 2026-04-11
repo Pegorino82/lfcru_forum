@@ -104,5 +104,5 @@ Canonical lifecycle gates живут в [../flows/feature-flow.md](../flows/feat
 - Integration-тесты помечаются build tag `//go:build integration` и также живут в пакете рядом с кодом
 - Каждый пакет самостоятельно вызывает `goose.Up()` в `TestMain` — setup изолирован
 - Моки репозиториев используются в unit-тестах сервисов; integration-тесты обязаны попадать в реальную БД
-- Перед handoff агент прогоняет unit-тесты (`go test ./...`) и integration-тесты затронутых пакетов
+- Перед handoff агент прогоняет unit-тесты (Docker-командой из раздела Stack выше) и integration-тесты затронутых пакетов
 

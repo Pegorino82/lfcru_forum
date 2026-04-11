@@ -18,7 +18,7 @@ status: active
 
 | Поле | Когда | Описание |
 |---|---|---|
-| `derived_from` | Есть upstream-документ | Прямые upstream-зависимости. Каждый элемент — строка (путь) или объект `{path, fit}`, где `fit` объясняет scope зависимости |
+| `derived_from` | Есть upstream-документ (для `active` non-root документов upstream всегда есть) | Прямые upstream-зависимости. Каждый элемент — строка (путь) или объект `{path, fit}`, где `fit` объясняет scope зависимости |
 | `delivery_status` | Feature-документы | `planned` / `in_progress` / `done` / `cancelled` |
 | `decision_status` | ADR-документы | `proposed` / `accepted` / `superseded` / `rejected` |
 
