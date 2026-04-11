@@ -43,7 +43,7 @@ audience: humans_and_agents
 
 `short.md` допустим только если одновременно выполняются все условия:
 
-1. фичу можно описать через `REQ-*`, `NS-*`, максимум один `CON-*`, один `EC-*`, один `CHK-*` и один `EVID-*`;
+1. фичу можно описать через `REQ-*`, `NS-*`, один `SC-*`, максимум один `CON-*`, один `EC-*`, один `CHK-*` и один `EVID-*`;
 2. в `feature.md` не нужны `ASM-*`, `DEC-*`, `CTR-*`, `FM-*`, rollout/backout-правила или ADR-dependent design rules;
 3. изменение не вводит и не меняет API, event, schema, file format, CLI или env contract;
 4. verify укладывается в один основной check без quality slices и без нескольких acceptance scenarios.

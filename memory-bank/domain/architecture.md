@@ -66,6 +66,6 @@ DI и инициализация в `cmd/forum/main.go`: config → pool → goo
 ## Configuration Ownership
 
 1. **Canonical schema**: `internal/config/config.go` — единственный owner всех env-переменных проекта.
-2. **Defaults** задаются там же, в `config.Load()`.
+2. **Defaults** задаются в helper-функциях `getEnv / getInt / getBool / getDuration` в `config.go`.
 3. **Environment overlays**: `docker-compose.dev.yml` и `docker-compose.prod.yml` — передают env в контейнер.
 4. При добавлении новой переменной: сначала обновить `internal/config/config.go`, затем `../ops/config.md`.
