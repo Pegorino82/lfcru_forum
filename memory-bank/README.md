@@ -18,6 +18,9 @@ audience: humans_and_agents
 - [`domain/README.md`](domain/README.md)
   Читать, когда нужно: зафиксировать product context, архитектурные границы и UI-соглашения проекта.
 
+- [`domain/glossary.md`](domain/glossary.md)
+  Читать, когда нужно: найти определение термина, аббревиатуры или стабильного идентификатора (REQ-*, SC-*, STEP-* и т.д.).
+
 - [`prd/README.md`](prd/README.md)
   Читать, когда нужно: описать продуктовую инициативу между общим problem statement и downstream feature packages.
 

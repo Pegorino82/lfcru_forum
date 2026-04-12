@@ -16,7 +16,14 @@ audience: humans_and_agents
 
 - Заводи новый ADR из шаблона [`../flows/templates/adr/ADR-XXX.md`](../flows/templates/adr/ADR-XXX.md).
 - Держи в этом каталоге только реальные decision records, а не заметки или черновые исследования.
-- Если ADR пока нет, этот индекс остается пустым и служит ожидаемой точкой размещения для будущих решений.
+## Records
+
+| ADR | Решение | Статус | Источник |
+|---|---|---|---|
+| [ADR-001](ADR-001-session-storage.md) | Сессии хранятся в PostgreSQL (не Redis, не JWT) | `accepted` | FT-001 |
+| [ADR-002](ADR-002-rate-limiting-strategy.md) | IP-based rate limiting на `/login` | `accepted` | FT-001 |
+| [ADR-003](ADR-003-email-only-auth-no-confirmation.md) | Email-only регистрация без подтверждения email в MVP | `accepted` | FT-001 |
+| [ADR-004](ADR-004-forum-hierarchy-model.md) | Иерархическая модель форума sections→topics→posts | `accepted` | FT-005 |
 
 ## Naming
 
