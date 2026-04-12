@@ -2,3 +2,5 @@
 .env
 examples/
 .claude/logs/
+memory-bank-legacy/
+legacy-migration-guide.md
