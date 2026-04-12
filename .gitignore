@@ -1,3 +1,4 @@
 .obsidian/
 .env
-./examples/
+examples/
+.claude/logs/
