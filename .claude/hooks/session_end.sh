@@ -51,8 +51,8 @@ INITIAL_PROMPT=$(jq -r '
 ' "$TRANSCRIPT_PATH" | grep -v '^$' | head -1 | cut -c1-600)
 
 # Продолжительность: первый и последний timestamp в файле
-START_TS=$(jq -r '.timestamp' "$TRANSCRIPT_PATH" | head -1)
-LAST_TS=$(jq -r '.timestamp' "$TRANSCRIPT_PATH" | tail -1)
+START_TS=$(jq -r 'select(.timestamp != null) | .timestamp' "$TRANSCRIPT_PATH" | head -1)
+LAST_TS=$(jq -r 'select(.timestamp != null) | .timestamp' "$TRANSCRIPT_PATH" | tail -1)
 
 # Нормализуем ISO 8601 для macOS date
 norm_ts() { echo "$1" | sed 's/\.[0-9]*Z$/Z/'; }
@@ -96,10 +96,7 @@ ERRORS=$(jq -r '
   if type == "array" then
     .[] |
     select(.type == "tool_result") |
-    select(
-      .is_error == true or
-      (.content | tostring | ascii_downcase | test("error|failed|denied|permission denied|not found|no such file"))
-    ) |
+    select(.is_error == true) |
     "- " + (
       .content |
       if   type == "array"  then (.[0].text // "" | .[0:300])
