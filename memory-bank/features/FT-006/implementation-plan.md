@@ -5,7 +5,7 @@ doc_function: derived
 purpose: "Execution-план реализации FT-006 (список новостей с пагинацией). Фиксирует discovery context, шаги, test strategy без переопределения canonical feature-фактов."
 derived_from:
   - feature.md
-status: active
+status: archived
 audience: humans_and_agents
 must_not_define:
   - ft_006_scope

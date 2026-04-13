@@ -1,5 +1,40 @@
 # HANDOFF.md
 
+## FT-006 — News: список статей ✅
+
+**Commit:** feat(FT-006) @ 29ce5d2
+
+### Что сделано
+
+1. **`internal/news/repo.go`** — добавлен `ListPublished(ctx, limit, offset int) ([]News, int64, error)`:
+   - `COUNT(*)` + `SELECT … LIMIT/OFFSET` (два запроса)
+   - Сортировка `published_at DESC`, только опубликованные
+
+2. **`internal/news/handler.go`** — добавлен `ShowList`:
+   - `GET /news?page=N` (default 1, невалидный → 1)
+   - `const pageSize = 20` хардкод
+   - HTMX-совместимость: при `HX-Request: true` → partial `content`-блок
+   - Зарегистрирован в `RegisterRoutes`
+
+3. **`templates/news/list.html`** — новый шаблон:
+   - Список заголовков-ссылок с датой
+   - Компактная пагинация (первая/последняя страница, ±2 от текущей, `…` для gaps)
+
+4. **`internal/tmpl/renderer.go`** — добавлены FuncMap: `add`, `sub`, `paginate`
+
+5. **Тесты**: 4 `TestListPublished_*` (repo) + 4 `TestShowList_*` (handler) — все 32 теста зелёные
+
+### Что сделать следующим
+
+- Создание/редактирование новостей (NS-01 в FT-006) — отдельная задача
+- Ссылка «Новости» в навигации (`base.html`) ведёт на `/news` — можно добавить
+
+### Проблемы и решения
+
+- Docker Compose был остановлен → `docker compose -f docker-compose.dev.yml up -d postgres` перед тестами
+
+---
+
 > Файл передачи контекста между агентами. Обновляется в конце каждого сеанса.
 
 ---
