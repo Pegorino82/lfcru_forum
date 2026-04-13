@@ -17,6 +17,18 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const pageSize = 20
+
+// ListData is the template data for the news list page.
+type ListData struct {
+	User       *user.User
+	Items      []News
+	Page       int
+	TotalPages int
+	HasPrev    bool
+	HasNext    bool
+}
+
 // ArticleData is the template data for the article page.
 type ArticleData struct {
 	User      *user.User
@@ -40,8 +52,46 @@ func NewHandler(newsRepo *Repo, commentRepo *comment.Repo, commentSvc *comment.S
 
 // RegisterRoutes mounts news routes on the Echo instance.
 func (h *Handler) RegisterRoutes(e *echo.Echo) {
+	e.GET("/news", h.ShowList)
 	e.GET("/news/:id", h.ShowArticle)
 	e.POST("/news/:id/comments", h.CreateComment)
+}
+
+// ShowList renders the paginated news list.
+func (h *Handler) ShowList(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	page, _ := strconv.Atoi(c.QueryParam("page"))
+	if page < 1 {
+		page = 1
+	}
+	offset := (page - 1) * pageSize
+
+	items, total, err := h.newsRepo.ListPublished(ctx, pageSize, offset)
+	if err != nil {
+		slog.Error("news list: load", "err", err)
+		return c.String(http.StatusInternalServerError, "Что-то пошло не так. Попробуйте обновить страницу.")
+	}
+
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	data := ListData{
+		User:       auth.UserFromContext(c),
+		Items:      items,
+		Page:       page,
+		TotalPages: totalPages,
+		HasPrev:    page > 1,
+		HasNext:    page < totalPages,
+	}
+
+	if c.Request().Header.Get("HX-Request") == "true" {
+		r := c.Echo().Renderer.(*tmpl.Renderer)
+		return r.RenderPartial(c.Response(), "templates/news/list.html", "content", data)
+	}
+	return c.Render(http.StatusOK, "templates/news/list.html", data)
 }
 
 // ShowArticle renders the article page with comments.

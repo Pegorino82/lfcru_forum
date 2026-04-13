@@ -25,6 +25,35 @@ var funcMap = template.FuncMap{
 		}
 		return *s
 	},
+	"add": func(a, b int) int { return a + b },
+	"sub": func(a, b int) int { return a - b },
+	// paginate returns a compact slice of page numbers for navigation.
+	// -1 represents an ellipsis gap.
+	"paginate": func(current, total int) []int {
+		if total <= 1 {
+			return []int{1}
+		}
+		set := make(map[int]bool)
+		set[1] = true
+		set[total] = true
+		for p := current - 2; p <= current+2; p++ {
+			if p >= 1 && p <= total {
+				set[p] = true
+			}
+		}
+		pages := make([]int, 0, len(set))
+		prev := 0
+		for p := 1; p <= total; p++ {
+			if set[p] {
+				if prev > 0 && p-prev > 1 {
+					pages = append(pages, -1)
+				}
+				pages = append(pages, p)
+				prev = p
+			}
+		}
+		return pages
+	},
 }
 
 // Renderer holds an isolated template set per page file.

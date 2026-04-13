@@ -1,0 +1,66 @@
+{{template "templates/layouts/base.html" .}}
+
+{{define "content"}}
+<style>
+  .news-list { background: #fff; border-radius: 6px; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .news-list-title { font-size: 1.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid #c8102e; padding-bottom: .5rem; }
+
+  .news-item { padding: .875rem 0; border-bottom: 1px solid #eee; }
+  .news-item:last-child { border-bottom: none; }
+  .news-item-title { font-size: 1.1rem; margin: 0 0 .25rem; }
+  .news-item-title a { color: #1a1a1a; text-decoration: none; }
+  .news-item-title a:hover { color: #c8102e; text-decoration: underline; }
+  .news-item-date { color: #888; font-size: .8rem; }
+
+  .news-empty { color: #666; font-style: italic; padding: 1rem 0; }
+
+  .pagination { display: flex; gap: .5rem; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; }
+  .pagination a, .pagination span { display: inline-block; padding: .35rem .7rem; border-radius: 4px; font-size: .9rem; text-decoration: none; }
+  .pagination a { background: #f0f0f0; color: #333; border: 1px solid #ddd; }
+  .pagination a:hover { background: #c8102e; color: #fff; border-color: #c8102e; }
+  .pagination .current { background: #c8102e; color: #fff; border: 1px solid #c8102e; font-weight: 600; }
+  .pagination .dots { color: #999; padding: .35rem .3rem; }
+</style>
+
+<div class="news-list">
+  <h1 class="news-list-title">Новости</h1>
+
+  {{if .Items}}
+  {{range .Items}}
+  <div class="news-item">
+    <h2 class="news-item-title">
+      <a href="/news/{{.ID}}">{{.Title}}</a>
+    </h2>
+    {{if .PublishedAt}}
+    <time class="news-item-date">{{.PublishedAt.Format "02.01.2006"}}</time>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if gt .TotalPages 1}}
+  <nav class="pagination" aria-label="Пагинация">
+    {{if .HasPrev}}
+    <a href="/news?page={{sub .Page 1}}">&larr; Назад</a>
+    {{end}}
+
+    {{range paginate .Page .TotalPages}}
+    {{if eq . -1}}
+    <span class="dots">&hellip;</span>
+    {{else if eq . $.Page}}
+    <span class="current">{{.}}</span>
+    {{else}}
+    <a href="/news?page={{.}}">{{.}}</a>
+    {{end}}
+    {{end}}
+
+    {{if .HasNext}}
+    <a href="/news?page={{add .Page 1}}">Вперёд &rarr;</a>
+    {{end}}
+  </nav>
+  {{end}}
+
+  {{else}}
+  <p class="news-empty">Новостей пока нет.</p>
+  {{end}}
+</div>
+{{end}}

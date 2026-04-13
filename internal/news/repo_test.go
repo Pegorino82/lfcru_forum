@@ -235,6 +235,128 @@ func TestGetPublishedByID_Draft(t *testing.T) {
 	}
 }
 
+func TestListPublished_Empty(t *testing.T) {
+	pool := setupPool(t)
+	insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	repo := news.NewRepo(pool)
+	items, total, err := repo.ListPublished(context.Background(), 20, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if total != 0 {
+		t.Errorf("expected total=0, got %d", total)
+	}
+	if len(items) != 0 {
+		t.Errorf("expected empty slice, got %d items", len(items))
+	}
+}
+
+func TestListPublished_Pagination(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	now := time.Now()
+	for i := 0; i < 25; i++ {
+		pub := now.Add(time.Duration(-i) * time.Hour)
+		_, err := pool.Exec(ctx,
+			`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, $3)`,
+			"test-list-news", authorID, pub,
+		)
+		if err != nil {
+			t.Fatalf("insert news: %v", err)
+		}
+	}
+
+	repo := news.NewRepo(pool)
+
+	// Page 1: first 20
+	items, total, err := repo.ListPublished(ctx, 20, 0)
+	if err != nil {
+		t.Fatalf("page 1: %v", err)
+	}
+	if total != 25 {
+		t.Errorf("expected total=25, got %d", total)
+	}
+	if len(items) != 20 {
+		t.Errorf("expected 20 items on page 1, got %d", len(items))
+	}
+
+	// Page 2: remaining 5
+	items2, _, err := repo.ListPublished(ctx, 20, 20)
+	if err != nil {
+		t.Fatalf("page 2: %v", err)
+	}
+	if len(items2) != 5 {
+		t.Errorf("expected 5 items on page 2, got %d", len(items2))
+	}
+}
+
+func TestListPublished_ExcludesDrafts(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	_, _ = pool.Exec(ctx,
+		`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, now())`,
+		"test-list-published", authorID,
+	)
+	_, _ = pool.Exec(ctx,
+		`INSERT INTO news (title, is_published, author_id) VALUES ($1, false, $2)`,
+		"test-list-draft", authorID,
+	)
+
+	repo := news.NewRepo(pool)
+	items, total, err := repo.ListPublished(ctx, 20, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if total != 1 {
+		t.Errorf("expected total=1, got %d", total)
+	}
+	for _, item := range items {
+		if item.Title == "test-list-draft" {
+			t.Error("draft should not appear in list")
+		}
+	}
+}
+
+func TestListPublished_SortedDesc(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	base := time.Now()
+	for i, title := range []string{"test-list-oldest", "test-list-middle", "test-list-newest"} {
+		pub := base.Add(time.Duration(i) * time.Hour)
+		_, _ = pool.Exec(ctx,
+			`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, $3)`,
+			title, authorID, pub,
+		)
+	}
+
+	repo := news.NewRepo(pool)
+	items, _, err := repo.ListPublished(ctx, 20, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(items) < 3 {
+		t.Fatalf("expected at least 3 items")
+	}
+	if items[0].Title != "test-list-newest" {
+		t.Errorf("first item should be newest, got %q", items[0].Title)
+	}
+}
+
 func TestLatestPublished_SortedDesc(t *testing.T) {
 	pool := setupPool(t)
 	authorID := insertUser(t, pool)

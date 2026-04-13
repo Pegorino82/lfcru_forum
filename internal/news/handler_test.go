@@ -224,6 +224,85 @@ func doPost(t *testing.T, e *echo.Echo, path string, form url.Values, sessID, cs
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
+// ─── News list tests ──────────────────────────────────────────────────────────
+
+func TestShowList_OK(t *testing.T) {
+	pool := testDB(t)
+	cleanArticleData(t, pool)
+	defer cleanArticleData(t, pool)
+
+	authorID, _ := createUser(t, pool, "newstest-list1@test.com", "newstest-list1")
+	insertNews(t, pool, "test-list-article-1", true, authorID)
+	insertNews(t, pool, "test-list-article-2", true, authorID)
+
+	e := newTestServer(t, pool)
+	rec := doGet(t, e, "/news", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "test-list-article-1") {
+		t.Error("expected article-1 in list")
+	}
+	if !strings.Contains(body, "test-list-article-2") {
+		t.Error("expected article-2 in list")
+	}
+}
+
+func TestShowList_NoDrafts(t *testing.T) {
+	pool := testDB(t)
+	cleanArticleData(t, pool)
+	defer cleanArticleData(t, pool)
+
+	authorID, _ := createUser(t, pool, "newstest-listdraft@test.com", "newstest-listdraft")
+	insertNews(t, pool, "test-list-published-ok", true, authorID)
+	insertNews(t, pool, "test-list-draft-hidden", false, authorID)
+
+	e := newTestServer(t, pool)
+	rec := doGet(t, e, "/news", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if strings.Contains(rec.Body.String(), "test-list-draft-hidden") {
+		t.Error("draft should not appear in list")
+	}
+}
+
+func TestShowList_InvalidPage(t *testing.T) {
+	pool := testDB(t)
+	cleanArticleData(t, pool)
+	defer cleanArticleData(t, pool)
+
+	e := newTestServer(t, pool)
+	for _, q := range []string{"?page=0", "?page=-1", "?page=abc", ""} {
+		rec := doGet(t, e, "/news"+q, "")
+		if rec.Code != http.StatusOK {
+			t.Errorf("query %q: expected 200, got %d", q, rec.Code)
+		}
+	}
+}
+
+func TestShowList_HTMXPartial(t *testing.T) {
+	pool := testDB(t)
+	cleanArticleData(t, pool)
+	defer cleanArticleData(t, pool)
+
+	e := newTestServer(t, pool)
+	req := httptest.NewRequest(http.MethodGet, "/news", nil)
+	req.Header.Set("HX-Request", "true")
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if strings.Contains(rec.Body.String(), "<html") {
+		t.Error("HTMX partial should not contain <html>")
+	}
+}
+
+// ─── Article tests ────────────────────────────────────────────────────────────
+
 func TestShowArticle_InvalidID(t *testing.T) {
 	pool := testDB(t)
 	cleanArticleData(t, pool)
