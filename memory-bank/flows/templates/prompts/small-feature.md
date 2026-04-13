@@ -18,9 +18,10 @@ Workflow: малая фича (issue → implementation → review → merge).
    - unit: `docker run --rm -v "$(pwd)":/app -w /app golang:1.23-alpine go test ./...`
    - integration: `docker run --rm -v "$(pwd)":/app -w /app --network lfcru_forum_default -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru_test?sslmode=disable" golang:1.23-alpine go test -tags integration -p 1 ./internal/...`
    - Полные команды и детали — в `memory-bank/engineering/testing-policy.md` → Stack.
-2. Simplify review: нет premature abstractions, dead code, дублирования логики.
-3. Коммит (conventional commits: feat/fix/docs/refactor/test).
-4. Обнови HANDOFF.md.
+2. Применяй `gofmt` ко всем изменённым Go-файлам.
+3. Simplify review: нет premature abstractions, dead code, дублирования логики.
+4. Коммит (conventional commits: feat/fix/docs/refactor/test).
+5. Обнови HANDOFF.md.
 
 Правила автономии:
 - Без подтверждения: редактировать код, запускать тесты, читать файлы.
