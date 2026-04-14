@@ -1,5 +1,35 @@
 # HANDOFF.md
 
+## FT-008 — Управление статьями (CRUD + превью + review workflow) ✅
+
+**Commit:** feat(FT-008) @ 72882e4
+
+### Что сделано
+
+1. **`migrations/011_article_status_machine.sql`** — `CREATE TYPE news_status ENUM ('draft','in_review','published')`, ADD COLUMN `status`, `reviewer_id`, data migration, DROP `is_published`.
+2. **`internal/news/model.go`** — `ArticleStatus` тип + константы, убран `IsPublished`.
+3. **`internal/news/repo.go`** — все публичные запросы переведены на `status = 'published'`; новые методы: `CreateDraft`, `UpdateArticle`, `ChangeStatus`, `ListByStatus`, `GetByIDAdmin`.
+4. **`internal/news/markdown.go`** — `RenderMarkdown(content) template.HTML` через goldmark.
+5. **`internal/news/handler.go`** — `ContentHTML template.HTML` в `ArticleData`, рендер Markdown в `ShowArticle`.
+6. **`templates/news/article.html`** — использует `{{.ContentHTML}}` вместо `{{.Article.Content}}`.
+7. **`internal/admin/articles_handler.go`** — `ArticlesHandler`: List, New, Create, Edit, Update, Preview, ChangeStatus. Валидация переходов статусов.
+8. **`templates/admin/articles/list.html`**, **`edit.html`** — списки с фильтром, форма редактирования с кнопками смены статуса и загрузкой изображений.
+9. **`cmd/forum/main.go`** — 7 новых admin-маршрутов для статей.
+10. Все тесты `is_published` → `status` обновлены в `news`, `home`, `comment`, `admin` пакетах.
+11. **`internal/admin/articles_handler_test.go`** — 7 интеграционных тестов (SC-01..SC-06, EC-01, EC-03, EC-05), все зелёные.
+12. goldmark v1.8.2 добавлен в зависимости; создана директория `vendor/`.
+
+### Что сделать следующим
+
+- Нет незакрытых зависимостей. Все фичи admin-панели реализованы (FT-007..FT-011).
+
+### Проблемы и решения
+
+- Миграция data migration требует явного каста: `(CASE WHEN is_published THEN 'published' ELSE 'draft' END)::news_status` — без каста PostgreSQL отклоняет присвоение text к enum.
+- Сетевые проблемы при скачивании Go-модулей в test-контейнере → создан `vendor/` через `go mod vendor`, тесты запускаются с флагом `-mod=vendor`.
+
+---
+
 ## FT-011 — Управление пользователями (бан/разбан) ✅
 
 **Commit:** feat(FT-011) @ 118aea1
@@ -21,7 +51,12 @@
 
 ### Что сделать следующим
 
-1. **FT-008** — Управление статьями (CRUD + превью + review workflow). Требует принятия ADR-006 (статус enum). Зависит от FT-009 ✅.
+1. **FT-008** — Управление статьями (CRUD + превью + review workflow). ADR-006 принят ✅. Все зависимости (FT-009 ✅) закрыты. Готово к реализации.
+   - Миграция `011`: enum `news_status`, колонка `status`, `reviewer_id BIGINT`, data migration, drop `is_published`
+   - Обновить `internal/news/` (model, repo, тесты) — убрать `is_published`, добавить `status`
+   - Обновить тесты в `home`, `admin/images`, `comment` (INSERT-ы с `is_published`)
+   - Markdown рендерер: `github.com/yuin/goldmark`
+   - Создание статьи → всегда `draft`, публикация — явный статусный переход
 
 ### Проблемы и решения
 

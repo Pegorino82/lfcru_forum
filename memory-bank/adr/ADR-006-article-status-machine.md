@@ -7,8 +7,9 @@ derived_from:
   - ../features/FT-008/feature.md
   - ../use-cases/UC-001-article-publishing.md
 status: active
-decision_status: proposed
+decision_status: accepted
 date: 2026-04-13
+accepted_date: 2026-04-14
 audience: humans_and_agents
 must_not_define:
   - current_system_state
@@ -41,18 +42,18 @@ must_not_define:
 | Несколько булевых флагов (`is_draft`, `is_in_review`, `is_published`) | Читаемо | Возможны взаимоисключающие конфликты, много флагов | Отклонён |
 | Отдельная таблица `article_status_history` | История смен статуса | Избыточно для текущего масштаба | Отклонён |
 
-## Решение (proposed)
+## Решение (accepted 2026-04-14)
 
-Предлагается:
 1. Добавить PostgreSQL enum `CREATE TYPE news_status AS ENUM ('draft', 'in_review', 'published')`.
 2. Добавить колонку `status news_status NOT NULL DEFAULT 'draft'`.
 3. Выполнить data migration: `UPDATE news SET status = CASE WHEN is_published THEN 'published' ELSE 'draft' END`.
-4. Убрать `is_published` (или оставить как computed column для обратной совместимости — решается в FT-008).
+4. Удалить `is_published` полностью — колонка из БД и поле из Go-модели убираются без замены. Нигде в коде не используется.
 5. Обновить все запросы `WHERE is_published = true` → `WHERE status = 'published'`.
+6. Добавить `reviewer_id BIGINT REFERENCES users(id)` — кто взял на ревью (nullable). Тип BIGINT соответствует `users.id`.
 
-Добавить `reviewer_id UUID REFERENCES users(id)` — кто взял на ревью (nullable).
-
-**Это решение требует человеческого approval (AG-*) в FT-008, так как меняет схему БД и затрагивает FT-006.**
+**Дополнительные принятые решения:**
+- **OQ-01 закрыт:** формат текста статьи — Markdown. Рендерер: `github.com/yuin/goldmark`.
+- **OQ-02 закрыт:** создание статьи всегда сохраняет `draft`. Прямая публикация из формы создания исключена — переход в `published` только через явный статусный переход. Это исключает случайную публикацию сырой статьи.
 
 ## Последствия
 
