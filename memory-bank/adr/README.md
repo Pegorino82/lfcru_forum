@@ -24,6 +24,8 @@ audience: humans_and_agents
 | [ADR-002](ADR-002-rate-limiting-strategy.md) | IP-based rate limiting на `/login` | `accepted` | FT-001 |
 | [ADR-003](ADR-003-email-only-auth-no-confirmation.md) | Email-only регистрация без подтверждения email в MVP | `accepted` | FT-001 |
 | [ADR-004](ADR-004-forum-hierarchy-model.md) | Иерархическая модель форума sections→topics→posts | `accepted` | FT-005 |
+| [ADR-005](ADR-005-image-storage.md) | Хранение изображений: файловая система + Docker volume | `accepted` | FT-009 |
+| [ADR-006](ADR-006-article-status-machine.md) | Статусная машина статьи: draft/in_review/published enum | `proposed` | FT-008 |
 
 ## Naming
 
