@@ -7,15 +7,16 @@ import (
 )
 
 type Config struct {
-	DatabaseURL       string
-	AppPort           string
-	CookieSecure      bool
-	SessionLifetime   time.Duration
-	BcryptCost        int
-	RateLimitWindow   time.Duration
-	RateLimitMax      int
+	DatabaseURL        string
+	AppPort            string
+	CookieSecure       bool
+	SessionLifetime    time.Duration
+	BcryptCost         int
+	RateLimitWindow    time.Duration
+	RateLimitMax       int
 	SessionGracePeriod time.Duration
 	MaxSessionsPerUser int
+	UploadsDir         string
 }
 
 func Load() *Config {
@@ -29,6 +30,7 @@ func Load() *Config {
 		RateLimitMax:       getInt("RATE_LIMIT_MAX", 5),
 		SessionGracePeriod: getDuration("SESSION_GRACE_PERIOD", 5*time.Minute),
 		MaxSessionsPerUser: getInt("MAX_SESSIONS_PER_USER", 10),
+		UploadsDir:         getEnv("UPLOADS_DIR", "./uploads"),
 	}
 }
 

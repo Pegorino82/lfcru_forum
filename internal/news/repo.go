@@ -75,6 +75,30 @@ func (r *Repo) ListPublished(ctx context.Context, limit, offset int) ([]News, in
 	return result, total, rows.Err()
 }
 
+// ListImagesByArticleID returns images attached to an article, ordered by created_at ASC.
+func (r *Repo) ListImagesByArticleID(ctx context.Context, articleID int64) ([]ImageView, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, filename
+		FROM article_images
+		WHERE article_id = $1
+		ORDER BY created_at ASC
+	`, articleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := []ImageView{}
+	for rows.Next() {
+		var img ImageView
+		if err := rows.Scan(&img.ID, &img.Filename); err != nil {
+			return nil, err
+		}
+		result = append(result, img)
+	}
+	return result, rows.Err()
+}
+
 // GetPublishedByID возвращает опубликованную статью по ID.
 // Если статья не найдена или не опубликована — возвращает nil, nil.
 func (r *Repo) GetPublishedByID(ctx context.Context, id int64) (*News, error) {

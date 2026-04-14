@@ -9,7 +9,7 @@ import (
 // Token is stored in a cookie (_csrf) and checked in form field "_csrf" for POST/PUT/DELETE.
 func CSRFMiddleware() echo.MiddlewareFunc {
 	return middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup:    "form:_csrf",
+		TokenLookup:    "form:_csrf,header:X-CSRF-Token",
 		CookieName:     "_csrf",
 		CookieHTTPOnly: false,
 		CookieSameSite: 3, // http.SameSiteStrictMode

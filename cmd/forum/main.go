@@ -125,8 +125,14 @@ func main() {
 	authGroup.POST("/forum/topics/:id/posts", forumHandler.CreatePost)
 
 	// Admin routes
+	imagesRepo := admin.NewImagesRepo(pool)
+	imgSvc := admin.NewImageService(cfg.UploadsDir)
+	imagesHandler := admin.NewImagesHandler(imagesRepo, imgSvc)
+
 	adminGroup := e.Group("", admin.RequireAdminOrMod(renderer))
 	adminGroup.GET("/admin", admin.NewHandler().Dashboard)
+	adminGroup.POST("/admin/articles/:id/images", imagesHandler.Upload)
+	adminGroup.DELETE("/admin/articles/:id/images/:image_id", imagesHandler.Delete)
 
 	// Фоновая очистка
 	bgCtx, bgCancel := context.WithCancel(context.Background())

@@ -1,0 +1,17 @@
+{{define "image-item"}}
+<div id="img-{{.Image.ID}}" class="image-item">
+  <img src="/uploads/{{.Image.Filename}}"
+       alt="{{.Image.OriginalFilename}}"
+       style="aspect-ratio:16/9;object-fit:cover;width:100%;max-width:300px;border-radius:4px;">
+  <p style="margin:.25rem 0;font-size:.8rem;color:#666;">{{.Image.OriginalFilename}}</p>
+  <button type="button"
+          hx-delete="/admin/articles/{{.ArticleID}}/images/{{.Image.ID}}"
+          hx-target="#img-{{.Image.ID}}"
+          hx-swap="outerHTML"
+          hx-confirm="Удалить изображение?"
+          hx-headers='{"X-CSRF-Token": "{{.CSRFToken}}"}'
+          style="background:none;border:none;color:#c8102e;cursor:pointer;font-size:.875rem;padding:0;">
+    Удалить
+  </button>
+</div>
+{{end}}

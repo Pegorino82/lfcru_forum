@@ -12,3 +12,9 @@ type News struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+// ImageView is a read-only projection of article_images for public display.
+type ImageView struct {
+	ID       int64
+	Filename string
+}

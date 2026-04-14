@@ -35,6 +35,7 @@ type ArticleData struct {
 	CSRFToken string
 	Article   *News
 	Comments  []comment.CommentView
+	Images    []ImageView
 	NewsID    int64
 }
 
@@ -123,11 +124,18 @@ func (h *Handler) ShowArticle(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Что-то пошло не так. Попробуйте обновить страницу.")
 	}
 
+	images, err := h.newsRepo.ListImagesByArticleID(ctx, id)
+	if err != nil {
+		slog.Error("article: load images", "id", id, "err", err)
+		return c.String(http.StatusInternalServerError, "Что-то пошло не так. Попробуйте обновить страницу.")
+	}
+
 	data := ArticleData{
 		User:      auth.UserFromContext(c),
 		CSRFToken: appMiddleware.CSRFToken(c),
 		Article:   article,
 		Comments:  comments,
+		Images:    images,
 		NewsID:    id,
 	}
 
