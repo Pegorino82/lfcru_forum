@@ -1,0 +1,13 @@
+{{define "templates/admin/dashboard.html"}}
+{{template "templates/admin/layouts/layout.html" .}}
+{{end}}
+
+{{define "admin-content"}}
+<h1 class="admin-header">Панель управления</h1>
+<p>Добро пожаловать в панель управления LFC.ru.</p>
+<ul style="margin-top:1rem;padding-left:1.5rem;line-height:2;">
+  <li><a href="/admin/articles">Управление статьями</a></li>
+  <li><a href="/admin/forum">Управление форумом</a></li>
+  <li><a href="/admin/users">Управление пользователями</a></li>
+</ul>
+{{end}}

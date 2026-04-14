@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Pegorino82/lfcru_forum/internal/admin"
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
 	"github.com/Pegorino82/lfcru_forum/internal/cleanup"
 	"github.com/Pegorino82/lfcru_forum/internal/comment"
@@ -122,6 +123,10 @@ func main() {
 	// Auth-only routes
 	authGroup := e.Group("", auth.RequireAuth)
 	authGroup.POST("/forum/topics/:id/posts", forumHandler.CreatePost)
+
+	// Admin routes
+	adminGroup := e.Group("", admin.RequireAdminOrMod(renderer))
+	adminGroup.GET("/admin", admin.NewHandler().Dashboard)
 
 	// Фоновая очистка
 	bgCtx, bgCancel := context.WithCancel(context.Background())

@@ -1,0 +1,28 @@
+{{define "templates/admin/layouts/layout.html"}}
+{{template "templates/layouts/base.html" .}}
+{{end}}
+
+{{define "content"}}
+<style>
+.admin-layout { display: flex; gap: 2rem; }
+.admin-nav { width: 200px; flex-shrink: 0; }
+.admin-nav ul { list-style: none; padding: 0; margin: 0; }
+.admin-nav li { margin-bottom: 0.5rem; }
+.admin-nav a { display: block; padding: 0.5rem 0.75rem; border-radius: 4px; color: #222; text-decoration: none; }
+.admin-nav a:hover { background: #f0f0f0; color: #c8102e; }
+.admin-main { flex: 1; }
+.admin-header { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 2px solid #c8102e; }
+</style>
+<div class="admin-layout">
+  <nav class="admin-nav" aria-label="Навигация панели управления">
+    <ul>
+      <li><a href="/admin/articles">Статьи</a></li>
+      <li><a href="/admin/forum">Форум</a></li>
+      <li><a href="/admin/users">Пользователи</a></li>
+    </ul>
+  </nav>
+  <div class="admin-main">
+    {{block "admin-content" .}}{{end}}
+  </div>
+</div>
+{{end}}
