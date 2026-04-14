@@ -9,6 +9,7 @@ type User struct {
 	PassHash  []byte
 	Role      string
 	IsActive  bool
+	BannedAt  *time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

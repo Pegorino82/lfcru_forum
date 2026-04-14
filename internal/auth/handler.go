@@ -148,6 +148,13 @@ func (h *Handler) Login(c echo.Context) error {
 		switch {
 		case errors.Is(err, ErrRateLimited):
 			return c.String(http.StatusTooManyRequests, "Слишком много попыток. Попробуйте позже.")
+		case errors.Is(err, ErrUserBanned):
+			return h.renderForm(c, http.StatusForbidden,
+				"templates/auth/login.html", loginData{
+					CSRFToken: appMiddleware.CSRFToken(c),
+					Error:     "Ваш аккаунт заблокирован",
+					Email:     email,
+				})
 		case errors.Is(err, ErrInvalidCredentials):
 			return h.renderForm(c, http.StatusUnprocessableEntity,
 				"templates/auth/login.html", loginData{

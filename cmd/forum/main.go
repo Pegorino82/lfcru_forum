@@ -129,6 +129,8 @@ func main() {
 	imgSvc := admin.NewImageService(cfg.UploadsDir)
 	imagesHandler := admin.NewImagesHandler(imagesRepo, imgSvc)
 	forumAdminHandler := admin.NewForumHandler(forumSvc)
+	userSvc := user.NewService(userRepo)
+	usersAdminHandler := admin.NewUsersHandler(userSvc)
 
 	adminGroup := e.Group("", admin.RequireAdminOrMod(renderer))
 	adminGroup.GET("/admin", admin.NewHandler().Dashboard)
@@ -146,6 +148,11 @@ func main() {
 	adminGroup.POST("/admin/forum/sections/:id/topics", forumAdminHandler.CreateTopic)
 	adminGroup.GET("/admin/forum/topics/:id/edit", forumAdminHandler.EditTopic)
 	adminGroup.POST("/admin/forum/topics/:id", forumAdminHandler.UpdateTopic)
+
+	// Admin user routes
+	adminGroup.GET("/admin/users", usersAdminHandler.List)
+	adminGroup.POST("/admin/users/:id/ban", usersAdminHandler.Ban)
+	adminGroup.POST("/admin/users/:id/unban", usersAdminHandler.Unban)
 
 	// Фоновая очистка
 	bgCtx, bgCancel := context.WithCancel(context.Background())

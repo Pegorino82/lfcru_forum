@@ -8,6 +8,7 @@ var (
 	ErrDuplicateEmail     = errors.New("duplicate email")
 	ErrDuplicateUsername  = errors.New("duplicate username")
 	ErrSessionNotFound    = errors.New("session not found")
+	ErrUserBanned         = errors.New("user is banned")
 )
 
 // ValidationErrors maps field names to error messages.

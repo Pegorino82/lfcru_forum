@@ -148,6 +148,10 @@ func (s *Service) Login(ctx context.Context, in LoginInput) (*user.User, *sessio
 		return nil, nil, ErrInvalidCredentials
 	}
 
+	if u.BannedAt != nil {
+		return nil, nil, ErrUserBanned
+	}
+
 	sess, err := s.createSession(ctx, u.ID, in.IPAddr, in.UserAgent)
 	if err != nil {
 		return nil, nil, err
@@ -172,6 +176,10 @@ func (s *Service) GetSession(ctx context.Context, sessionID uuid.UUID) (*user.Us
 	u, err := s.users.GetByID(ctx, sess.UserID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("get user: %w", err)
+	}
+
+	if u.BannedAt != nil {
+		return nil, nil, ErrUserBanned
 	}
 
 	// Touch with grace period: only update if less than (lifetime - grace) remains

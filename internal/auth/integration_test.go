@@ -566,3 +566,55 @@ func TestIntegration_MaxSessions_OldestDeleted(t *testing.T) {
 		t.Errorf("expected oldest session to be deleted, got: %v", err)
 	}
 }
+
+// EC-02: Заблокированный пользователь не может войти → ErrUserBanned.
+func TestIntegration_Login_BannedUser(t *testing.T) {
+	pool := testDB(t)
+	truncate(t, pool)
+	svc := newSvc(pool)
+
+	u, _, err := svc.Register(context.Background(), validInput())
+	if err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	// Ban the user directly
+	if _, err := pool.Exec(context.Background(),
+		`UPDATE users SET banned_at = now() WHERE id = $1`, u.ID,
+	); err != nil {
+		t.Fatalf("ban user: %v", err)
+	}
+
+	_, _, err = svc.Login(context.Background(), auth.LoginInput{
+		Email:    "test@example.com",
+		Password: "password123",
+		IPAddr:   "127.0.0.1",
+	})
+	if !errors.Is(err, auth.ErrUserBanned) {
+		t.Errorf("want ErrUserBanned, got: %v", err)
+	}
+}
+
+// EC-02b: Заблокированный пользователь с активной сессией — GetSession возвращает ошибку.
+func TestIntegration_GetSession_BannedUser(t *testing.T) {
+	pool := testDB(t)
+	truncate(t, pool)
+	svc := newSvc(pool)
+
+	u, sess, err := svc.Register(context.Background(), validInput())
+	if err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	// Ban the user after session was created
+	if _, err := pool.Exec(context.Background(),
+		`UPDATE users SET banned_at = now() WHERE id = $1`, u.ID,
+	); err != nil {
+		t.Fatalf("ban user: %v", err)
+	}
+
+	_, _, err = svc.GetSession(context.Background(), sess.ID)
+	if !errors.Is(err, auth.ErrUserBanned) {
+		t.Errorf("want ErrUserBanned, got: %v", err)
+	}
+}
