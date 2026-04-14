@@ -1,5 +1,33 @@
 # HANDOFF.md
 
+## FT-010 — Управление структурой форума ✅
+
+**Commit:** feat(FT-010) @ 40863c8
+
+### Что сделано
+
+1. **`internal/forum/repo.go`** — `UpdateSection`, `UpdateTopic`.
+2. **`internal/forum/service.go`** — `UpdateSection`, `UpdateTopic`, `GetTopic`, `ListTopicsBySection` + обновлён `RepoInterface`.
+3. **`internal/forum/service_test.go`** — добавлены заглушки `UpdateSection`/`UpdateTopic` в `mockRepo`.
+4. **`internal/forum/handler.go`** — исправлена обработка `ErrSectionNotFound`/`ErrTopicNotFound` → 404 (pre-existing bug).
+5. **`internal/admin/forum_handler.go`** — `ForumHandler` с методами: `ListSections`, `NewSection`, `CreateSection`, `EditSection`, `UpdateSection`, `ListTopics`, `NewTopic`, `CreateTopic`, `EditTopic`, `UpdateTopic`.
+6. **Шаблоны** `templates/admin/forum/` — `sections_list.html`, `section_edit.html`, `topics_list.html`, `topic_edit.html`.
+7. **`cmd/forum/main.go`** — зарегистрированы 10 admin-маршрутов для форума.
+8. **`internal/admin/handler_test.go`** — `cleanAdminData` расширена: удаляет `article_images` и `news` перед удалением пользователей (fix FK-проблемы при повторных запусках).
+9. **`internal/admin/forum_handler_test.go`** — 8 интеграционных тестов (SC-01..SC-06, EC-04, FM-02), все зелёные.
+
+### Что сделать следующим
+
+1. **FT-011** — Управление пользователями (бан/разбан, независима).
+2. **FT-008** — Управление статьями (требует принятия ADR-006 + зависит от FT-009).
+
+### Проблемы и решения
+
+- `GetSectionWithTopics`/`GetTopicWithPosts` возвращают sentinel-ошибку при отсутствии записи → public forum handler не распознавал 404 → исправлено проверкой `errors.Is` перед 500.
+- `cleanAdminData` при повторных запусках не мог удалить пользователей из-за FK `news.author_id ON DELETE RESTRICT` → добавлена очистка `article_images` и `news` перед удалением пользователей.
+
+---
+
 ## FT-009 — Загрузка и нормализация изображений ✅
 
 **Commit:** feat(FT-009) @ d477571
