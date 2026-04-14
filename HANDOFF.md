@@ -1,5 +1,34 @@
 # HANDOFF.md
 
+## FT-011 — Управление пользователями (бан/разбан) ✅
+
+**Commit:** feat(FT-011) @ 118aea1
+
+### Что сделано
+
+1. **`migrations/010_add_banned_at_to_users.sql`** — `ALTER TABLE users ADD COLUMN banned_at TIMESTAMPTZ`.
+2. **`internal/user/model.go`** — добавлено поле `BannedAt *time.Time`.
+3. **`internal/user/repo.go`** — обновлены `GetByEmail`/`GetByID` (сканируют `banned_at`), добавлены `ListAll`, `BanUser`, `UnbanUser`.
+4. **`internal/user/service.go`** — новый `Service` с методами `ListAll`, `BanUser` (проверка self-ban), `UnbanUser`.
+5. **`internal/auth/errors.go`** — добавлен `ErrUserBanned`.
+6. **`internal/auth/service.go`** — `Login` и `GetSession` возвращают `ErrUserBanned` если `banned_at IS NOT NULL`.
+7. **`internal/auth/handler.go`** — `Login` обрабатывает `ErrUserBanned` → 403 "Ваш аккаунт заблокирован".
+8. **`internal/admin/users_handler.go`** — `UsersHandler`: `List`, `Ban`, `Unban`.
+9. **`templates/admin/users/list.html`** — список пользователей с кнопками бан/разбан.
+10. **`cmd/forum/main.go`** — зарегистрированы маршруты `/admin/users`, `/admin/users/:id/ban`, `/admin/users/:id/unban`.
+11. **`internal/admin/users_handler_test.go`** — 5 интеграционных тестов (SC-01, EC-01, EC-03, EC-04, FM-02), все зелёные.
+12. **`internal/auth/integration_test.go`** — добавлены EC-02 (бан при логине) и EC-02b (бан при GetSession), все зелёные.
+
+### Что сделать следующим
+
+1. **FT-008** — Управление статьями (CRUD + превью + review workflow). Требует принятия ADR-006 (статус enum). Зависит от FT-009 ✅.
+
+### Проблемы и решения
+
+- Нет: реализация прошла без blockers.
+
+---
+
 ## FT-010 — Управление структурой форума ✅
 
 **Commit:** feat(FT-010) @ 40863c8
