@@ -54,6 +54,9 @@ func (h *Handler) ShowSection(c echo.Context) error {
 	ctx := c.Request().Context()
 	section, topics, err := h.svc.GetSectionWithTopics(ctx, id)
 	if err != nil {
+		if errors.Is(err, ErrSectionNotFound) {
+			return c.String(http.StatusNotFound, "Not found")
+		}
 		return c.String(http.StatusInternalServerError, "Internal error")
 	}
 	if section == nil {
@@ -87,6 +90,9 @@ func (h *Handler) ShowTopic(c echo.Context) error {
 	ctx := c.Request().Context()
 	topic, posts, err := h.svc.GetTopicWithPosts(ctx, id)
 	if err != nil {
+		if errors.Is(err, ErrTopicNotFound) {
+			return c.String(http.StatusNotFound, "Not found")
+		}
 		return c.String(http.StatusInternalServerError, "Internal error")
 	}
 	if topic == nil {

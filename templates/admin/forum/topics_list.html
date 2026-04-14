@@ -1,0 +1,37 @@
+{{define "templates/admin/forum/topics_list.html"}}
+{{template "templates/admin/layouts/layout.html" .}}
+{{end}}
+
+{{define "admin-content"}}
+<h1 class="admin-header">Темы раздела «{{.Section.Title}}»</h1>
+<div style="margin-bottom:1.5rem;">
+  <a href="/admin/forum/sections/{{.Section.ID}}/topics/new" style="display:inline-block;padding:0.5rem 1rem;background:#c8102e;color:#fff;border-radius:4px;text-decoration:none;">+ Создать тему</a>
+  <a href="/admin/forum/sections" style="margin-left:1rem;color:#555;">← Разделы</a>
+</div>
+{{if .Topics}}
+<table style="width:100%;border-collapse:collapse;">
+  <thead>
+    <tr style="border-bottom:2px solid #ddd;text-align:left;">
+      <th style="padding:0.5rem 0.75rem;">ID</th>
+      <th style="padding:0.5rem 0.75rem;">Название</th>
+      <th style="padding:0.5rem 0.75rem;">Сообщений</th>
+      <th style="padding:0.5rem 0.75rem;">Действия</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .Topics}}
+    <tr style="border-bottom:1px solid #eee;">
+      <td style="padding:0.5rem 0.75rem;">{{.ID}}</td>
+      <td style="padding:0.5rem 0.75rem;">{{.Title}}</td>
+      <td style="padding:0.5rem 0.75rem;">{{.PostCount}}</td>
+      <td style="padding:0.5rem 0.75rem;">
+        <a href="/admin/forum/topics/{{.ID}}/edit" style="color:#c8102e;">Редактировать</a>
+      </td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{else}}
+<p style="color:#666;">В этом разделе пока нет тем.</p>
+{{end}}
+{{end}}

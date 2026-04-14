@@ -279,6 +279,22 @@ func (r *Repo) CreatePost(ctx context.Context, p *Post) (int64, error) {
 	return id, nil
 }
 
+// UpdateSection обновляет название и описание раздела.
+func (r *Repo) UpdateSection(ctx context.Context, id int64, title, description string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE forum_sections SET title = $1, description = $2 WHERE id = $3
+	`, title, description, id)
+	return err
+}
+
+// UpdateTopic обновляет название темы.
+func (r *Repo) UpdateTopic(ctx context.Context, id int64, title string) error {
+	_, err := r.pool.Exec(ctx, `
+		UPDATE forum_topics SET title = $1 WHERE id = $2
+	`, title, id)
+	return err
+}
+
 // LatestActive возвращает до limit тем с последней активностью.
 // Темы без сообщений (last_post_at IS NULL) не включаются.
 func (r *Repo) LatestActive(ctx context.Context, limit int) ([]TopicWithLastAuthor, error) {

@@ -8,7 +8,9 @@ import (
 
 type RepoInterface interface {
 	CreateSection(context.Context, *Section) (int64, error)
+	UpdateSection(ctx context.Context, id int64, title, description string) error
 	CreateTopic(context.Context, *Topic) (int64, error)
+	UpdateTopic(ctx context.Context, id int64, title string) error
 	CreatePost(context.Context, *Post) (int64, error)
 	ListSections(context.Context) ([]SectionView, error)
 	GetSection(context.Context, int64) (*Section, error)
@@ -71,6 +73,16 @@ func (s *Service) GetTopicWithPosts(ctx context.Context, id int64) (*Topic, []Po
 	return topic, posts, nil
 }
 
+// GetTopic возвращает тему по ID (nil, nil если не найдено).
+func (s *Service) GetTopic(ctx context.Context, id int64) (*Topic, error) {
+	return s.repo.GetTopic(ctx, id)
+}
+
+// ListTopicsBySection возвращает темы раздела.
+func (s *Service) ListTopicsBySection(ctx context.Context, sectionID int64) ([]TopicView, error) {
+	return s.repo.ListTopicsBySection(ctx, sectionID)
+}
+
 // CreateSection создаёт раздел после валидации.
 func (s *Service) CreateSection(ctx context.Context, title, description string, sortOrder int) (int64, error) {
 	title = strings.TrimSpace(title)
@@ -95,6 +107,22 @@ func (s *Service) CreateSection(ctx context.Context, title, description string, 
 	return s.repo.CreateSection(ctx, sec)
 }
 
+// UpdateSection обновляет раздел после валидации.
+func (s *Service) UpdateSection(ctx context.Context, id int64, title, description string) error {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return ErrEmptyTitle
+	}
+	if len(title) > 255 {
+		return ErrTitleTooLong
+	}
+	description = strings.TrimSpace(description)
+	if utf8.RuneCountInString(description) > 2000 {
+		return ErrDescriptionTooLong
+	}
+	return s.repo.UpdateSection(ctx, id, title, description)
+}
+
 // CreateTopic создаёт тему после валидации.
 func (s *Service) CreateTopic(ctx context.Context, sectionID, authorID int64, title string) (int64, error) {
 	title = strings.TrimSpace(title)
@@ -112,6 +140,18 @@ func (s *Service) CreateTopic(ctx context.Context, sectionID, authorID int64, ti
 	}
 
 	return s.repo.CreateTopic(ctx, t)
+}
+
+// UpdateTopic обновляет тему после валидации.
+func (s *Service) UpdateTopic(ctx context.Context, id int64, title string) error {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return ErrEmptyTitle
+	}
+	if len(title) > 255 {
+		return ErrTitleTooLong
+	}
+	return s.repo.UpdateTopic(ctx, id, title)
 }
 
 // CreatePost создаёт пост после валидации.

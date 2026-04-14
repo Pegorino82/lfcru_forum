@@ -84,6 +84,8 @@ func testDB(t *testing.T) *pgxpool.Pool {
 func cleanAdminData(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	ctx := context.Background()
+	pool.Exec(ctx, `DELETE FROM article_images WHERE article_id IN (SELECT id FROM news WHERE author_id IN (SELECT id FROM users WHERE email LIKE 'admintest%'))`)
+	pool.Exec(ctx, `DELETE FROM news WHERE author_id IN (SELECT id FROM users WHERE email LIKE 'admintest%')`)
 	pool.Exec(ctx, `DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE email LIKE 'admintest%')`)
 	pool.Exec(ctx, `DELETE FROM users WHERE email LIKE 'admintest%'`)
 }

@@ -128,11 +128,24 @@ func main() {
 	imagesRepo := admin.NewImagesRepo(pool)
 	imgSvc := admin.NewImageService(cfg.UploadsDir)
 	imagesHandler := admin.NewImagesHandler(imagesRepo, imgSvc)
+	forumAdminHandler := admin.NewForumHandler(forumSvc)
 
 	adminGroup := e.Group("", admin.RequireAdminOrMod(renderer))
 	adminGroup.GET("/admin", admin.NewHandler().Dashboard)
 	adminGroup.POST("/admin/articles/:id/images", imagesHandler.Upload)
 	adminGroup.DELETE("/admin/articles/:id/images/:image_id", imagesHandler.Delete)
+
+	// Admin forum routes
+	adminGroup.GET("/admin/forum/sections", forumAdminHandler.ListSections)
+	adminGroup.GET("/admin/forum/sections/new", forumAdminHandler.NewSection)
+	adminGroup.POST("/admin/forum/sections", forumAdminHandler.CreateSection)
+	adminGroup.GET("/admin/forum/sections/:id/edit", forumAdminHandler.EditSection)
+	adminGroup.POST("/admin/forum/sections/:id", forumAdminHandler.UpdateSection)
+	adminGroup.GET("/admin/forum/sections/:id/topics", forumAdminHandler.ListTopics)
+	adminGroup.GET("/admin/forum/sections/:id/topics/new", forumAdminHandler.NewTopic)
+	adminGroup.POST("/admin/forum/sections/:id/topics", forumAdminHandler.CreateTopic)
+	adminGroup.GET("/admin/forum/topics/:id/edit", forumAdminHandler.EditTopic)
+	adminGroup.POST("/admin/forum/topics/:id", forumAdminHandler.UpdateTopic)
 
 	// Фоновая очистка
 	bgCtx, bgCancel := context.WithCancel(context.Background())

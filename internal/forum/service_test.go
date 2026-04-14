@@ -33,8 +33,10 @@ func (m *mockRepo) CreatePost(ctx context.Context, p *Post) (int64, error) {
 	return 1, nil
 }
 
-func (m *mockRepo) ListSections(context.Context) ([]SectionView, error) { return nil, nil }
-func (m *mockRepo) GetSection(context.Context, int64) (*Section, error) { return nil, nil }
+func (m *mockRepo) UpdateSection(_ context.Context, _ int64, _, _ string) error { return nil }
+func (m *mockRepo) UpdateTopic(_ context.Context, _ int64, _ string) error      { return nil }
+func (m *mockRepo) ListSections(context.Context) ([]SectionView, error)         { return nil, nil }
+func (m *mockRepo) GetSection(context.Context, int64) (*Section, error)         { return nil, nil }
 func (m *mockRepo) ListTopicsBySection(context.Context, int64) ([]TopicView, error) {
 	return nil, nil
 }
