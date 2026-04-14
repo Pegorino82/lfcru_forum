@@ -47,16 +47,27 @@ docker compose -f docker-compose.dev.yml logs -f app
 
 App-контейнер — бинарный образ без Go. Тесты запускаются отдельным golang-контейнером.
 
+Зависимости Go кэшируются в именованном Docker-volume `lfcru_gomod` — скачиваются один раз, переиспользуются во всех запусках.
+
 ```bash
+# Шаг 0: скачать зависимости в кэш (один раз после клонирования и при изменении go.mod)
+docker run --rm \
+  -v "$(pwd)":/app -w /app \
+  -v lfcru_gomod:/root/go/pkg/mod \
+  golang:1.23-alpine \
+  go mod download
+
 # Юнит-тесты (без БД)
 docker run --rm \
   -v "$(pwd)":/app -w /app \
+  -v lfcru_gomod:/root/go/pkg/mod \
   golang:1.23-alpine \
   go test ./...
 
 # Интеграционные тесты (требуется запущенная БД из docker-compose.dev.yml)
 docker run --rm \
   -v "$(pwd)":/app -w /app \
+  -v lfcru_gomod:/root/go/pkg/mod \
   --network lfcru_forum_default \
   -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru_test?sslmode=disable" \
   golang:1.23-alpine \
@@ -65,6 +76,7 @@ docker run --rm \
 # Один пакет (пример)
 docker run --rm \
   -v "$(pwd)":/app -w /app \
+  -v lfcru_gomod:/root/go/pkg/mod \
   --network lfcru_forum_default \
   -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru_test?sslmode=disable" \
   golang:1.23-alpine \
@@ -72,6 +84,8 @@ docker run --rm \
 ```
 
 > Флаг `-p 1` обязателен для интеграционных тестов: каждый пакет вызывает `goose.Up()`, параллельный запуск вызывает race condition.
+
+> `vendor/` не хранится в репозитории (добавлен в `.gitignore`). Кэш-volume `lfcru_gomod` заменяет его — персистентен между запусками контейнеров на одной машине.
 
 ## Database And Services
 
