@@ -18,7 +18,7 @@ func (r *Repo) LatestPublished(ctx context.Context, limit int) ([]News, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, title, published_at
 		FROM news
-		WHERE is_published = true
+		WHERE status = 'published'
 		ORDER BY published_at DESC
 		LIMIT $1
 	`, limit)
@@ -46,7 +46,7 @@ func (r *Repo) LatestPublished(ctx context.Context, limit int) ([]News, error) {
 func (r *Repo) ListPublished(ctx context.Context, limit, offset int) ([]News, int64, error) {
 	var total int64
 	err := r.pool.QueryRow(ctx, `
-		SELECT COUNT(*) FROM news WHERE is_published = true
+		SELECT COUNT(*) FROM news WHERE status = 'published'
 	`).Scan(&total)
 	if err != nil {
 		return nil, 0, err
@@ -55,7 +55,7 @@ func (r *Repo) ListPublished(ctx context.Context, limit, offset int) ([]News, in
 	rows, err := r.pool.Query(ctx, `
 		SELECT id, title, published_at
 		FROM news
-		WHERE is_published = true
+		WHERE status = 'published'
 		ORDER BY published_at DESC
 		LIMIT $1 OFFSET $2
 	`, limit, offset)
@@ -104,10 +104,10 @@ func (r *Repo) ListImagesByArticleID(ctx context.Context, articleID int64) ([]Im
 func (r *Repo) GetPublishedByID(ctx context.Context, id int64) (*News, error) {
 	n := &News{}
 	err := r.pool.QueryRow(ctx, `
-		SELECT id, title, content, is_published, author_id, published_at, created_at, updated_at
+		SELECT id, title, content, status, reviewer_id, author_id, published_at, created_at, updated_at
 		FROM news
-		WHERE id = $1 AND is_published = true
-	`, id).Scan(&n.ID, &n.Title, &n.Content, &n.IsPublished, &n.AuthorID,
+		WHERE id = $1 AND status = 'published'
+	`, id).Scan(&n.ID, &n.Title, &n.Content, &n.Status, &n.ReviewerID, &n.AuthorID,
 		&n.PublishedAt, &n.CreatedAt, &n.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
@@ -116,4 +116,106 @@ func (r *Repo) GetPublishedByID(ctx context.Context, id int64) (*News, error) {
 		return nil, err
 	}
 	return n, nil
+}
+
+// GetByIDAdmin возвращает статью по ID без фильтрации по статусу (для admin-панели).
+// Если статья не найдена — возвращает nil, nil.
+func (r *Repo) GetByIDAdmin(ctx context.Context, id int64) (*News, error) {
+	n := &News{}
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, title, content, status, reviewer_id, author_id, published_at, created_at, updated_at
+		FROM news
+		WHERE id = $1
+	`, id).Scan(&n.ID, &n.Title, &n.Content, &n.Status, &n.ReviewerID, &n.AuthorID,
+		&n.PublishedAt, &n.CreatedAt, &n.UpdatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return n, nil
+}
+
+// CreateDraft создаёт новую статью со статусом draft и заполняет n.ID, n.CreatedAt, n.UpdatedAt.
+func (r *Repo) CreateDraft(ctx context.Context, n *News) error {
+	return r.pool.QueryRow(ctx, `
+		INSERT INTO news (title, content, author_id, status)
+		VALUES ($1, $2, $3, 'draft')
+		RETURNING id, created_at, updated_at
+	`, n.Title, n.Content, n.AuthorID).Scan(&n.ID, &n.CreatedAt, &n.UpdatedAt)
+}
+
+// UpdateArticle обновляет заголовок и содержимое статьи.
+func (r *Repo) UpdateArticle(ctx context.Context, n *News) error {
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE news SET title = $2, content = $3, updated_at = now()
+		WHERE id = $1
+	`, n.ID, n.Title, n.Content)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
+// ChangeStatus меняет статус статьи. Если новый статус — 'published' и published_at ещё не задан,
+// устанавливается текущее время.
+func (r *Repo) ChangeStatus(ctx context.Context, id int64, status ArticleStatus, reviewerID *int64) error {
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE news
+		SET status = $2::news_status,
+		    reviewer_id = $3,
+		    published_at = CASE
+		        WHEN $2::news_status = 'published' AND published_at IS NULL THEN now()
+		        ELSE published_at
+		    END,
+		    updated_at = now()
+		WHERE id = $1
+	`, id, string(status), reviewerID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
+// ListByStatus возвращает все статьи с фильтрацией по статусу.
+// Если status == "" — возвращает все статьи.
+func (r *Repo) ListByStatus(ctx context.Context, status ArticleStatus) ([]News, error) {
+	var rows pgx.Rows
+	var err error
+
+	if status == "" {
+		rows, err = r.pool.Query(ctx, `
+			SELECT id, title, status, author_id, published_at, created_at
+			FROM news
+			ORDER BY created_at DESC
+		`)
+	} else {
+		rows, err = r.pool.Query(ctx, `
+			SELECT id, title, status, author_id, published_at, created_at
+			FROM news
+			WHERE status = $1::news_status
+			ORDER BY created_at DESC
+		`, string(status))
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := []News{}
+	for rows.Next() {
+		var n News
+		if err := rows.Scan(&n.ID, &n.Title, &n.Status, &n.AuthorID, &n.PublishedAt, &n.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, n)
+	}
+	return result, rows.Err()
 }

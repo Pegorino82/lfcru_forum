@@ -158,14 +158,16 @@ func insertNews(t *testing.T, pool *pgxpool.Pool, title string, published bool, 
 	t.Helper()
 	ctx := context.Background()
 	var id int64
+	status := "draft"
 	var publishedAt interface{}
 	if published {
+		status = "published"
 		publishedAt = time.Now()
 	}
 	if err := pool.QueryRow(ctx,
-		`INSERT INTO news (title, content, is_published, author_id, published_at)
-		 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-		title, "Содержимое статьи "+title, published, authorID, publishedAt,
+		`INSERT INTO news (title, content, status, author_id, published_at)
+		 VALUES ($1, $2, $3::news_status, $4, $5) RETURNING id`,
+		title, "Содержимое статьи "+title, status, authorID, publishedAt,
 	).Scan(&id); err != nil {
 		t.Fatalf("insert news: %v", err)
 	}

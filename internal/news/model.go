@@ -2,11 +2,21 @@ package news
 
 import "time"
 
+// ArticleStatus represents the publication status of a news article.
+type ArticleStatus string
+
+const (
+	StatusDraft     ArticleStatus = "draft"
+	StatusInReview  ArticleStatus = "in_review"
+	StatusPublished ArticleStatus = "published"
+)
+
 type News struct {
 	ID          int64
 	Title       string
 	Content     string
-	IsPublished bool
+	Status      ArticleStatus
+	ReviewerID  *int64
 	AuthorID    int64
 	PublishedAt *time.Time
 	CreatedAt   time.Time

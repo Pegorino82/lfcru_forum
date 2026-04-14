@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -31,12 +32,13 @@ type ListData struct {
 
 // ArticleData is the template data for the article page.
 type ArticleData struct {
-	User      *user.User
-	CSRFToken string
-	Article   *News
-	Comments  []comment.CommentView
-	Images    []ImageView
-	NewsID    int64
+	User        *user.User
+	CSRFToken   string
+	Article     *News
+	ContentHTML template.HTML
+	Comments    []comment.CommentView
+	Images      []ImageView
+	NewsID      int64
 }
 
 // Handler handles news HTTP requests.
@@ -131,12 +133,13 @@ func (h *Handler) ShowArticle(c echo.Context) error {
 	}
 
 	data := ArticleData{
-		User:      auth.UserFromContext(c),
-		CSRFToken: appMiddleware.CSRFToken(c),
-		Article:   article,
-		Comments:  comments,
-		Images:    images,
-		NewsID:    id,
+		User:        auth.UserFromContext(c),
+		CSRFToken:   appMiddleware.CSRFToken(c),
+		Article:     article,
+		ContentHTML: RenderMarkdown(article.Content),
+		Comments:    comments,
+		Images:      images,
+		NewsID:      id,
 	}
 
 	if c.Request().Header.Get("HX-Request") == "true" {

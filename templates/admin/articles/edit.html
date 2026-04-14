@@ -1,0 +1,123 @@
+{{define "templates/admin/articles/edit.html"}}
+{{template "templates/admin/layouts/layout.html" .}}
+{{end}}
+
+{{define "admin-content"}}
+<style>
+.article-form input[type=text],
+.article-form textarea { width:100%; padding:0.5rem 0.75rem; border:1px solid #ccc; border-radius:4px; font-family:inherit; font-size:1rem; box-sizing:border-box; }
+.article-form input[type=text]:focus,
+.article-form textarea:focus { outline:none; border-color:#c8102e; box-shadow:0 0 0 2px rgba(200,16,46,.15); }
+.form-group { margin-bottom:1rem; }
+.form-label { display:block; font-weight:600; margin-bottom:0.4rem; }
+.error-msg { color:#721c24; background:#f8d7da; border:1px solid #f5c6cb; border-radius:4px; padding:0.5rem 0.75rem; margin-bottom:1rem; }
+.status-actions { display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.5rem; }
+.btn { display:inline-block; padding:0.5rem 1.25rem; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; font-weight:600; }
+.btn-primary { background:#c8102e; color:#fff; }
+.btn-primary:hover { background:#a00d24; }
+.btn-secondary { background:#6c757d; color:#fff; }
+.btn-secondary:hover { background:#5a6268; }
+.btn-warning { background:#ffc107; color:#212529; }
+.btn-warning:hover { background:#e0a800; }
+.btn-success { background:#28a745; color:#fff; }
+.btn-success:hover { background:#218838; }
+.btn-outline { background:#fff; color:#c8102e; border:1px solid #c8102e; }
+.btn-outline:hover { background:#c8102e; color:#fff; }
+.images-section { margin-top:2rem; border-top:1px solid #eee; padding-top:1.5rem; }
+.images-grid { display:flex; flex-wrap:wrap; gap:1rem; margin-top:1rem; }
+.image-thumb { position:relative; width:150px; }
+.image-thumb img { width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:4px; }
+.image-thumb button { position:absolute; top:4px; right:4px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:2px; padding:2px 6px; cursor:pointer; font-size:0.75rem; }
+</style>
+
+<h1 class="admin-header">{{if .Article}}Редактировать статью{{else}}Новая статья{{end}}</h1>
+
+{{if .Error}}
+<p class="error-msg">{{.Error}}</p>
+{{end}}
+
+<form method="post" class="article-form"
+  action="{{if .Article}}/admin/articles/{{.Article.ID}}{{else}}/admin/articles{{end}}">
+  <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+
+  <div class="form-group">
+    <label class="form-label" for="title">Заголовок</label>
+    <input type="text" id="title" name="title" value="{{if .Article}}{{.Article.Title}}{{end}}" required>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label" for="content">Текст (Markdown)</label>
+    <textarea id="content" name="content" rows="20">{{if .Article}}{{.Article.Content}}{{end}}</textarea>
+  </div>
+
+  <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    {{if .Article}}
+    <a href="/admin/articles/{{.Article.ID}}/preview" class="btn btn-outline">Превью</a>
+    {{end}}
+    <a href="/admin/articles" style="color:#666;text-decoration:none;margin-left:0.5rem;">Отмена</a>
+  </div>
+</form>
+
+{{if .Article}}
+<section style="margin-top:2rem;border-top:1px solid #eee;padding-top:1.5rem;">
+  <h2 style="font-size:1.1rem;margin-bottom:1rem;">Статус:
+    <span>
+      {{if eq (printf "%s" .Article.Status) "draft"}}Черновик
+      {{else if eq (printf "%s" .Article.Status) "in_review"}}На ревью
+      {{else}}Опубликована{{end}}
+    </span>
+  </h2>
+  <div class="status-actions">
+    {{if eq (printf "%s" .Article.Status) "draft"}}
+    <form method="post" action="/admin/articles/{{.Article.ID}}/status">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+      <input type="hidden" name="status" value="in_review">
+      <button type="submit" class="btn btn-warning">Отправить на ревью</button>
+    </form>
+    <form method="post" action="/admin/articles/{{.Article.ID}}/status">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+      <input type="hidden" name="status" value="published">
+      <button type="submit" class="btn btn-success">Опубликовать</button>
+    </form>
+    {{else if eq (printf "%s" .Article.Status) "in_review"}}
+    <form method="post" action="/admin/articles/{{.Article.ID}}/status">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+      <input type="hidden" name="status" value="published">
+      <button type="submit" class="btn btn-success">Опубликовать</button>
+    </form>
+    {{else if eq (printf "%s" .Article.Status) "published"}}
+    <form method="post" action="/admin/articles/{{.Article.ID}}/status">
+      <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+      <input type="hidden" name="status" value="draft">
+      <button type="submit" class="btn btn-secondary">Снять с публикации</button>
+    </form>
+    {{end}}
+  </div>
+</section>
+
+<section class="images-section">
+  <h2 style="font-size:1.1rem;margin-bottom:0.5rem;">Изображения</h2>
+  <div id="images-list" class="images-grid">
+    {{range .Images}}
+    <div class="image-thumb" id="image-{{.ID}}">
+      <img src="/uploads/{{.Filename}}" alt="">
+      <form method="delete" hx-delete="/admin/articles/{{$.Article.ID}}/images/{{.ID}}"
+            hx-target="#image-{{.ID}}" hx-swap="outerHTML"
+            hx-headers='{"X-CSRF-Token": "{{$.CSRFToken}}"}'>
+        <button type="submit">✕</button>
+      </form>
+    </div>
+    {{end}}
+  </div>
+  <form hx-post="/admin/articles/{{.Article.ID}}/images"
+        hx-target="#images-list" hx-swap="beforeend"
+        hx-encoding="multipart/form-data"
+        style="margin-top:1rem;">
+    <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+    <input type="file" name="image" accept="image/jpeg,image/png,image/webp">
+    <button type="submit" class="btn btn-secondary" style="margin-left:0.5rem;">Загрузить</button>
+  </form>
+</section>
+{{end}}
+{{end}}

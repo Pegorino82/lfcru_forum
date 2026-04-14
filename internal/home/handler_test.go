@@ -187,7 +187,7 @@ func TestHomeHandler_WithData(t *testing.T) {
 	// Новость
 	now := time.Now()
 	_, err = pool.Exec(ctx,
-		`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, $3)`,
+		`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, $3)`,
 		"Ливерпуль победил!", authorID, now,
 	)
 	if err != nil {

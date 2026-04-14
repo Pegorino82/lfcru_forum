@@ -100,7 +100,7 @@ func TestLatestPublished_Limit(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		pub := now.Add(time.Duration(-i) * time.Hour)
 		_, err := pool.Exec(ctx,
-			`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, $3)`,
+			`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, $3)`,
 			"news title", authorID, pub,
 		)
 		if err != nil {
@@ -128,7 +128,7 @@ func TestLatestPublished_ExcludesDrafts(t *testing.T) {
 	now := time.Now()
 	// Опубликованная
 	_, err := pool.Exec(ctx,
-		`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, $3)`,
+		`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, $3)`,
 		"published", authorID, now,
 	)
 	if err != nil {
@@ -136,7 +136,7 @@ func TestLatestPublished_ExcludesDrafts(t *testing.T) {
 	}
 	// Черновик
 	_, err = pool.Exec(ctx,
-		`INSERT INTO news (title, is_published, author_id) VALUES ($1, false, $2)`,
+		`INSERT INTO news (title, status, author_id) VALUES ($1, 'draft', $2)`,
 		"draft", authorID,
 	)
 	if err != nil {
@@ -167,7 +167,7 @@ func TestGetPublishedByID_Found(t *testing.T) {
 	ctx := context.Background()
 	var newsID int64
 	err := pool.QueryRow(ctx,
-		`INSERT INTO news (title, content, is_published, author_id, published_at) VALUES ($1, $2, true, $3, now()) RETURNING id`,
+		`INSERT INTO news (title, content, status, author_id, published_at) VALUES ($1, $2, 'published', $3, now()) RETURNING id`,
 		"Тестовая статья", "Полный текст статьи", authorID,
 	).Scan(&newsID)
 	if err != nil {
@@ -218,7 +218,7 @@ func TestGetPublishedByID_Draft(t *testing.T) {
 	ctx := context.Background()
 	var newsID int64
 	err := pool.QueryRow(ctx,
-		`INSERT INTO news (title, is_published, author_id) VALUES ($1, false, $2) RETURNING id`,
+		`INSERT INTO news (title, status, author_id) VALUES ($1, 'draft', $2) RETURNING id`,
 		"черновик", authorID,
 	).Scan(&newsID)
 	if err != nil {
@@ -265,7 +265,7 @@ func TestListPublished_Pagination(t *testing.T) {
 	for i := 0; i < 25; i++ {
 		pub := now.Add(time.Duration(-i) * time.Hour)
 		_, err := pool.Exec(ctx,
-			`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, $3)`,
+			`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, $3)`,
 			"test-list-news", authorID, pub,
 		)
 		if err != nil {
@@ -305,11 +305,11 @@ func TestListPublished_ExcludesDrafts(t *testing.T) {
 
 	ctx := context.Background()
 	_, _ = pool.Exec(ctx,
-		`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, now())`,
+		`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, now())`,
 		"test-list-published", authorID,
 	)
 	_, _ = pool.Exec(ctx,
-		`INSERT INTO news (title, is_published, author_id) VALUES ($1, false, $2)`,
+		`INSERT INTO news (title, status, author_id) VALUES ($1, 'draft', $2)`,
 		"test-list-draft", authorID,
 	)
 
@@ -339,7 +339,7 @@ func TestListPublished_SortedDesc(t *testing.T) {
 	for i, title := range []string{"test-list-oldest", "test-list-middle", "test-list-newest"} {
 		pub := base.Add(time.Duration(i) * time.Hour)
 		_, _ = pool.Exec(ctx,
-			`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, $3)`,
+			`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, $3)`,
 			title, authorID, pub,
 		)
 	}
@@ -369,7 +369,7 @@ func TestLatestPublished_SortedDesc(t *testing.T) {
 	for i, title := range titles {
 		pub := base.Add(time.Duration(i) * time.Hour)
 		_, err := pool.Exec(ctx,
-			`INSERT INTO news (title, is_published, author_id, published_at) VALUES ($1, true, $2, $3)`,
+			`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, $3)`,
 			title, authorID, pub,
 		)
 		if err != nil {

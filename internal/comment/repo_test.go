@@ -67,8 +67,8 @@ func insertNews(t *testing.T, pool *pgxpool.Pool, authorID int64) int64 {
 	t.Helper()
 	var id int64
 	err := pool.QueryRow(context.Background(),
-		`INSERT INTO news (title, content, is_published, author_id, published_at)
-		 VALUES ('test news', 'content', true, $1, now()) RETURNING id`,
+		`INSERT INTO news (title, content, status, author_id, published_at)
+		 VALUES ('test news', 'content', 'published', $1, now()) RETURNING id`,
 		authorID,
 	).Scan(&id)
 	if err != nil {

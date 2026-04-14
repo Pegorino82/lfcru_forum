@@ -128,12 +128,22 @@ func main() {
 	imagesRepo := admin.NewImagesRepo(pool)
 	imgSvc := admin.NewImageService(cfg.UploadsDir)
 	imagesHandler := admin.NewImagesHandler(imagesRepo, imgSvc)
+	articlesAdminHandler := admin.NewArticlesHandler(newsRepo, imagesRepo)
 	forumAdminHandler := admin.NewForumHandler(forumSvc)
 	userSvc := user.NewService(userRepo)
 	usersAdminHandler := admin.NewUsersHandler(userSvc)
 
 	adminGroup := e.Group("", admin.RequireAdminOrMod(renderer))
 	adminGroup.GET("/admin", admin.NewHandler().Dashboard)
+
+	// Admin article routes
+	adminGroup.GET("/admin/articles", articlesAdminHandler.List)
+	adminGroup.GET("/admin/articles/new", articlesAdminHandler.New)
+	adminGroup.POST("/admin/articles", articlesAdminHandler.Create)
+	adminGroup.GET("/admin/articles/:id/edit", articlesAdminHandler.Edit)
+	adminGroup.POST("/admin/articles/:id", articlesAdminHandler.Update)
+	adminGroup.GET("/admin/articles/:id/preview", articlesAdminHandler.Preview)
+	adminGroup.POST("/admin/articles/:id/status", articlesAdminHandler.ChangeStatus)
 	adminGroup.POST("/admin/articles/:id/images", imagesHandler.Upload)
 	adminGroup.DELETE("/admin/articles/:id/images/:image_id", imagesHandler.Delete)
 

@@ -111,8 +111,8 @@ func insertTestNewsArticle(t *testing.T, authorID int64) int64 {
 	pool := testDB(t)
 	var id int64
 	err := pool.QueryRow(ctx, `
-		INSERT INTO news (title, content, is_published, author_id)
-		VALUES ('img-test article', 'body', false, $1)
+		INSERT INTO news (title, content, status, author_id)
+		VALUES ('img-test article', 'body', 'draft', $1)
 		RETURNING id
 	`, authorID).Scan(&id)
 	if err != nil {
