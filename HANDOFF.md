@@ -1,5 +1,40 @@
 # HANDOFF.md
 
+## FT-009 — Загрузка и нормализация изображений ✅
+
+**Commit:** feat(FT-009) @ d477571
+
+### Что сделано
+
+1. **`migrations/009_create_article_images.sql`** — таблица `article_images` (article_id FK → news, filename, original_filename).
+2. **`internal/admin/images_repo.go`** — `ImagesRepo`: Create, ListByArticleID, GetByID, Delete.
+3. **`internal/admin/image_service.go`** — `ImageService`: resize до 1200px (CatmullRom из `golang.org/x/image/draw`), encode JPEG (stdlib), хранение в `UPLOADS_DIR/{article_id}/{uuid}.jpg`. Поддержка входных форматов: JPEG, PNG, WebP.
+4. **`internal/admin/images_handler.go`** — `POST /admin/articles/:id/images` (multipart), `DELETE /admin/articles/:id/images/:image_id`. Возвращает partial `image-item` для HTMX.
+5. **`internal/news/model.go`** — добавлен `ImageView`.
+6. **`internal/news/repo.go`** — `ListImagesByArticleID`.
+7. **`internal/news/handler.go`** — `ShowArticle` загружает изображения и передаёт в `ArticleData.Images`.
+8. **`templates/news/article.html`** — отображение изображений: `aspect-ratio: 16/9; object-fit: cover`.
+9. **`templates/admin/articles/image_item.html`** — partial для HTMX-ответа после upload.
+10. **`internal/config/config.go`** — поле `UploadsDir` (env `UPLOADS_DIR`, default `./uploads`).
+11. **`docker-compose.dev.yml`** — volume `uploads_data:/app/uploads`, env `UPLOADS_DIR`.
+12. **`internal/middleware/csrf.go`** — `TokenLookup` расширен: `"form:_csrf,header:X-CSRF-Token"` для поддержки HTMX DELETE.
+13. **`go.mod`** — добавлена зависимость `golang.org/x/image v0.22.0`.
+14. **Тесты** — 11 unit + 4 integration, все зелёные.
+
+### Что сделать следующим
+
+1. **FT-008** — Управление статьями (CRUD + превью + review workflow). Зависит от ADR-006 (принять enum статус) + использует `ImagesRepo`/`ImageService` из FT-009.
+2. **FT-010** — Управление структурой форума (независимо).
+3. **FT-011** — Управление пользователями (независимо).
+
+### Проблемы и решения
+
+- OQ-02 закрыт: выбран JPEG-вывод (stdlib), без CGO. WebP decode поддерживается через `golang.org/x/image/webp`.
+- OQ-01 закрыт: max_width = 1200px.
+- CSRF для HTMX DELETE: `TokenLookup` теперь включает `header:X-CSRF-Token`. Шаблон image_item.html передаёт токен через `hx-headers`.
+
+---
+
 ## FT-007 — Admin-панель инфраструктура ✅
 
 **Commit:** feat(FT-007) @ 00b2d1c
