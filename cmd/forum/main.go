@@ -97,6 +97,9 @@ func main() {
 	e.Use(appMiddleware.CSRFMiddleware())
 	e.Use(auth.LoadSession(authSvc))
 
+	// Статические файлы
+	e.Static("/storage/news", cfg.UploadsDir)
+
 	// Хэндлеры и маршруты
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})

@@ -101,7 +101,7 @@
   <div id="images-list" class="images-grid">
     {{range .Images}}
     <div class="image-thumb" id="image-{{.ID}}">
-      <img src="/uploads/{{.Filename}}" alt="">
+      <img src="/storage/news/{{.Filename}}" alt="">
       <form method="delete" hx-delete="/admin/articles/{{$.Article.ID}}/images/{{.ID}}"
             hx-target="#image-{{.ID}}" hx-swap="outerHTML"
             hx-headers='{"X-CSRF-Token": "{{$.CSRFToken}}"}'>

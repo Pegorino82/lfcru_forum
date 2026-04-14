@@ -1,6 +1,6 @@
 {{define "image-item"}}
 <div id="img-{{.Image.ID}}" class="image-item">
-  <img src="/uploads/{{.Image.Filename}}"
+  <img src="/storage/news/{{.Image.Filename}}"
        alt="{{.Image.OriginalFilename}}"
        style="aspect-ratio:16/9;object-fit:cover;width:100%;max-width:300px;border-radius:4px;">
   <p style="margin:.25rem 0;font-size:.8rem;color:#666;">{{.Image.OriginalFilename}}</p>
