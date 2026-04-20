@@ -41,7 +41,7 @@
 | Env vars, конфигурация, секреты | `memory-bank/ops/config.md` |
 | Production, staging, окружения | `memory-bank/ops/stages.md` |
 | Релиз, деплой, rollback | `memory-bank/ops/release.md` |
-| Маршрутизация задач, типы workflow | `memory-bank/flows/workflows.md` |
+| Маршрутизация задач, типы workflow, session protocol | `memory-bank/flows/workflows.md` |
 | Feature lifecycle, gates | `memory-bank/flows/feature-flow.md` |
 | Git workflow, коммиты, PR | `memory-bank/engineering/git-workflow.md` |
 | Реализованные фичи | `memory-bank/features/README.md` |
@@ -50,37 +50,7 @@
 
 ## Рабочий процесс
 
-**В начале сеанса:**
-1. Прочитай `HANDOFF.md` в корне проекта (если существует) — там контекст от предыдущего агента
-2. Прочитай задачу до конца
-3. Найди затронутые файлы, прочитай их
-
-**После кода:**
-1. Запусти тесты (unit + integration для затронутых пакетов)
-2. Убедись, что тесты зелёные
-3. **Simplify review** — нет ли premature abstractions, dead code, дублирования логики
-4. Сделай коммит (conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`)
-5. Обнови `HANDOFF.md` в корне проекта
-6. Если сессия реализует feature package — закрой его: обнови `delivery_status: done` в `feature.md` и `README.md` пакета согласно gate "Execution → Done" в `memory-bank/flows/feature-flow.md`
-
----
-
-## Handoff
-
-После каждого сеанса обновляй `HANDOFF.md` по шаблону:
-
-```markdown
-## Что сделано
-- <краткий список>
-
-## Что сделать следующим
-- <конкретные шаги>
-
-## Проблемы и решения
-- <проблема> → <как решили>
-```
-
-Файл предназначен для следующего агента — пиши коротко и конкретно.
+→ [`memory-bank/flows/workflows.md`](memory-bank/flows/workflows.md) — session protocol (начало и конец сеанса), маршрутизация задач по типам, шаблон HANDOFF.md.
 
 <!-- rtk-instructions v2 -->
 # RTK (Rust Token Killer) - Token-Optimized Commands
