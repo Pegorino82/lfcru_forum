@@ -72,6 +72,15 @@ Flow:
 
 `report -> reproduction -> analysis -> fix -> regression coverage -> review`
 
+**FT-пакет:** облегчённый. Создаётся `FT-XXX/README.md` без `feature.md` и `implementation-plan.md`. README содержит:
+
+- описание бага и условия воспроизведения
+- корневую причину (после анализа)
+- ссылку на коммит с фиксом
+- добавленный regression-тест
+
+Если в ходе анализа выясняется, что баг требует design choices или меняет контракт — поднимается до workflow «Средняя или большая фича» с полным feature package.
+
 ### 4. Рефакторинг
 
 Разделяй минимум на три класса:
