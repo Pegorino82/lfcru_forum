@@ -3,14 +3,14 @@
 {{end}}
 
 {{define "content"}}
-<div style="max-width:480px;margin:0 auto">
+<div id="register-wrapper" style="max-width:480px;margin:0 auto">
     <h1 style="margin-bottom:1.5rem">Регистрация</h1>
 
     <form id="register-form"
           method="POST"
           action="/register"
           hx-post="/register"
-          hx-target="#register-form"
+          hx-target="#register-wrapper"
           hx-swap="outerHTML">
 
         <input type="hidden" name="_csrf" value="{{.CSRFToken}}">

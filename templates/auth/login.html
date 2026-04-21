@@ -3,7 +3,7 @@
 {{end}}
 
 {{define "content"}}
-<div style="max-width:480px;margin:0 auto">
+<div id="login-wrapper" style="max-width:480px;margin:0 auto">
     <h1 style="margin-bottom:1.5rem">Вход</h1>
 
     {{if .Error}}
@@ -14,7 +14,7 @@
           method="POST"
           action="/login"
           hx-post="/login"
-          hx-target="#login-form"
+          hx-target="#login-wrapper"
           hx-swap="outerHTML">
 
         <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
