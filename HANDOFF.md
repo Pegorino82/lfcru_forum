@@ -1,5 +1,25 @@
 # HANDOFF.md
 
+## FT-014 — Дублирование ошибок при логине (HTMX outerHTML swap) ✅
+
+**Commit:** fix(FT-014) @ b32cb8c
+
+### Что сделано
+
+1. **`templates/auth/login.html`** — добавлен `id="login-wrapper"` на внешний `<div>`, `hx-target` изменён с `#login-form` на `#login-wrapper`. Root cause: partial-ответ содержал весь content-блок (div + h1 + form), а target указывал на вложенную `<form>` — outerHTML-swap заменял форму на div+form, создавая вложение при каждой ошибке.
+2. **`templates/auth/register.html`** — аналогичный фикс (`id="register-wrapper"`, `hx-target="#register-wrapper"`).
+3. **`internal/auth/handler_integration_test.go`** — regression-тест `TestLogin_HTMX_InvalidCredentials_NoNestedForm`: два последовательных HTMX POST /login с неверными данными → каждый ответ содержит ровно один `id="login-wrapper"` и один `id="login-form"`.
+
+### Проблемы и решения
+
+- Нет.
+
+### Что сделать следующим
+
+- Нет незакрытых зависимостей.
+
+---
+
 ## FT-013 — Форум не отображает залогиненного пользователя в навигации ✅
 
 **Commit:** fix(FT-013) @ 481eb97
