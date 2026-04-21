@@ -322,3 +322,70 @@ func TestAdminArticles_InvalidStatusTransition(t *testing.T) {
 		t.Fatalf("want 400 for invalid transition, got %d\n%s", rec.Code, rec.Body.String())
 	}
 }
+
+// FT-015 Regression: превью содержит баннер "Режим превью" и ссылку "Назад к редактору".
+func TestAdminArticles_Preview_HasPreviewBanner(t *testing.T) {
+	pool := testDB(t)
+	cleanArticlesTestData(t, pool)
+	defer cleanArticlesTestData(t, pool)
+
+	authorID, sessID := createUserWithRole(t, pool, "art-admintest-b1@test.com", "art_admintest_b1", "admin")
+	e := newArticlesServer(t, pool)
+
+	var articleID int64
+	pool.QueryRow(context.Background(),
+		`INSERT INTO news (title, content, status, author_id) VALUES ($1, $2, 'draft', $3) RETURNING id`,
+		"art-admintest banner article", "content", authorID,
+	).Scan(&articleID)
+
+	rec := doGet(t, e, fmt.Sprintf("/admin/articles/%d/preview", articleID), sessID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("preview: want 200, got %d\n%s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Режим превью") {
+		t.Error("preview page must contain 'Режим превью' banner")
+	}
+	if !strings.Contains(body, "Назад к редактору") {
+		t.Error("preview page must contain 'Назад к редактору' link")
+	}
+}
+
+// FT-015 Regression: после сохранения статьи редирект содержит ?saved=1, страница показывает подтверждение.
+func TestAdminArticles_Update_ShowsSavedConfirmation(t *testing.T) {
+	pool := testDB(t)
+	cleanArticlesTestData(t, pool)
+	defer cleanArticlesTestData(t, pool)
+
+	authorID, sessID := createUserWithRole(t, pool, "art-admintest-b2@test.com", "art_admintest_b2", "admin")
+	e := newArticlesServer(t, pool)
+
+	var articleID int64
+	pool.QueryRow(context.Background(),
+		`INSERT INTO news (title, content, status, author_id) VALUES ($1, $2, 'draft', $3) RETURNING id`,
+		"art-admintest save confirm", "original", authorID,
+	).Scan(&articleID)
+
+	csrfToken := getArticlesCsrf(t, e, sessID)
+	form := url.Values{
+		"title":   {"art-admintest save confirm updated"},
+		"content": {"updated"},
+	}
+	rec := doArticlesPost(t, e, fmt.Sprintf("/admin/articles/%d", articleID), form, sessID, csrfToken)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("update: want 303, got %d\n%s", rec.Code, rec.Body.String())
+	}
+	location := rec.Header().Get("Location")
+	if !strings.Contains(location, "saved=1") {
+		t.Errorf("redirect location must contain saved=1, got %q", location)
+	}
+
+	// Follow redirect — edit page must show saved confirmation.
+	rec2 := doGet(t, e, location, sessID)
+	if rec2.Code != http.StatusOK {
+		t.Fatalf("edit after save: want 200, got %d\n%s", rec2.Code, rec2.Body.String())
+	}
+	if !strings.Contains(rec2.Body.String(), "Статья сохранена") {
+		t.Error("edit page must show 'Статья сохранена' confirmation after save")
+	}
+}

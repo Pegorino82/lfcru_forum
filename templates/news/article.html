@@ -1,6 +1,12 @@
 {{template "templates/layouts/base.html" .}}
 
 {{define "content"}}
+{{if .IsPreview}}
+<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:0.75rem 1rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;">
+  <strong>Режим превью</strong>
+  <a href="/admin/articles/{{.Article.ID}}/edit" style="color:#c8102e;font-weight:600;text-decoration:none;">← Назад к редактору</a>
+</div>
+{{end}}
 <style>
   .article { background: #fff; border-radius: 6px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .article-title { font-size: 1.75rem; margin-bottom: .5rem; }

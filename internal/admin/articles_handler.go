@@ -55,6 +55,7 @@ type articleEditData struct {
 	Article   *news.News
 	Images    []ArticleImage
 	Error     string
+	Saved     bool
 }
 
 type articlePreviewData struct {
@@ -65,6 +66,7 @@ type articlePreviewData struct {
 	Comments    []struct{}
 	Images      []news.ImageView
 	NewsID      int64
+	IsPreview   bool
 }
 
 // List handles GET /admin/articles.
@@ -141,6 +143,7 @@ func (h *ArticlesHandler) Edit(c echo.Context) error {
 		CSRFToken: appMiddleware.CSRFToken(c),
 		Article:   article,
 		Images:    images,
+		Saved:     c.QueryParam("saved") == "1",
 	})
 }
 
@@ -172,7 +175,7 @@ func (h *ArticlesHandler) Update(c echo.Context) error {
 		slog.Error("admin: update article", "error", err)
 		return c.String(http.StatusInternalServerError, "Внутренняя ошибка сервера")
 	}
-	return c.Redirect(http.StatusSeeOther, "/admin/articles/"+strconv.FormatInt(id, 10)+"/edit")
+	return c.Redirect(http.StatusSeeOther, "/admin/articles/"+strconv.FormatInt(id, 10)+"/edit?saved=1")
 }
 
 // Preview handles GET /admin/articles/:id/preview.
@@ -198,21 +201,14 @@ func (h *ArticlesHandler) Preview(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Внутренняя ошибка сервера")
 	}
 
-	data := struct {
-		User        *user.User
-		CSRFToken   string
-		Article     *news.News
-		ContentHTML interface{}
-		Comments    []struct{}
-		Images      []news.ImageView
-		NewsID      int64
-	}{
+	data := articlePreviewData{
 		User:        auth.UserFromContext(c),
 		CSRFToken:   appMiddleware.CSRFToken(c),
 		Article:     article,
 		ContentHTML: news.RenderMarkdown(article.Content),
 		Images:      images,
 		NewsID:      id,
+		IsPreview:   true,
 	}
 	return c.Render(http.StatusOK, "templates/news/article.html", data)
 }
