@@ -64,8 +64,11 @@ type Renderer struct {
 // New builds a separate *template.Template for each page file.
 // prefix is prepended to all keys (e.g. "templates/") so that handler names match.
 // Layout files (those inside a "layouts" directory) are included in every set.
+// Partial files (those inside a "partials" directory) are included in every page
+// set AND get their own minimal set for use with RenderPartial.
 func New(root fs.FS, prefix string) (*Renderer, error) {
 	var layoutPaths []string
+	var partialPaths []string
 	var pagePaths []string
 
 	err := fs.WalkDir(root, ".", func(path string, d fs.DirEntry, err error) error {
@@ -78,6 +81,8 @@ func New(root fs.FS, prefix string) (*Renderer, error) {
 		dir := filepath.ToSlash(filepath.Dir(path))
 		if dir == "layouts" || strings.HasSuffix(dir, "/layouts") {
 			layoutPaths = append(layoutPaths, path)
+		} else if dir == "partials" || strings.HasSuffix(dir, "/partials") {
+			partialPaths = append(partialPaths, path)
 		} else {
 			pagePaths = append(pagePaths, path)
 		}
@@ -97,13 +102,40 @@ func New(root fs.FS, prefix string) (*Renderer, error) {
 		layoutContents[prefix+lp] = string(data)
 	}
 
-	sets := make(map[string]*template.Template, len(pagePaths))
+	// Pre-read partial contents.
+	partialContents := make(map[string]string, len(partialPaths))
+	for _, pp := range partialPaths {
+		data, err := fs.ReadFile(root, pp)
+		if err != nil {
+			return nil, err
+		}
+		partialContents[prefix+pp] = string(data)
+	}
+
+	sets := make(map[string]*template.Template, len(pagePaths)+len(partialPaths))
+
+	// Build minimal sets for partials (no layout chain — just the partial itself).
+	// These are used by RenderPartial in Go code.
+	for pp, pc := range partialContents {
+		t := template.New("").Funcs(funcMap)
+		if _, err := t.New(pp).Parse(pc); err != nil {
+			return nil, fmt.Errorf("parse partial %q: %w", pp, err)
+		}
+		sets[pp] = t
+	}
+
+	// Build page sets: layouts + partials (for {{template}} calls) + page itself.
 	for _, p := range pagePaths {
 		key := prefix + p
 		t := template.New("").Funcs(funcMap)
 		for lp, lc := range layoutContents {
 			if _, err := t.New(lp).Parse(lc); err != nil {
 				return nil, fmt.Errorf("parse layout %q: %w", lp, err)
+			}
+		}
+		for pp, pc := range partialContents {
+			if _, err := t.New(pp).Parse(pc); err != nil {
+				return nil, fmt.Errorf("parse partial %q in set %q: %w", pp, key, err)
 			}
 		}
 		content, err := fs.ReadFile(root, p)

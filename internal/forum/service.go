@@ -17,6 +17,7 @@ type RepoInterface interface {
 	ListTopicsBySection(context.Context, int64) ([]TopicView, error)
 	GetTopic(context.Context, int64) (*Topic, error)
 	ListPostsByTopic(context.Context, int64) ([]PostView, error)
+	ListPostsAfter(ctx context.Context, topicID, afterID int64) ([]PostView, error)
 }
 
 type Service struct {
@@ -152,6 +153,11 @@ func (s *Service) UpdateTopic(ctx context.Context, id int64, title string) error
 		return ErrTitleTooLong
 	}
 	return s.repo.UpdateTopic(ctx, id, title)
+}
+
+// ListPostsAfter возвращает до 50 постов темы с id > afterID (для SSE catch-up).
+func (s *Service) ListPostsAfter(ctx context.Context, topicID, afterID int64) ([]PostView, error) {
+	return s.repo.ListPostsAfter(ctx, topicID, afterID)
 }
 
 // CreatePost создаёт пост после валидации.

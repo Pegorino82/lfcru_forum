@@ -1,22 +1,27 @@
 package forum
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
+	"github.com/Pegorino82/lfcru_forum/internal/tmpl"
 	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {
 	svc      *Service
-	renderer echo.Renderer
+	renderer *tmpl.Renderer
+	hub      *Hub
 }
 
-func NewHandler(svc *Service, renderer echo.Renderer) *Handler {
-	return &Handler{svc: svc, renderer: renderer}
+func NewHandler(svc *Service, renderer *tmpl.Renderer, hub *Hub) *Handler {
+	return &Handler{svc: svc, renderer: renderer, hub: hub}
 }
 
 // Index renders GET /forum — list of sections
@@ -311,11 +316,23 @@ func (h *Handler) CreatePost(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Internal error")
 	}
 
+	// Broadcast to SSE subscribers (best-effort; errors are logged and ignored)
+	topic, posts, err := h.svc.GetTopicWithPosts(ctx, topicID)
+	if err == nil {
+		for _, pv := range posts {
+			if pv.ID == postID {
+				if fragment, ferr := h.renderPostFragment(pv); ferr == nil {
+					h.hub.Broadcast(topicID, u.ID, fragment)
+				}
+				break
+			}
+		}
+	}
+
 	// Success
 	isHTMX := c.Request().Header.Get("HX-Request") == "true"
 	if isHTMX {
 		// HTMX: return updated posts list
-		topic, posts, _ := h.svc.GetTopicWithPosts(ctx, topicID)
 		data := map[string]interface{}{
 			"User":      u,
 			"Posts":     posts,
@@ -329,6 +346,91 @@ func (h *Handler) CreatePost(c echo.Context) error {
 
 	// Non-HTMX: redirect with anchor
 	return c.Redirect(http.StatusSeeOther, "/forum/topics/"+strconv.FormatInt(topicID, 10)+"#post-"+strconv.FormatInt(postID, 10))
+}
+
+// StreamEvents handles GET /forum/topics/:id/events — SSE endpoint.
+// Available to all users including unauthenticated (CON-03).
+func (h *Handler) StreamEvents(c echo.Context) error {
+	topicID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		return c.String(http.StatusNotFound, "Not found")
+	}
+
+	ctx := c.Request().Context()
+
+	// Verify topic exists
+	topic, err := h.svc.GetTopic(ctx, topicID)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Internal error")
+	}
+	if topic == nil {
+		return c.String(http.StatusNotFound, "Not found")
+	}
+
+	// Determine userID (0 for anonymous — never matches authorUserID in broadcast)
+	var userID int64
+	if u := auth.UserFromContext(c); u != nil {
+		userID = u.ID
+	}
+
+	ch, err := h.hub.Subscribe(ctx, topicID, userID)
+	if err != nil {
+		return c.String(http.StatusServiceUnavailable, "Too many subscribers")
+	}
+
+	w := c.Response().Writer
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		return c.String(http.StatusInternalServerError, "Streaming not supported")
+	}
+
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().Header().Set("X-Accel-Buffering", "no")
+	c.Response().WriteHeader(http.StatusOK)
+	flusher.Flush()
+
+	// Catch-up: deliver posts missed since Last-Event-ID (CTR-02)
+	if lastIDStr := c.Request().Header.Get("Last-Event-ID"); lastIDStr != "" {
+		if lastID, parseErr := strconv.ParseInt(lastIDStr, 10, 64); parseErr == nil && lastID > 0 {
+			missedPosts, dbErr := h.svc.ListPostsAfter(ctx, topicID, lastID)
+			if dbErr == nil {
+				for _, pv := range missedPosts {
+					if fragment, renderErr := h.renderPostFragment(pv); renderErr == nil {
+						fmt.Fprintf(w, "id: %d\nevent: post-added\ndata: %s\n\n", pv.ID, fragment)
+					}
+				}
+				if len(missedPosts) == 50 {
+					fmt.Fprintf(w, "event: catch-up-overflow\ndata:\n\n")
+				}
+				flusher.Flush()
+			}
+		}
+	}
+
+	// Stream live events
+	for {
+		select {
+		case msg, ok := <-ch:
+			if !ok {
+				return nil
+			}
+			fmt.Fprintf(w, "event: post-added\ndata: %s\n\n", msg)
+			flusher.Flush()
+		case <-ctx.Done():
+			return nil
+		}
+	}
+}
+
+// renderPostFragment renders a PostView to a single-line HTML string for SSE delivery.
+func (h *Handler) renderPostFragment(pv PostView) (string, error) {
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "templates/forum/partials/post.html", "post", pv); err != nil {
+		return "", err
+	}
+	return strings.NewReplacer("\n", " ", "\r", " ").Replace(buf.String()), nil
 }
 
 func mapErrorMessage(err error) string {

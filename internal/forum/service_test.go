@@ -47,6 +47,9 @@ func (m *mockRepo) ListPostsByTopic(context.Context, int64) ([]PostView, error) 
 func (m *mockRepo) LatestActive(context.Context, int) ([]TopicWithLastAuthor, error) {
 	return nil, nil
 }
+func (m *mockRepo) ListPostsAfter(_ context.Context, _, _ int64) ([]PostView, error) {
+	return nil, nil
+}
 
 // Tests for CreateSection
 

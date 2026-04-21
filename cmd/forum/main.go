@@ -80,6 +80,7 @@ func main() {
 
 	// Сервис форума
 	forumSvc := forum.NewService(topicRepo)
+	forumHub := forum.NewHub()
 
 	// Шаблоны
 	renderer, err := tmpl.New(os.DirFS("templates"), "templates/")
@@ -99,6 +100,7 @@ func main() {
 
 	// Статические файлы
 	e.Static("/storage/news", cfg.UploadsDir)
+	e.Static("/static", "static")
 
 	// Хэндлеры и маршруты
 	e.GET("/health", func(c echo.Context) error {
@@ -109,7 +111,7 @@ func main() {
 	news.NewHandler(newsRepo, commentRepo, commentSvc).RegisterRoutes(e)
 
 	// Forum routes
-	forumHandler := forum.NewHandler(forumSvc, renderer)
+	forumHandler := forum.NewHandler(forumSvc, renderer, forumHub)
 
 	// Moderator-only routes (require auth + role)
 	modGroup := e.Group("", auth.RequireAuth, auth.RequireRole(renderer, "moderator", "admin"))
@@ -122,6 +124,7 @@ func main() {
 	e.GET("/forum", forumHandler.Index)
 	e.GET("/forum/sections/:id", forumHandler.ShowSection)
 	e.GET("/forum/topics/:id", forumHandler.ShowTopic)
+	e.GET("/forum/topics/:id/events", forumHandler.StreamEvents)
 
 	// Auth-only routes
 	authGroup := e.Group("", auth.RequireAuth)

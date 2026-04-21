@@ -129,7 +129,8 @@ func newTestServer(t *testing.T, pool *pgxpool.Pool) *echo.Echo {
 	e.Use(auth.LoadSession(authSvc))
 
 	// Register forum routes
-	forumHandler := forum.NewHandler(forumSvc, renderer)
+	forumHub := forum.NewHub()
+	forumHandler := forum.NewHandler(forumSvc, renderer, forumHub)
 
 	modGroup := e.Group("", auth.RequireAuth, auth.RequireRole(renderer, "moderator", "admin"))
 	modGroup.GET("/forum/sections/new", forumHandler.NewSection)
@@ -140,6 +141,7 @@ func newTestServer(t *testing.T, pool *pgxpool.Pool) *echo.Echo {
 	e.GET("/forum", forumHandler.Index)
 	e.GET("/forum/sections/:id", forumHandler.ShowSection)
 	e.GET("/forum/topics/:id", forumHandler.ShowTopic)
+	e.GET("/forum/topics/:id/events", forumHandler.StreamEvents)
 
 	authGroup := e.Group("", auth.RequireAuth)
 	authGroup.POST("/forum/topics/:id/posts", forumHandler.CreatePost)
@@ -523,6 +525,180 @@ func TestIndex_HTMX(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", rec.Code)
+	}
+}
+
+// ─── SSE Tests ───────────────────────────────────────────────────────────────
+
+// TestStreamEvents_LiveBroadcast verifies CHK-01: SSE endpoint returns text/event-stream
+// and delivers a post-added event after CreatePost is called.
+func TestStreamEvents_LiveBroadcast(t *testing.T) {
+	pool := testDB(t)
+	cleanForumData(t, pool)
+	defer cleanForumData(t, pool)
+
+	userID, sessID := createUser(t, pool, "forumtest-sse1@test.com", "sseuser1", "user")
+	otherID, _ := createUser(t, pool, "forumtest-sse2@test.com", "sseuser2", "user")
+	sectionID := insertTestSection(t, pool, "test-sse-section", "", 0)
+	topicID := insertTestTopic(t, pool, sectionID, userID, "test-sse-topic")
+
+	e := newTestServer(t, pool)
+
+	// Open SSE connection as otherID (subscriber)
+	sseReq := httptest.NewRequest(http.MethodGet, "/forum/topics/"+strconv.FormatInt(topicID, 10)+"/events", nil)
+	sseRec := httptest.NewRecorder()
+
+	// Run SSE handler in background; cancel after we receive data
+	sseCtx, sseCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer sseCancel()
+	sseReq = sseReq.WithContext(sseCtx)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		e.ServeHTTP(sseRec, sseReq)
+	}()
+
+	// Give handler time to subscribe and flush headers
+	time.Sleep(50 * time.Millisecond)
+
+	if ct := sseRec.Header().Get("Content-Type"); ct != "text/event-stream" {
+		t.Fatalf("expected Content-Type text/event-stream, got %q", ct)
+	}
+
+	// Post as userID (author — should NOT receive own post)
+	// We just need otherID subscriber to receive it
+	getReq := httptest.NewRequest(http.MethodGet, "/forum/topics/"+strconv.FormatInt(topicID, 10), nil)
+	getReq.Header.Set("Cookie", "session_id="+sessID)
+	getRec := httptest.NewRecorder()
+	e.ServeHTTP(getRec, getReq)
+	csrfToken := getCsrfToken(getRec)
+
+	form := url.Values{"content": {"hello from sse test"}, "_csrf": {csrfToken}}
+	doPost(t, e, "/forum/topics/"+strconv.FormatInt(topicID, 10)+"/posts", form, sessID, csrfToken, true)
+
+	// Wait for SSE context to expire
+	<-done
+
+	body := sseRec.Body.String()
+	if !strings.Contains(body, "event: post-added") {
+		t.Errorf("expected 'event: post-added' in SSE stream, got:\n%s", body)
+	}
+	if !strings.Contains(body, "hello from sse test") {
+		t.Errorf("expected post content in SSE stream, got:\n%s", body)
+	}
+	_ = otherID
+}
+
+// TestStreamEvents_AnonymousAccess verifies CHK-05: SSE endpoint returns 200 without a session cookie.
+func TestStreamEvents_AnonymousAccess(t *testing.T) {
+	pool := testDB(t)
+	cleanForumData(t, pool)
+	defer cleanForumData(t, pool)
+
+	authorID, _ := createUser(t, pool, "forumtest-sseanon@test.com", "sseanon", "user")
+	sectionID := insertTestSection(t, pool, "test-sse-anon-section", "", 0)
+	topicID := insertTestTopic(t, pool, sectionID, authorID, "test-sse-anon-topic")
+
+	e := newTestServer(t, pool)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	req := httptest.NewRequest(http.MethodGet, "/forum/topics/"+strconv.FormatInt(topicID, 10)+"/events", nil)
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200 for anonymous SSE, got %d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "text/event-stream" {
+		t.Errorf("expected text/event-stream, got %q", ct)
+	}
+}
+
+// TestStreamEvents_SubscriberLimit verifies CHK-06: 201st subscriber gets 503.
+func TestStreamEvents_SubscriberLimit(t *testing.T) {
+	pool := testDB(t)
+	cleanForumData(t, pool)
+	defer cleanForumData(t, pool)
+
+	authorID, _ := createUser(t, pool, "forumtest-sselimit@test.com", "sselimit", "user")
+	sectionID := insertTestSection(t, pool, "test-sse-limit-section", "", 0)
+	topicID := insertTestTopic(t, pool, sectionID, authorID, "test-sse-limit-topic")
+
+	e := newTestServer(t, pool)
+
+	// Subscribe maxSubscribersPerTopic (200) connections
+	rootCtx, rootCancel := context.WithCancel(context.Background())
+	defer rootCancel()
+
+	for i := 0; i < forum.MaxSubscribersPerTopic; i++ {
+		ctx, cancel := context.WithCancel(rootCtx)
+		_ = cancel
+		req := httptest.NewRequest(http.MethodGet, "/forum/topics/"+strconv.FormatInt(topicID, 10)+"/events", nil)
+		req = req.WithContext(ctx)
+		rec := httptest.NewRecorder()
+		go e.ServeHTTP(rec, req)
+	}
+
+	// Give goroutines time to subscribe
+	time.Sleep(100 * time.Millisecond)
+
+	// 201st request must return 503
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	req := httptest.NewRequest(http.MethodGet, "/forum/topics/"+strconv.FormatInt(topicID, 10)+"/events", nil)
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("expected 503 for 201st subscriber, got %d", rec.Code)
+	}
+}
+
+// TestStreamEvents_CatchUp verifies CHK-02: posts published during disconnect are delivered via Last-Event-ID.
+func TestStreamEvents_CatchUp(t *testing.T) {
+	pool := testDB(t)
+	cleanForumData(t, pool)
+	defer cleanForumData(t, pool)
+
+	userID, sessID := createUser(t, pool, "forumtest-ssecatchup@test.com", "ssecatchup", "user")
+	sectionID := insertTestSection(t, pool, "test-sse-catchup-section", "", 0)
+	topicID := insertTestTopic(t, pool, sectionID, userID, "test-sse-catchup-topic")
+
+	e := newTestServer(t, pool)
+
+	// Publish a post via HTTP (simulates missed post during disconnect)
+	getReq := httptest.NewRequest(http.MethodGet, "/forum/topics/"+strconv.FormatInt(topicID, 10), nil)
+	getReq.Header.Set("Cookie", "session_id="+sessID)
+	getRec := httptest.NewRecorder()
+	e.ServeHTTP(getRec, getReq)
+	csrfToken := getCsrfToken(getRec)
+
+	form := url.Values{"content": {"missed post content"}, "_csrf": {csrfToken}}
+	postRec := doPost(t, e, "/forum/topics/"+strconv.FormatInt(topicID, 10)+"/posts", form, sessID, csrfToken, true)
+	if postRec.Code != http.StatusCreated {
+		t.Fatalf("create post: expected 201, got %d", postRec.Code)
+	}
+
+	// Reconnect with Last-Event-ID=0 to catch up all posts
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	req := httptest.NewRequest(http.MethodGet, "/forum/topics/"+strconv.FormatInt(topicID, 10)+"/events", nil)
+	req.Header.Set("Last-Event-ID", "0")
+	req = req.WithContext(ctx)
+	rec := httptest.NewRecorder()
+	e.ServeHTTP(rec, req)
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "event: post-added") {
+		t.Errorf("expected 'event: post-added' in catch-up response, got:\n%s", body)
+	}
+	if !strings.Contains(body, "missed post content") {
+		t.Errorf("expected missed post content in catch-up response, got:\n%s", body)
 	}
 }
 

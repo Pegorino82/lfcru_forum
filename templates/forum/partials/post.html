@@ -1,0 +1,17 @@
+{{define "post"}}
+<article class="post {{if .ParentID}}reply{{end}}" id="post-{{.ID}}">
+  <div class="post-author">
+    <span>{{.AuthorUsername}}</span>
+  </div>
+  <time class="post-date" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
+    {{.CreatedAt.Format "02.01.2006 15:04"}}
+  </time>
+  {{if .ParentAuthorSnapshot}}
+  <div class="post-quote">
+    <div class="post-quote-author">{{deref .ParentAuthorSnapshot}}:</div>
+    <div>{{deref .ParentContentSnapshot}}</div>
+  </div>
+  {{end}}
+  <div class="post-content">{{.Content}}</div>
+</article>
+{{end}}

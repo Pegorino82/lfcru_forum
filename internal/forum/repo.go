@@ -279,6 +279,38 @@ func (r *Repo) CreatePost(ctx context.Context, p *Post) (int64, error) {
 	return id, nil
 }
 
+// ListPostsAfter возвращает до 50 постов темы с id > afterID, по возрастанию id.
+// Используется для SSE catch-up (Last-Event-ID).
+func (r *Repo) ListPostsAfter(ctx context.Context, topicID, afterID int64) ([]PostView, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT p.id, p.topic_id, p.author_id, COALESCE(u.username, '[удалён]') AS author_username,
+		       p.parent_id, p.parent_author_snapshot, p.parent_content_snapshot, p.content, p.created_at
+		FROM forum_posts p
+		LEFT JOIN users u ON u.id = p.author_id
+		WHERE p.topic_id = $1 AND p.id > $2
+		ORDER BY p.id ASC
+		LIMIT 50
+	`, topicID, afterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []PostView
+	for rows.Next() {
+		var p PostView
+		if err := rows.Scan(&p.ID, &p.TopicID, &p.AuthorID, &p.AuthorUsername,
+			&p.ParentID, &p.ParentAuthorSnapshot, &p.ParentContentSnapshot, &p.Content, &p.CreatedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, p)
+	}
+	if result == nil {
+		result = []PostView{}
+	}
+	return result, rows.Err()
+}
+
 // UpdateSection обновляет название и описание раздела.
 func (r *Repo) UpdateSection(ctx context.Context, id int64, title, description string) error {
 	_, err := r.pool.Exec(ctx, `
