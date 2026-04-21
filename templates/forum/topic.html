@@ -247,7 +247,10 @@ h1 {
 {{end}}
 
 {{define "posts-list"}}
-<div id="posts-list">
+<div id="posts-list"
+     sse-connect="/forum/topics/{{.Topic.ID}}/events"
+     sse-swap="post-added"
+     hx-swap="beforeend">
   {{if .Posts}}
   {{range .Posts}}
   <div class="post {{if .ParentID}}reply{{end}}" id="post-{{.ID}}">

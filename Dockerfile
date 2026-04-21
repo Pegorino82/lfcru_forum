@@ -19,6 +19,7 @@ WORKDIR /app
 COPY --from=builder /forum /app/forum
 COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/templates /app/templates
+COPY --from=builder /app/static /app/static
 
 EXPOSE 8080
 
