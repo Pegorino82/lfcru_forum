@@ -23,6 +23,7 @@ const pageSize = 20
 // ListData is the template data for the news list page.
 type ListData struct {
 	User       *user.User
+	CSRFToken  string
 	Items      []News
 	Page       int
 	TotalPages int
@@ -83,6 +84,7 @@ func (h *Handler) ShowList(c echo.Context) error {
 
 	data := ListData{
 		User:       auth.UserFromContext(c),
+		CSRFToken:  appMiddleware.CSRFToken(c),
 		Items:      items,
 		Page:       page,
 		TotalPages: totalPages,

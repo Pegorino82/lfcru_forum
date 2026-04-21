@@ -303,6 +303,23 @@ func TestShowList_HTMXPartial(t *testing.T) {
 	}
 }
 
+// TestShowList_AuthUser_OK — regression for FT-012: GET /news returned 500 for
+// authenticated users because ListData was missing CSRFToken field, causing
+// html/template to fail when rendering the logout form in base.html nav.
+func TestShowList_AuthUser_OK(t *testing.T) {
+	pool := testDB(t)
+	cleanArticleData(t, pool)
+	defer cleanArticleData(t, pool)
+
+	_, sessID := createUser(t, pool, "newstest-auth-list@test.com", "newstest-auth-list")
+
+	e := newTestServer(t, pool)
+	rec := doGet(t, e, "/news", sessID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("authenticated user: expected 200 on GET /news, got %d\nbody: %s", rec.Code, rec.Body.String())
+	}
+}
+
 // ─── Article tests ────────────────────────────────────────────────────────────
 
 func TestShowArticle_InvalidID(t *testing.T) {
