@@ -32,6 +32,7 @@ func (h *Handler) Index(c echo.Context) error {
 	canManage := u != nil && (u.Role == "moderator" || u.Role == "admin")
 
 	data := map[string]interface{}{
+		"User":      u,
 		"Sections":  sections,
 		"CanManage": canManage,
 		"CSRFToken": appMiddleware.CSRFToken(c),
@@ -67,6 +68,7 @@ func (h *Handler) ShowSection(c echo.Context) error {
 	canManage := u != nil && (u.Role == "moderator" || u.Role == "admin")
 
 	data := map[string]interface{}{
+		"User":      u,
 		"Section":   section,
 		"Topics":    topics,
 		"CanManage": canManage,
@@ -109,6 +111,7 @@ func (h *Handler) ShowTopic(c echo.Context) error {
 	canReply := u != nil
 
 	data := map[string]interface{}{
+		"User":      u,
 		"Topic":     topic,
 		"Section":   section,
 		"Posts":     posts,
@@ -126,6 +129,7 @@ func (h *Handler) ShowTopic(c echo.Context) error {
 // NewSection renders GET /forum/sections/new — form
 func (h *Handler) NewSection(c echo.Context) error {
 	data := map[string]interface{}{
+		"User":      auth.UserFromContext(c),
 		"CSRFToken": appMiddleware.CSRFToken(c),
 	}
 
@@ -158,6 +162,7 @@ func (h *Handler) CreateSection(c echo.Context) error {
 		if errors.Is(err, ErrEmptyTitle) || errors.Is(err, ErrTitleTooLong) || errors.Is(err, ErrDescriptionTooLong) {
 			errMsg := mapErrorMessage(err)
 			data := map[string]interface{}{
+				"User":      auth.UserFromContext(c),
 				"FormError": errMsg,
 				"FormContent": map[string]string{
 					"title":       title,
@@ -191,6 +196,7 @@ func (h *Handler) NewTopic(c echo.Context) error {
 	}
 
 	data := map[string]interface{}{
+		"User":      auth.UserFromContext(c),
 		"Section":   section,
 		"CSRFToken": appMiddleware.CSRFToken(c),
 	}
@@ -226,6 +232,7 @@ func (h *Handler) CreateTopic(c echo.Context) error {
 			errMsg := mapErrorMessage(err)
 			section, _ := h.svc.GetSection(ctx, sectionID)
 			data := map[string]interface{}{
+				"User":      u,
 				"FormError": errMsg,
 				"FormContent": map[string]string{
 					"title": title,
@@ -287,9 +294,10 @@ func (h *Handler) CreatePost(c echo.Context) error {
 			topic, posts, _ := h.svc.GetTopicWithPosts(ctx, topicID)
 			section, _ := h.svc.GetSection(ctx, topic.SectionID)
 			data := map[string]interface{}{
-				"Topic":   topic,
-				"Section": section,
-				"Posts":   posts,
+				"User":      u,
+				"Topic":     topic,
+				"Section":   section,
+				"Posts":     posts,
 				"FormError": errMsg,
 				"FormContent": map[string]string{
 					"content":   content,
@@ -309,6 +317,7 @@ func (h *Handler) CreatePost(c echo.Context) error {
 		// HTMX: return updated posts list
 		topic, posts, _ := h.svc.GetTopicWithPosts(ctx, topicID)
 		data := map[string]interface{}{
+			"User":      u,
 			"Posts":     posts,
 			"Topic":     topic,
 			"CanReply":  true,

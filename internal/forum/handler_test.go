@@ -16,8 +16,8 @@ import (
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
 	"github.com/Pegorino82/lfcru_forum/internal/forum"
-	"github.com/Pegorino82/lfcru_forum/internal/ratelimit"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
+	"github.com/Pegorino82/lfcru_forum/internal/ratelimit"
 	"github.com/Pegorino82/lfcru_forum/internal/session"
 	"github.com/Pegorino82/lfcru_forum/internal/tmpl"
 	"github.com/Pegorino82/lfcru_forum/internal/user"
@@ -523,5 +523,27 @@ func TestIndex_HTMX(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", rec.Code)
+	}
+}
+
+// Regression: FT-013 — forum pages must display logged-in user in navigation.
+// Before fix: forum handler did not pass User to data map → nav showed «Войти / Регистрация»
+// for authenticated users on all forum pages.
+func TestIndex_AuthUser_ShowsUsername(t *testing.T) {
+	pool := testDB(t)
+	cleanForumData(t, pool)
+	defer cleanForumData(t, pool)
+
+	_, sessID := createUser(t, pool, "forumtest-navuser@test.com", "navuser", "user")
+
+	e := newTestServer(t, pool)
+	rec := doGet(t, e, "/forum", sessID)
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "navuser") {
+		t.Error("expected username in navigation for authenticated user (FT-013 regression)")
 	}
 }
