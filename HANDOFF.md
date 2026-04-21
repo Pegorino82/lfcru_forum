@@ -1,5 +1,25 @@
 # HANDOFF.md
 
+## FT-012 — Навигация «Новости» и 500 на /news ✅
+
+**Commit:** fix(FT-012) @ 7fbea0f
+
+### Что сделано
+
+1. **`templates/layouts/base.html`** — ссылка «Новости» в навигации исправлена: `href="#"` → `href="/news"`.
+2. **`internal/news/handler.go`** — в структуру `ListData` добавлено поле `CSRFToken string`; заполняется в `ShowList` через `appMiddleware.CSRFToken(c)`. Причина бага: `html/template` выбрасывал ошибку на `{{.CSRFToken}}` в шаблоне `nav` (внутри `{{if .User}}`), когда пользователь залогинен, — поле отсутствовало в типе `news.ListData`.
+3. **`internal/news/handler_test.go`** — добавлен regression-тест `TestShowList_AuthUser_OK`: `GET /news` залогиненным пользователем → 200.
+
+### Проблемы и решения
+
+- Нет.
+
+### Что сделать следующим
+
+- Нет незакрытых зависимостей.
+
+---
+
 ## FT-008 — Управление статьями (CRUD + превью + review workflow) ✅
 
 **Commit:** feat(FT-008) @ 72882e4

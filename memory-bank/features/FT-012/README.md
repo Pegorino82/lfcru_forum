@@ -4,7 +4,7 @@ doc_kind: feature
 doc_function: index
 purpose: "Облегчённый пакет баг-фикса. Содержит описание бага, репродукцию, root cause и ссылку на фикс."
 status: active
-delivery_status: planned
+delivery_status: done
 audience: humans_and_agents
 ---
 
@@ -16,20 +16,32 @@ audience: humans_and_agents
 
 ## Репродукция
 
+### 1
+
 1. Залогиниться
 2. Кликнуть «Новости» в навигации
 
 **Ожидается:** открывается `/news` со списком статей
 **Факт:** 500 Internal Server Error
 
+### 2
+
+1. Кликнуть «Новости» в навигации не залогиненным пользователем
+
+**Ожидается:** открывается `/news` со списком статей
+**Факт:** 500 Internal Server Error
+
 ## Root cause
 
-_Заполняется после анализа_
+Два независимых бага:
+
+1. **Навигация**: `templates/layouts/base.html:44` — ссылка «Новости» имела `href="#"` вместо `href="/news"`.
+2. **500 для залогиненных**: `internal/news/handler.go` — структура `ListData` не содержала поля `CSRFToken`. Шаблон `base.html` вызывает `{{.CSRFToken}}` внутри `{{if .User}}` (форма выхода); `html/template` возвращает ошибку выполнения `can't evaluate field CSRFToken in type news.ListData` → 500.
 
 ## Фикс
 
-_Ссылка на коммит после реализации_
+`7fbea0f` — fix: news nav link broken and 500 for authenticated users on /news
 
 ## Regression-тест
 
-_Ссылка на тест после реализации_
+`internal/news/handler_test.go` — `TestShowList_AuthUser_OK`.
