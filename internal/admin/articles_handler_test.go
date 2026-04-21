@@ -349,6 +349,9 @@ func TestAdminArticles_Preview_HasPreviewBanner(t *testing.T) {
 	if !strings.Contains(body, "Назад к редактору") {
 		t.Error("preview page must contain 'Назад к редактору' link")
 	}
+	if strings.Contains(body, "Оставить комментарий") || strings.Contains(body, "hx-post") {
+		t.Error("preview page must not contain comment form")
+	}
 }
 
 // FT-015 Regression: после сохранения статьи редирект содержит ?saved=1, страница показывает подтверждение.

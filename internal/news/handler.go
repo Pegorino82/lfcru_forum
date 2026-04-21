@@ -40,6 +40,7 @@ type ArticleData struct {
 	Comments    []comment.CommentView
 	Images      []ImageView
 	NewsID      int64
+	IsPreview   bool
 }
 
 // Handler handles news HTTP requests.
