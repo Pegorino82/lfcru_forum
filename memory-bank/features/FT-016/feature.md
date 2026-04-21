@@ -7,7 +7,7 @@ derived_from:
   - ../../domain/problem.md
   - ../../domain/architecture.md
   - ../../domain/frontend.md
-status: draft
+status: active
 delivery_status: planned
 audience: humans_and_agents
 must_not_define:
@@ -45,7 +45,7 @@ must_not_define:
 - `CON-02` Каждый SSE-ответ содержит HTML-фрагмент нового поста (прямой append через `hx-ext="sse"`) — не JSON.
 - `CON-03` SSE-эндпоинт `GET /forum/topics/:id/events` доступен всем пользователям (включая неаутентифицированных) — форумные топики публичны, real-time события публичны в той же мере.
 - `CON-04` Hub потокобезопасен: все операции с internal map защищены `sync.RWMutex`; write lock при subscribe/unsubscribe, read lock при broadcast. Broadcast-горутина защищена `defer recover()` от паники при записи в закрытый канал.
-- `CON-05` Максимум 200 SSE-подписчиков на один топик и 2000 глобально (подписчик = одно активное SSE-соединение, т.е. одна открытая вкладка браузера). При превышении лимита `StreamEvents` возвращает `503 Service Unavailable` до установки SSE-соединения.
+- `CON-05` Максимум 200 SSE-подписчиков на один топик (подписчик = одно активное SSE-соединение, т.е. одна открытая вкладка браузера). При превышении лимита `StreamEvents` возвращает `503 Service Unavailable` до установки SSE-соединения.
 - `CON-06` Сессия пользователя проверяется только при установке SSE-соединения. Инвалидация сессии (logout, бан) во время активного соединения не закрывает его автоматически — **известное ограничение MVP**.
 - `CON-07` **ADR**: Для MVP (ASM-01, single Go-process) используется in-process broadcast hub вместо PostgreSQL `LISTEN/NOTIFY`, описанного в `architecture.md`. `architecture.md` должен быть обновлён с этим решением до начала реализации.
 
@@ -61,14 +61,14 @@ must_not_define:
 
 | Surface | Type | Why it changes |
 | --- | --- | --- |
-| `internal/forum/hub.go` | code (new) | In-process broadcast hub: subscribe/unsubscribe/broadcast по topicID |
+| `internal/forum/hub.go` | code (new) | In-process broadcast hub: subscribe/unsubscribe/broadcast по topicID. Внутренняя структура подписчика: `struct{ userID int64; ch chan string }`. Анонимные пользователи подписываются с `userID = 0`; значение 0 никогда не совпадает с реальным authorUserID, поэтому анонимы всегда получают все события — дополнительная логика не нужна. |
 | `internal/forum/handler.go` | code | `CreatePost`: вызвать hub.Broadcast после успешной записи; добавить метод `StreamEvents` |
 | `internal/forum/service.go` | code | Не изменяется: hub не проходит через service-слой |
 | `internal/forum/handler.go` (constructor) | code | `forumHandler` получает `hub *Hub` как поле; конструктор принимает hub явно (dependency injection) |
 | `cmd/forum/main.go` | code | Создать hub, передать в forumHandler, зарегистрировать маршрут `GET /forum/topics/:id/events` |
 | `templates/forum/topic.html` | code | Добавить `hx-ext="sse"`, `sse-connect="/forum/topics/{{.ID}}/events"`, `sse-swap="post-added"`, `hx-swap="beforeend"` на контейнер постов; подключить htmx-ext-sse |
 | `templates/forum/partials/post.html` | code (new) | Partial-шаблон одного поста (`<article class="post" id="post-{{.ID}}">`) — используется и для initial page render, и для SSE-фрагментов |
-| `deploy/nginx/` (location `/forum/topics/*/events`) | config | Добавить `proxy_buffering off; proxy_set_header X-Accel-Buffering no;` — без этого nginx буферизует SSE-поток |
+| `deploy/nginx/` (location `/forum/topics/*/events`) | config | Добавить `proxy_buffering off;` — без этого nginx буферизует SSE-поток. Заголовок `X-Accel-Buffering: no` выставляет приложение (CTR-01); дублировать через `proxy_set_header` не нужно. |
 | `migrations/XXXX_idx_posts_topic_id.sql` | migration (new) | `CREATE INDEX CONCURRENTLY idx_posts_topic_id_id ON posts(topic_id, id)` для catch-up запроса |
 
 ### Flow
@@ -86,7 +86,7 @@ must_not_define:
 | Contract ID | Input / Output | Producer / Consumer | Notes |
 | --- | --- | --- | --- |
 | `CTR-01` | SSE event с полями `id`, `event`, `data`; HTTP-заголовки ответа | `StreamEvents` / HTMX SSE ext | Поля фрейма: `id: <post_db_id>`, `event: post-added`, `data: <html>` (HTML-фрагмент одного поста в одну строку — символы `\n` и `\r` заменены пробелами перед отправкой). Обязательные HTTP-заголовки ответа: `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, `X-Accel-Buffering: no`. |
-| `CTR-02` | `Last-Event-ID` header | клиент / `StreamEvents` | Database post ID (integer) последнего полученного поста. Валидация: если значение не парсится как int64 > 0 — заголовок игнорируется (catch-up не выполняется, только live). Запрос: `WHERE topic_id = :id AND id > last_event_id ORDER BY id ASC LIMIT 50`. При наличии более 50 пропущенных постов клиент получает последние 50; после них сервер отправляет `event: catch-up-overflow` как сигнал для UI-подсказки "Обновите страницу для полной истории". |
+| `CTR-02` | `Last-Event-ID` header | клиент / `StreamEvents` | Database post ID (integer) последнего полученного поста. Валидация: если значение не парсится как int64 > 0 — заголовок игнорируется (catch-up не выполняется, только live). Запрос: `WHERE topic_id = :id AND id > last_event_id ORDER BY id ASC LIMIT 50`. При наличии более 50 пропущенных постов клиент получает первые 50 от точки отрыва (в хронологическом порядке); после них сервер отправляет `event: catch-up-overflow` как сигнал для UI-подсказки "Обновите страницу для полной истории". |
 | `CTR-03` | HTML-фрагмент поста | `handler.go` / `templates/forum/partials/post.html` | Корневой тег `<article class="post" id="post-{{.ID}}">`. Один и тот же шаблон используется для catch-up и live-событий. Шаблон Go `html/template` — автоматическое HTML-экранирование пользовательского контента (не использовать `template.HTML`). |
 
 ### Failure Modes
@@ -95,6 +95,7 @@ must_not_define:
 - `FM-02` Hub переполнен (медленный клиент): использовать буферизованный канал размером ≥ 16 сообщений (достаточен для типичного всплеска активности) с `select { case ch <- msg: default: }` — дроп допустим только при исчерпании буфера; медленный клиент теряет события, не блокирует других. Восстановление пропущенных событий через `Last-Event-ID` возможно только при переподключении, но не при дропе в рамках живого соединения.
 - `FM-03` Горутина `StreamEvents` утекает при закрытии соединения: hub должен unsubscribe при `ctx.Done()`, удалить канал из slice для `topicID`; если slice становится пустым — удалить ключ `topicID` из map во избежание накопления мёртвых записей.
 - `FM-04` Ошибки до установки SSE-соединения возвращаются как стандартные HTTP-ответы (не SSE-фреймы): топик не существует → `404 Not Found`; превышен лимит подписчиков (CON-05) → `503 Service Unavailable`; внутренняя ошибка → `500 Internal Server Error`. `Content-Type: text/plain`.
+- `FM-05` Глобальный лимит SSE-соединений по всем топикам — вне текущего scope (NS-04, single Go-process). Защита от перегрузки при масштабировании возложена на будущий multi-pod механизм.
 
 ## Verify
 
@@ -144,18 +145,20 @@ must_not_define:
 | `CHK-02` | `EVID-02` | `internal/forum/handler_test.go` |
 | `CHK-03` | `EVID-01` | `internal/forum/hub_test.go` |
 | `CHK-04` | `EVID-01` | `internal/forum/handler_test.go` |
-| `CHK-05` | — | `internal/forum/handler_test.go` |
-| `CHK-06` | — | `internal/forum/handler_test.go` |
-| `CHK-07` | — | `templates/forum/topic_test.go` |
+| `CHK-05` | `EVID-03` | `internal/forum/handler_test.go` |
+| `CHK-06` | `EVID-03` | `internal/forum/handler_test.go` |
+| `CHK-07` | `EVID-03` | `templates/forum/topic_test.go` |
 
 ### Evidence
 
 - `EVID-01` Юнит-тесты hub + интеграционные тесты StreamEvents — зелёные.
 - `EVID-02` Интеграционный тест reconnect с `Last-Event-ID` — зелёный.
+- `EVID-03` Интеграционные тесты доступа без сессии, лимита подписчиков и шаблонный тест атрибутов — зелёные.
 
 ### Evidence contract
 
 | Evidence ID | Artifact | Producer | Path contract | Reused by checks |
 | --- | --- | --- | --- | --- |
-| `EVID-01` | Вывод `go test ./internal/forum/...` и `go test -tags integration ./internal/forum/...` | CI / локальный запуск | `internal/forum/hub_test.go`, `internal/forum/handler_test.go` | `CHK-01`, `CHK-03` |
+| `EVID-01` | Вывод `go test ./internal/forum/...` и `go test -tags integration ./internal/forum/...` | CI / локальный запуск | `internal/forum/hub_test.go`, `internal/forum/handler_test.go` | `CHK-01`, `CHK-03`, `CHK-04` |
 | `EVID-02` | Вывод `go test -tags integration ./internal/forum/...` | CI / локальный запуск | `internal/forum/handler_test.go` | `CHK-02` |
+| `EVID-03` | Вывод `go test -tags integration ./internal/forum/...` и `go test ./templates/forum/...` | CI / локальный запуск | `internal/forum/handler_test.go`, `templates/forum/topic_test.go` | `CHK-05`, `CHK-06`, `CHK-07` |

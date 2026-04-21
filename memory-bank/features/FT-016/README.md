@@ -21,3 +21,7 @@ audience: humans_and_agents
 - [`feature.md`](feature.md)
   Читать, когда нужно: открыть canonical feature-документ с scope, design, verify, constraints.
   Отвечает на вопрос: где находятся scope, design, verify и canonical IDs для этой фичи.
+
+- [`implementation-plan.md`](implementation-plan.md)
+  Читать, когда нужно: начать или продолжить реализацию.
+  Отвечает на вопрос: порядок шагов, discovery context, test strategy, open questions.
