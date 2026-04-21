@@ -6,3 +6,5 @@ memory-bank-legacy/
 legacy-migration-guide.md
 vendor/
 storage/
+.rtk/
+.DS_Store
