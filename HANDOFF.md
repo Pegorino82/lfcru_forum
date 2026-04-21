@@ -1,5 +1,26 @@
 # HANDOFF.md
 
+## FT-015 — UX редактора статей (превью + фидбек сохранения) ✅
+
+**Commit:** fix(FT-015) @ 94f21a2
+
+### Что сделано
+
+1. **`internal/admin/articles_handler.go`** — `articlePreviewData` получила поле `IsPreview bool`; `Preview` handler теперь использует эту struct вместо анонимной, передаёт `IsPreview: true`. `articleEditData` получила поле `Saved bool`; `Update` redirects to `?saved=1`; `Edit` передаёт `Saved: c.QueryParam("saved") == "1"`.
+2. **`templates/news/article.html`** — добавлен баннер «Режим превью» + ссылка «← Назад к редактору» при `{{if .IsPreview}}`.
+3. **`templates/admin/articles/edit.html`** — добавлен success-баннер «Статья сохранена.» при `{{if .Saved}}`.
+4. **`internal/admin/articles_handler_test.go`** — два regression-теста: `TestAdminArticles_Preview_HasPreviewBanner` и `TestAdminArticles_Update_ShowsSavedConfirmation`. Все 10 тестов зелёные.
+
+### Проблемы и решения
+
+- Нет.
+
+### Что сделать следующим
+
+- Нет незакрытых зависимостей.
+
+---
+
 ## FT-014 — Дублирование ошибок при логине (HTMX outerHTML swap) ✅
 
 **Commit:** fix(FT-014) @ b32cb8c

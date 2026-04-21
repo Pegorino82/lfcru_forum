@@ -34,12 +34,20 @@ audience: humans_and_agents
 
 ## Root cause
 
-_Заполняется после анализа_
+**Баг 1 (Preview):** `Preview` handler рендерил публичный `templates/news/article.html` с анонимной struct, в которой не было флага `IsPreview`. Шаблон не имел условного баннера, поэтому страница выглядела идентично обычной статье.
+
+**Баг 2 (Save):** `Update` handler после успешного сохранения делал `Redirect` без параметра, `Edit` handler не передавал никакого сигнала об успехе в шаблон, а `articleEditData` не имела поля `Saved`.
 
 ## Фикс
 
-_Ссылка на коммит после реализации_
+Commit: `94f21a2`
+
+- `articlePreviewData` получила поле `IsPreview bool`; `Preview` handler использует эту struct с `IsPreview: true` вместо анонимной; в `templates/news/article.html` добавлен баннер «Режим превью» + ссылка «Назад к редактору» при `{{if .IsPreview}}`.
+- `articleEditData` получила поле `Saved bool`; `Update` redirects to `?saved=1`; `Edit` передаёт `Saved: c.QueryParam("saved") == "1"`; `templates/admin/articles/edit.html` показывает success-баннер при `{{if .Saved}}`.
 
 ## Regression-тест
 
-_Ссылка на тест после реализации_
+Commit: `94f21a2` — `internal/admin/articles_handler_test.go`
+
+- `TestAdminArticles_Preview_HasPreviewBanner` — GET `/admin/articles/:id/preview` → 200, тело содержит «Режим превью» и «Назад к редактору».
+- `TestAdminArticles_Update_ShowsSavedConfirmation` — POST update → 303 Location содержит `saved=1`; GET edit?saved=1 → 200, тело содержит «Статья сохранена».
