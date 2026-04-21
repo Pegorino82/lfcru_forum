@@ -46,9 +46,8 @@ DI и инициализация в `cmd/forum/main.go`: config → pool → goo
 ## Concurrency And Critical Sections
 
 - `pgxpool.Pool` — connection pool; конкурентный доступ из горутин безопасен по умолчанию.
-- **SSE fan-out**: одна горутина слушает `LISTEN/NOTIFY` от PostgreSQL, рассылает события по каналам всем активным подписчикам.
-- **Cursor-based догонялка при реконнекте**: клиент передаёт `Last-Event-ID`, сервер досылает пропущенные события из PG по cursor.
-- `LISTEN/NOTIFY` payload ≤ 8000 байт — передавать только ID события; полные данные клиент получает через отдельный запрос по cursor.
+- **SSE fan-out (MVP, FT-016)**: in-process broadcast hub (`internal/forum/hub.go`) — `map[topicID][]chan string`, защищён `sync.RWMutex`. `CreatePost` пушит HTML-фрагмент в hub после записи в БД, исключая канал автора. Каждое SSE-соединение — одна горутина + один буферизованный канал (≥ 16). Hub ограничен 200 подписчиками/топик и 2000 глобально. **ADR**: PostgreSQL `LISTEN/NOTIFY` отложен до масштабирования на multi-pod (NS-04 в FT-016).
+- **Cursor-based догонялка при реконнекте**: клиент передаёт `Last-Event-ID` (database post ID), сервер досылает пропущенные посты `WHERE topic_id = :id AND id > last_event_id ORDER BY id ASC LIMIT 50`.
 - **Cleanup-горутина** запускается как `go cleanup.Run(ctx, pool)` — не блокирует основной поток; завершается по context cancellation при graceful shutdown.
 
 Запрещено:

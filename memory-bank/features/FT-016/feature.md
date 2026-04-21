@@ -35,22 +35,27 @@ must_not_define:
 - `NS-03` Push-уведомления в браузере (Notification API) — вне MVP.
 - `NS-04` Масштабирование hub между несколькими инстансами (multi-pod) — вне текущего scope.
 - `NS-05` Отображение числа онлайн-пользователей в топике.
+- `NS-06` Real-time обновление/удаление уже опубликованных постов — вне MVP (события доставляются только при публикации).
 
 ### Constraints / Assumptions
 
 - `ASM-01` Приложение запускается как один Go-процесс — in-process broadcast hub достаточен.
 - `ASM-02` HTMX SSE extension (`htmx-ext-sse`) используется на клиенте для прослушивания событий и вставки постов.
 - `CON-01` SSE реализуется через stdlib (`http.Flusher`) без внешних зависимостей.
-- `CON-02` Каждый SSE-ответ содержит HTML-фрагмент нового поста (HTMX out-of-band или прямой append) — не JSON.
-- `DEC-01` Формат SSE-события и HTMX-интеграция требуют выбора между `hx-swap-oob` и `hx-ext="sse"` — решение не принято, блокирует `How`.
+- `CON-02` Каждый SSE-ответ содержит HTML-фрагмент нового поста (прямой append через `hx-ext="sse"`) — не JSON.
+- `CON-03` SSE-эндпоинт `GET /forum/topics/:id/events` доступен всем пользователям (включая неаутентифицированных) — форумные топики публичны, real-time события публичны в той же мере.
+- `CON-04` Hub потокобезопасен: все операции с internal map защищены `sync.RWMutex`; write lock при subscribe/unsubscribe, read lock при broadcast. Broadcast-горутина защищена `defer recover()` от паники при записи в закрытый канал.
+- `CON-05` Максимум 200 SSE-подписчиков на один топик и 2000 глобально (подписчик = одно активное SSE-соединение, т.е. одна открытая вкладка браузера). При превышении лимита `StreamEvents` возвращает `503 Service Unavailable` до установки SSE-соединения.
+- `CON-06` Сессия пользователя проверяется только при установке SSE-соединения. Инвалидация сессии (logout, бан) во время активного соединения не закрывает его автоматически — **известное ограничение MVP**.
+- `CON-07` **ADR**: Для MVP (ASM-01, single Go-process) используется in-process broadcast hub вместо PostgreSQL `LISTEN/NOTIFY`, описанного в `architecture.md`. `architecture.md` должен быть обновлён с этим решением до начала реализации.
 
 ## How
 
 ### Solution
 
-Добавить in-process broadcast hub (`forum/hub.go`): map `topicID → []chan string`. `CreatePost` после записи в БД пушит HTML-фрагмент поста в hub. `GET /forum/topics/:id/events` — SSE endpoint, который подписывает клиента на канал топика и стримит события.
+Добавить in-process broadcast hub (`forum/hub.go`): map `topicID → []chan string`. `CreatePost` после записи в БД рендерит HTML-фрагмент через `templates/forum/partials/post.html`, заменяет `\n`/`\r` пробелами и вызывает `hub.Broadcast(topicID, authorUserID, fragment)` — канал(ы) автора пропускаются, чтобы избежать дублирования поста в его DOM. `GET /forum/topics/:id/events` — SSE endpoint, который подписывает клиента на канал топика и стримит события. Доступен без аутентификации (CON-03).
 
-На клиенте: подключить HTMX SSE extension, добавить `hx-ext="sse" sse-connect="/forum/topics/:id/events"` на контейнер постов, настроить `sse-swap` для append новых постов.
+На клиенте контейнер постов размечается: `hx-ext="sse" sse-connect="/forum/topics/{{.ID}}/events" sse-swap="post-added" hx-swap="beforeend"`. Расширение htmx-ext-sse подключается через `<script src="/static/js/sse.js">`.
 
 ### Change Surface
 
@@ -58,16 +63,20 @@ must_not_define:
 | --- | --- | --- |
 | `internal/forum/hub.go` | code (new) | In-process broadcast hub: subscribe/unsubscribe/broadcast по topicID |
 | `internal/forum/handler.go` | code | `CreatePost`: вызвать hub.Broadcast после успешной записи; добавить метод `StreamEvents` |
-| `internal/forum/service.go` | code | Передать hub в handler или сделать hub частью handler |
+| `internal/forum/service.go` | code | Не изменяется: hub не проходит через service-слой |
+| `internal/forum/handler.go` (constructor) | code | `forumHandler` получает `hub *Hub` как поле; конструктор принимает hub явно (dependency injection) |
 | `cmd/forum/main.go` | code | Создать hub, передать в forumHandler, зарегистрировать маршрут `GET /forum/topics/:id/events` |
-| `templates/forum/topic.html` | code | Добавить `hx-ext="sse"`, `sse-connect`, `sse-swap` на контейнер постов |
+| `templates/forum/topic.html` | code | Добавить `hx-ext="sse"`, `sse-connect="/forum/topics/{{.ID}}/events"`, `sse-swap="post-added"`, `hx-swap="beforeend"` на контейнер постов; подключить htmx-ext-sse |
+| `templates/forum/partials/post.html` | code (new) | Partial-шаблон одного поста (`<article class="post" id="post-{{.ID}}">`) — используется и для initial page render, и для SSE-фрагментов |
+| `deploy/nginx/` (location `/forum/topics/*/events`) | config | Добавить `proxy_buffering off; proxy_set_header X-Accel-Buffering no;` — без этого nginx буферизует SSE-поток |
+| `migrations/XXXX_idx_posts_topic_id.sql` | migration (new) | `CREATE INDEX CONCURRENTLY idx_posts_topic_id_id ON posts(topic_id, id)` для catch-up запроса |
 
 ### Flow
 
 1. Пользователь Б открывает `/forum/topics/:id` — браузер устанавливает SSE-соединение на `/forum/topics/:id/events`.
 2. Hub регистрирует канал для Б в map под ключом `topicID`.
-3. Пользователь А публикует пост: `CreatePost` записывает в БД, рендерит HTML-фрагмент поста, вызывает `hub.Broadcast(topicID, fragment)`.
-4. Hub отправляет фрагмент во все каналы для `topicID`.
+3. Пользователь А публикует пост: `CreatePost` записывает в БД, рендерит HTML-фрагмент через `post.html`, заменяет `\n`/`\r` пробелами, вызывает `hub.Broadcast(topicID, authorUserID, fragment)`.
+4. Hub отправляет фрагмент во все каналы для `topicID`, пропуская канал(ы) с `userID == authorUserID`.
 5. SSE endpoint пишет `data: <html-fragment>\n\n` в ответ Б.
 6. HTMX SSE extension принимает событие, вставляет фрагмент в контейнер постов.
 7. Пользователь Б видит новый пост без перезагрузки.
@@ -76,14 +85,16 @@ must_not_define:
 
 | Contract ID | Input / Output | Producer / Consumer | Notes |
 | --- | --- | --- | --- |
-| `CTR-01` | SSE event: `data: <html>\n\n` | `StreamEvents` / HTMX SSE ext | HTML-фрагмент одного поста; `event: post-added` для HTMX `sse-swap` |
-| `CTR-02` | `Last-Event-ID` header | клиент / `StreamEvents` | ID последнего полученного поста; handler догоняет посты из БД |
+| `CTR-01` | SSE event с полями `id`, `event`, `data`; HTTP-заголовки ответа | `StreamEvents` / HTMX SSE ext | Поля фрейма: `id: <post_db_id>`, `event: post-added`, `data: <html>` (HTML-фрагмент одного поста в одну строку — символы `\n` и `\r` заменены пробелами перед отправкой). Обязательные HTTP-заголовки ответа: `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, `X-Accel-Buffering: no`. |
+| `CTR-02` | `Last-Event-ID` header | клиент / `StreamEvents` | Database post ID (integer) последнего полученного поста. Валидация: если значение не парсится как int64 > 0 — заголовок игнорируется (catch-up не выполняется, только live). Запрос: `WHERE topic_id = :id AND id > last_event_id ORDER BY id ASC LIMIT 50`. При наличии более 50 пропущенных постов клиент получает последние 50; после них сервер отправляет `event: catch-up-overflow` как сигнал для UI-подсказки "Обновите страницу для полной истории". |
+| `CTR-03` | HTML-фрагмент поста | `handler.go` / `templates/forum/partials/post.html` | Корневой тег `<article class="post" id="post-{{.ID}}">`. Один и тот же шаблон используется для catch-up и live-событий. Шаблон Go `html/template` — автоматическое HTML-экранирование пользовательского контента (не использовать `template.HTML`). |
 
 ### Failure Modes
 
 - `FM-01` SSE-соединение обрывается (сеть, таймаут): пользователь видит существующие посты, не получает новые. После переподключения HTMX SSE extension пересоединяется автоматически с `Last-Event-ID`.
-- `FM-02` Hub переполнен (медленный клиент): использовать небуферизованный или буферизованный канал с `select { case ch <- msg: default: }` — медленный клиент теряет события, не блокирует других.
-- `FM-03` Горутина `StreamEvents` утекает при закрытии соединения: hub должен unsubscribe при `ctx.Done()`.
+- `FM-02` Hub переполнен (медленный клиент): использовать буферизованный канал размером ≥ 16 сообщений (достаточен для типичного всплеска активности) с `select { case ch <- msg: default: }` — дроп допустим только при исчерпании буфера; медленный клиент теряет события, не блокирует других. Восстановление пропущенных событий через `Last-Event-ID` возможно только при переподключении, но не при дропе в рамках живого соединения.
+- `FM-03` Горутина `StreamEvents` утекает при закрытии соединения: hub должен unsubscribe при `ctx.Done()`, удалить канал из slice для `topicID`; если slice становится пустым — удалить ключ `topicID` из map во избежание накопления мёртвых записей.
+- `FM-04` Ошибки до установки SSE-соединения возвращаются как стандартные HTTP-ответы (не SSE-фреймы): топик не существует → `404 Not Found`; превышен лимит подписчиков (CON-05) → `503 Service Unavailable`; внутренняя ошибка → `500 Internal Server Error`. `Content-Type: text/plain`.
 
 ## Verify
 
@@ -98,26 +109,32 @@ must_not_define:
 | Requirement ID | Design refs | Acceptance refs | Checks | Evidence IDs |
 | --- | --- | --- | --- | --- |
 | `REQ-01` | `ASM-01`, `ASM-02`, `CON-01`, `CON-02`, `CTR-01`, `FM-01`, `FM-02` | `EC-01`, `SC-01` | `CHK-01` | `EVID-01` |
-| `REQ-02` | `CTR-01`, `CTR-02` | `EC-01`, `SC-01` | `CHK-01` | `EVID-01` |
+| `REQ-02` | `CTR-01`, `CTR-02` | `EC-01`, `SC-01` | `CHK-01`, `CHK-04` | `EVID-01` |
 | `REQ-03` | `CTR-02` | `EC-02`, `SC-02` | `CHK-02` | `EVID-02` |
 
 ### Acceptance Scenarios
 
 - `SC-01` Пользователи А и Б открывают один топик. А публикует пост. Б видит новый пост в своём браузере без перезагрузки, не более чем через 2 секунды.
-- `SC-02` Б имеет открытое SSE-соединение. Соединение обрывается на 5 секунд. За это время А публикует пост. После восстановления соединения Б получает пропущенный пост через `Last-Event-ID`.
+- `SC-02` Б имеет открытое SSE-соединение. Сетевое соединение прерывается на 5 секунд (симуляция сетевого сбоя — браузер обнаруживает disconnect и разрывает EventSource). За это время А публикует пост. После автоматического восстановления HTMX SSE extension отправляет `Last-Event-ID`, Б получает пропущенный пост.
 
 ### Negative / Edge Cases
 
 - `NEG-01` Клиент разрывает SSE-соединение (закрывает вкладку): hub удаляет канал, горутина завершается без паники.
 - `NEG-02` В топике нет активных SSE-клиентов: `hub.Broadcast` не создаёт лишних аллокаций.
+- `NEG-03` Неаутентифицированный пользователь открывает `/forum/topics/:id/events` — SSE-соединение устанавливается (200), события доставляются в обычном режиме (CON-03).
+- `NEG-04` Превышен лимит подписчиков на топик (CON-05) — новый запрос получает `503`, существующие соединения не затрагиваются.
 
 ### Checks
 
 | Check ID | Covers | How to check | Expected result |
 | --- | --- | --- | --- |
-| `CHK-01` | `EC-01`, `SC-01` | Интеграционный тест: открыть SSE-соединение, вызвать CreatePost, прочитать событие из канала | Событие получено, содержит HTML-фрагмент нового поста |
-| `CHK-02` | `EC-02`, `SC-02` | Интеграционный тест: имитировать reconnect с `Last-Event-ID`, проверить dogfooding из БД | Пропущенные посты доставлены |
-| `CHK-03` | `EC-03`, `NEG-01` | Unit-тест hub: Subscribe → Cancel context → проверить что канал удалён | Hub не содержит канал после ctx.Done() |
+| `CHK-01` | `EC-01`, `SC-01` | Интеграционный тест: открыть SSE HTTP-эндпоинт через `httptest`, вызвать CreatePost, прочитать SSE-фрейм из response body | HTTP-ответ: `Content-Type: text/event-stream`; фрейм содержит `event: post-added`, `id: <post_id>`, `data: <html-fragment>` |
+| `CHK-02` | `EC-02`, `SC-02` | Интеграционный тест: создать посты, затем подключиться с `Last-Event-ID` меньшим ID последнего поста; проверить catch-up из БД | Пропущенные посты доставлены в порядке возрастания ID до начала live-стриминга |
+| `CHK-03` | `EC-03`, `NEG-01` | Unit-тест hub: Subscribe → Cancel context → проверить что канал удалён и ключ topicID удалён из map если подписчиков не осталось | Hub не содержит канал и не содержит пустой записи topicID после ctx.Done() |
+| `CHK-04` | `REQ-02` | Интеграционный тест: клиент А подписан на топик 1, клиент Б — на топик 2; пост публикуется в топик 2 | Клиент А не получает событие в течение 200 мс; клиент Б получает |
+| `CHK-05` | `NEG-03`, `CON-03` | Интеграционный тест: GET `/forum/topics/:id/events` без сессионной куки | HTTP 200, `Content-Type: text/event-stream` — соединение установлено |
+| `CHK-06` | `NEG-04`, `CON-05` | Интеграционный тест: открыть 201 соединений на один топик | 201-й запрос получает `503 Service Unavailable` |
+| `CHK-07` | `CTR-03` | Шаблонный тест: render `topic.html` и проверить атрибуты в HTML | Присутствуют `hx-ext="sse"`, `sse-connect`, `sse-swap="post-added"`, `hx-swap="beforeend"` |
 
 ### Test matrix
 
@@ -126,6 +143,10 @@ must_not_define:
 | `CHK-01` | `EVID-01` | `internal/forum/hub_test.go`, `internal/forum/handler_test.go` |
 | `CHK-02` | `EVID-02` | `internal/forum/handler_test.go` |
 | `CHK-03` | `EVID-01` | `internal/forum/hub_test.go` |
+| `CHK-04` | `EVID-01` | `internal/forum/handler_test.go` |
+| `CHK-05` | — | `internal/forum/handler_test.go` |
+| `CHK-06` | — | `internal/forum/handler_test.go` |
+| `CHK-07` | — | `templates/forum/topic_test.go` |
 
 ### Evidence
 
