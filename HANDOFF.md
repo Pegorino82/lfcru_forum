@@ -1,5 +1,24 @@
 # HANDOFF.md
 
+## FT-013 — Форум не отображает залогиненного пользователя в навигации ✅
+
+**Commit:** fix(FT-013) @ 481eb97
+
+### Что сделано
+
+1. **`internal/forum/handler.go`** — во все `data map` добавлен ключ `"User": auth.UserFromContext(c)` (методы `Index`, `ShowSection`, `ShowTopic`, `NewSection`, `NewTopic`, `CreateSection` (ошибка), `CreateTopic` (ошибка), `CreatePost` (ошибка + HTMX-успех)). Причина бага: `base.html` рендерит `{{if .User}}` для отображения имени пользователя в навигации, но форум-хендлер передавал `map[string]interface{}` без этого ключа.
+2. **`internal/forum/handler_test.go`** — добавлен regression-тест `TestIndex_AuthUser_ShowsUsername`: `GET /forum` залогиненным пользователем → 200, тело содержит username.
+
+### Проблемы и решения
+
+- Нет.
+
+### Что сделать следующим
+
+- Нет незакрытых зависимостей.
+
+---
+
 ## FT-012 — Навигация «Новости» и 500 на /news ✅
 
 **Commit:** fix(FT-012) @ 7fbea0f

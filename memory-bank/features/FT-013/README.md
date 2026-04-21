@@ -28,8 +28,8 @@ audience: humans_and_agents
 
 ## Фикс
 
-_Ссылка на коммит после реализации_
+Commit `481eb97` — добавлен ключ `"User": auth.UserFromContext(c)` во все `data map` в `internal/forum/handler.go`.
 
 ## Regression-тест
 
-_Ссылка на тест после реализации_
+`TestIndex_AuthUser_ShowsUsername` в `internal/forum/handler_test.go`.
