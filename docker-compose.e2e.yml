@@ -15,9 +15,6 @@ services:
       - .env
     volumes:
       - storage_data_e2e:/app/storage/news
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - lfcru_forum_default
 

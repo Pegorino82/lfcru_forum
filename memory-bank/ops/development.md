@@ -105,7 +105,7 @@ docker run --rm \
   --network lfcru_forum_default \
   -e PW_BASE_URL=http://app-e2e:8080 \
   -e PW_DB_HOST=postgres \
-  mcr.microsoft.com/playwright:v1.44.0-jammy \
+  mcr.microsoft.com/playwright:v1.59.1-jammy \
   npx playwright test
 ```
 

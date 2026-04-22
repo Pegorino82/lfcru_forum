@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { E2E_USER_EMAIL, E2E_USER_PASSWORD } from './global-setup';
+import { E2E_USER_EMAIL, E2E_USER_PASSWORD } from '../global-setup';
 
 const TOPIC_URL = '/forum/topics/9999';
 
