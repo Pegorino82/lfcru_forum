@@ -1,0 +1,14 @@
+{
+  "name": "lfcru-forum-e2e",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "@types/bcrypt": "^5.0.2",
+    "@types/pg": "^8.11.6",
+    "bcrypt": "^5.1.1",
+    "pg": "^8.11.5"
+  }
+}

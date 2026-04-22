@@ -25,6 +25,8 @@ audience: humans_and_agents
 
 ## Stack
 
+### Go-тесты
+
 - **Framework:** `go test` (stdlib)
 - **Data:** тестовая БД `lfcru_test` (postgres); изолирована от `lfcru` — dev-данные не затрагиваются
 - **Запуск unit-тестов** (без БД):
@@ -42,7 +44,25 @@ audience: humans_and_agents
   ```
 - **Флаг `-p 1` обязателен** для integration-тестов: каждый пакет вызывает `goose.Up()` независимо, параллельный запуск вызывает race condition
 - Тестовая БД создаётся автоматически скриптом `scripts/init-test-db.sql` при первом старте postgres-контейнера
-- **CI:** не настроен (задача backlog)
+
+### E2E-тесты (Playwright)
+
+- **Framework:** `@playwright/test` (TypeScript)
+- **Data:** та же тестовая БД `lfcru_test`; seed/teardown через `e2e/global-setup.ts` и `e2e/global-teardown.ts`
+- **App:** отдельный контейнер `app-e2e` на порту `8081`, указывает на `lfcru_test` (`docker-compose.e2e.yml`)
+- **Запуск:**
+  ```bash
+  # Предварительно: docker compose -f docker-compose.dev.yml up -d
+  #                 docker compose -f docker-compose.e2e.yml up -d
+  npm install
+  npx playwright install chromium
+  npx playwright test
+  ```
+- **Артефакты:** `e2e/test-results/` (скриншоты при падении), `e2e/test-report/` (HTML-отчёт) — в `.gitignore`
+
+### CI
+
+- Не настроен (задача backlog)
 
 ## Core Rules
 
@@ -76,7 +96,8 @@ Canonical lifecycle gates живут в [../flows/feature-flow.md](../flows/feat
 ## Когда Manual-Only Допустим
 
 - Сценарий зависит от live infra, внешних систем, hardware, недетерминированной среды или human оценки UI.
-- Сценарий зависит от SSE/real-time поведения, визуального рендеринга шаблонов или browser-специфики.
+- Сценарий зависит от SSE/real-time поведения или визуального рендеринга, которое Playwright не покрывает (анимации, шрифты, пиксельный layout).
+- Browser-специфика и HTMX/Alpine.js-взаимодействия — **покрываются Playwright**, не являются основанием для manual-only.
 - Для каждого manual-only gap: причина, ручная процедура, owner follow-up.
 - Если manual-only gap оставляет без regression protection критичный путь (auth, сессии, CSRF), feature не считается завершённой.
 
@@ -100,9 +121,16 @@ Canonical lifecycle gates живут в [../flows/feature-flow.md](../flows/feat
 
 ## Project-Specific Conventions
 
+### Go-тесты
 - Unit-тесты (`*_test.go` без build tag) живут рядом с тестируемым пакетом в `internal/`
 - Integration-тесты помечаются build tag `//go:build integration` и также живут в пакете рядом с кодом
 - Каждый пакет самостоятельно вызывает `goose.Up()` в `TestMain` — setup изолирован
 - Моки репозиториев используются в unit-тестах сервисов; integration-тесты обязаны попадать в реальную БД
 - Перед handoff агент прогоняет unit-тесты (Docker-командой из раздела Stack выше) и integration-тесты затронутых пакетов
+
+### E2E-тесты (Playwright)
+- Спеки (`*.spec.ts`) живут в `e2e/<домен>/` — зеркалируют структуру `internal/<домен>/`
+- Глобальный seed/teardown — `e2e/global-setup.ts` / `e2e/global-teardown.ts`
+- Тестовые данные вставляются с фиксированными ID через `OVERRIDING SYSTEM VALUE`; teardown чистит их по тому же ID
+- Конфиг: `playwright.config.ts` в корне проекта
 
