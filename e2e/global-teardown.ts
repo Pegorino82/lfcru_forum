@@ -6,7 +6,7 @@ const E2E_TOPIC_ID = 9999;
 
 export default async function globalTeardown() {
   const client = new Client({
-    host: 'localhost',
+    host: process.env.PW_DB_HOST ?? 'localhost',
     port: 5432,
     user: 'postgres',
     password: 'postgres',

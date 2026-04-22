@@ -87,12 +87,41 @@ docker run --rm \
 
 > `vendor/` не хранится в репозитории (добавлен в `.gitignore`). Кэш-volume `lfcru_gomod` заменяет его — персистентен между запусками контейнеров на одной машине.
 
+## E2E Tests (Playwright)
+
+Node.js на хосте не нужен — тесты запускаются в официальном Docker-образе Playwright.
+Требуется запущенный dev-стек (`docker-compose.dev.yml`) и e2e-контейнер приложения.
+
+```bash
+# Шаг 1: поднять dev-стек (postgres + app на 8080), если ещё не запущен
+docker compose -f docker-compose.dev.yml up -d
+
+# Шаг 2: поднять e2e-контейнер (app на 8081 → lfcru_test)
+docker compose -f docker-compose.e2e.yml up -d
+
+# Шаг 3: запустить тесты
+docker run --rm \
+  -v "$(pwd)":/app -w /app \
+  --network lfcru_forum_default \
+  -e PW_BASE_URL=http://app-e2e:8080 \
+  -e PW_DB_HOST=postgres \
+  mcr.microsoft.com/playwright:v1.44.0-jammy \
+  npx playwright test
+```
+
+Playwright-контейнер подключается к сети `lfcru_forum_default` — видит `app-e2e:8080`
+и `postgres:5432` напрямую, без проброса портов на хост.
+
+Артефакты (скриншоты при падении, HTML-отчёт) записываются в `e2e/test-results/` и
+`e2e/test-report/` на хосте через смонтированный volume (`-v "$(pwd)":/app`).
+
 ## Database And Services
 
 | Сервис | Host (из контейнера) | Host (с хоста) | БД |
 |--------|---------------------|----------------|-----|
 | postgres | `postgres:5432` | `localhost:5432` | `lfcru` (dev), `lfcru_test` (tests) |
-| app | — | `localhost:8080` | — |
+| app | — | `localhost:8080` | `lfcru` |
+| app-e2e | `app-e2e:8080` | `localhost:8081` | `lfcru_test` |
 
 Docker-сеть: `lfcru_forum_default` (автоматически из имени папки проекта).
 

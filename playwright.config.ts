@@ -6,7 +6,7 @@ export default defineConfig({
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
   use: {
-    baseURL: 'http://localhost:8081',
+    baseURL: process.env.PW_BASE_URL ?? 'http://localhost:8081',
     locale: 'ru-RU',
     headless: true,
     screenshot: 'only-on-failure',

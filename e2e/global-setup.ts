@@ -10,7 +10,7 @@ export const E2E_USER_PASSWORD = 'e2e_pass123';
 
 export default async function globalSetup() {
   const client = new Client({
-    host: 'localhost',
+    host: process.env.PW_DB_HOST ?? 'localhost',
     port: 5432,
     user: 'postgres',
     password: 'postgres',
