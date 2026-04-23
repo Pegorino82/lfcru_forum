@@ -62,7 +62,24 @@ audience: humans_and_agents
 
 ### CI
 
-- Не настроен (задача backlog)
+GitHub Actions (`.github/workflows/ci.yml`). Запускается на каждый push и PR.
+
+**Jobs:**
+
+- **Lint** — actionlint, shellcheck, shfmt, markdownlint
+- **Go Tests** — unit + integration тесты:
+  - postgres запускается как service container (postgres:17-alpine)
+  - `go test ./...` — unit
+  - `go test -tags integration -p 1 ./internal/...` — integration
+  - `DATABASE_URL` указывает на `lfcru_test` в service container
+- **E2E (Playwright)** — playwright на раннере:
+  - postgres + app-e2e поднимаются через docker compose
+  - `.env` создаётся из `.env.example` перед стартом compose
+  - `npm ci` + `npx playwright install chromium --with-deps`
+  - `npx playwright test`
+  - Артефакты (скриншоты, HTML-отчёт) загружаются при падении
+
+Все три job-а обязательны для merge (branch protection на `main`).
 
 ## Core Rules
 
