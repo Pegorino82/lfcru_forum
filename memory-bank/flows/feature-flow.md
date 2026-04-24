@@ -38,6 +38,7 @@ audience: humans_and_agents
 9. **Связь с task tracker.** При создании feature package агент обязан добавить в исходную задачу или ticket ссылки на `feature.md` и, после появления, на `implementation-plan.md`. Это обеспечивает навигацию из task tracker к спецификации без ручного поиска по репозиторию.
 10. Если фича является частью более крупной инициативы, `feature.md` может зависеть от PRD из `memory-bank/prd/`, но PRD не заменяет сам feature package.
 11. Если фича создает новый устойчивый сценарий проекта или materially changes существующий, соответствующий `UC-*` в `memory-bank/use-cases/` должен быть создан или обновлен до closure.
+12. Если фича вводит новые доменные или архитектурные термины (сущности, паттерны, внешние концепции), соответствующие записи в memory-bank/domain/glossary.md должны быть добавлены или обновлены к моменту Design Ready. Агент проверяет glossary при создании feature.md и пополняет его при появлении новых терминов в ходе работы.
 
 ## Выбор шаблона `feature.md`
 
@@ -97,6 +98,10 @@ flowchart LR
 - [ ] `implementation-plan.md` → `status: active`
 - [ ] `implementation-plan.md` фиксирует test strategy: automated coverage surfaces, required local suites (и CI suites, когда CI настроен)
 - [ ] каждый manual-only gap имеет причину, ручную процедуру и `AG-*` с approval ref (approver — человек, ответственный за приёмку фичи: автор задачи или team lead)
+- [ ] создана feature-ветка по конвенции из [git-workflow.md](../engineering/git-workflow.md): `feat/FT-XXX-slug` или `fix/FT-XXX-slug`
+- [ ] создан git worktree: `git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug`
+- [ ] создан draft PR до первого коммита с кодом; все последующие commits/push/CI привязаны к нему
+- [ ] вся разработка ведётся внутри worktree-папки `../lfcru_forum-FT-XXX`
 
 ### Execution → Done
 
@@ -107,6 +112,9 @@ flowchart LR
 - [ ] каждый manual-only gap явно approved человеком (approval ref в `AG-*`)
 - [ ] simplify review выполнен: код минимально сложен или complexity обоснована ссылкой на `CON-*`, `FM-*` или `DEC-*`
 - [ ] если feature добавляет новый stable flow или materially changes существующий project-level scenario, соответствующий `UC-*` создан или обновлен и зарегистрирован в `memory-bank/use-cases/README.md`
+- [ ] PR переведён из draft в ready for review
+- [ ] PR merged в `main`
+- [ ] worktree удалён: `git worktree remove ../lfcru_forum-FT-XXX` и `git branch -d feat/FT-XXX-slug`
 - [ ] `feature.md` → `delivery_status: done`
 - [ ] `implementation-plan.md` → `status: archived`
 

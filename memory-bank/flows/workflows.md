@@ -72,6 +72,8 @@ Flow:
 
 `report -> reproduction -> analysis -> fix -> regression coverage -> review`
 
+**Worktree:** баг-фикс ведётся в git worktree на ветке `fix/FT-XXX-slug` с draft PR от начала работы — аналогично фиче (см. [git-workflow.md](../engineering/git-workflow.md)).
+
 **FT-пакет:** облегчённый. Создаётся `FT-XXX/README.md` без `feature.md` и `implementation-plan.md`. README содержит:
 
 - описание бага и условия воспроизведения
