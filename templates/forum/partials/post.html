@@ -7,7 +7,7 @@
     {{.CreatedAt.Format "02.01.2006 15:04"}}
   </time>
   {{if .ParentAuthorSnapshot}}
-  <a class="post-quote" {{if .ParentID}}href="#post-{{deref .ParentID}}"{{end}}>
+  <a class="post-quote" {{if .ParentID}}href="#post-{{derefInt64 .ParentID}}"{{end}}>
     <div class="post-quote-author">{{deref .ParentAuthorSnapshot}}:</div>
     <div>{{deref .ParentContentSnapshot}}</div>
   </a>
