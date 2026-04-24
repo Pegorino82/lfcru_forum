@@ -1,5 +1,6 @@
 .obsidian/
 .env
+.env.local
 examples/
 .claude/logs/
 memory-bank-legacy/
