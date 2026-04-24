@@ -77,6 +77,8 @@ flowchart LR
 
 ### Draft → Design Ready
 
+> Eval: self-check по [eval.md#draft--design-ready](eval.md) перед переводом статуса.
+
 - [ ] `feature.md` → `status: active`
 - [ ] секция `What` содержит ≥ 1 `REQ-*` и ≥ 1 `NS-*`
 - [ ] секция `Verify` содержит ≥ 1 `SC-*`
@@ -86,6 +88,8 @@ flowchart LR
 
 ### Design Ready → Plan Ready
 
+> Eval: для `large.md` — evaluator agent по [eval.md#design-ready--plan-ready](eval.md).
+
 - [ ] агент выполнил grounding: прошёлся по текущему состоянию системы (relevant paths, existing patterns, dependencies) и зафиксировал результат в discovery context секции `implementation-plan.md`
 - [ ] `implementation-plan.md` создан по шаблону `templates/feature/implementation-plan.md`
 - [ ] `implementation-plan.md` → `status: active`
@@ -93,6 +97,8 @@ flowchart LR
 - [ ] discovery context в `implementation-plan.md` содержит: relevant paths, local reference patterns, unresolved questions (`OQ-*`), test surfaces и execution environment
 
 ### Plan Ready → Execution
+
+> Eval: workflow-level check встроен в HARD STOP ниже; `AG-*` = human eval form.
 
 > **⛔ HARD STOP.** Все пункты ниже выполняются **до первого коммита с кодом** и не могут быть пропущены или отложены. Коммит в `main` без worktree — нарушение flow.
 
@@ -107,6 +113,8 @@ flowchart LR
 - [ ] вся разработка ведётся **исключительно** внутри worktree-папки `../lfcru_forum-FT-XXX`; прямая работа в `main` запрещена
 
 ### Execution → Done
+
+> Eval: execution + workflow-level по [eval.md#execution--done](eval.md); для `large.md` — evaluator agent обязателен.
 
 - [ ] все `CHK-*` из `feature.md` имеют результат pass/fail в evidence
 - [ ] все `EVID-*` из `feature.md` заполнены конкретными carriers (путь к файлу, CI run, screenshot)

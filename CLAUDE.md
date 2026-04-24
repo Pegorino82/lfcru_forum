@@ -43,6 +43,7 @@
 | Релиз, деплой, rollback | `memory-bank/ops/release.md` |
 | Маршрутизация задач, типы workflow, session protocol | `memory-bank/flows/workflows.md` |
 | Feature lifecycle, gates | `memory-bank/flows/feature-flow.md` |
+| Eval-чеклисты, evaluator agent, gate eval | `memory-bank/flows/eval.md` |
 | Trello: workflow trigger, маппинг, lifecycle | `memory-bank/flows/trello.md` |
 | Trello: board ID, list IDs (TODO/IN PROGRESS/DONE) | `memory-bank/ops/trello-board.md` |
 | Git workflow, коммиты, PR | `memory-bank/engineering/git-workflow.md` |
