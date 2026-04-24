@@ -25,6 +25,12 @@ var funcMap = template.FuncMap{
 		}
 		return *s
 	},
+	"derefInt64": func(i *int64) int64 {
+		if i == nil {
+			return 0
+		}
+		return *i
+	},
 	"add": func(a, b int) int { return a + b },
 	"sub": func(a, b int) int { return a - b },
 	// paginate returns a compact slice of page numbers for navigation.

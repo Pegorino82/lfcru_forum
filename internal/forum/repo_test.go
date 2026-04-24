@@ -496,7 +496,7 @@ func TestListPostsByTopic_Sorting(t *testing.T) {
 	}
 }
 
-func TestListPostsByTopic_RepliesGroupedAfterParent(t *testing.T) {
+func TestListPostsByTopic_RepliesChronological(t *testing.T) {
 	pool := setupPool(t)
 	cleanForum(t, pool)
 	defer cleanForum(t, pool)
@@ -507,7 +507,7 @@ func TestListPostsByTopic_RepliesGroupedAfterParent(t *testing.T) {
 	topicID := insertTopic(t, pool, sectionID, authorID, "topic")
 
 	// post1 → post2 → post3 (root posts in order)
-	// reply_to_post1 added last, should appear right after post1
+	// reply_to_post1 added last — должен появиться в конце (хронологически), а не под post1
 	idPost1 := insertPost(t, pool, topicID, authorID, "post1")
 	time.Sleep(10 * time.Millisecond)
 	insertPost(t, pool, topicID, authorID, "post2")
@@ -524,15 +524,15 @@ func TestListPostsByTopic_RepliesGroupedAfterParent(t *testing.T) {
 	if len(posts) != 4 {
 		t.Fatalf("expected 4 posts, got %d", len(posts))
 	}
-	// Expected order: post1, reply_to_post1, post2, post3
+	// Ожидаемый порядок: хронологический — reply появляется последним
 	contents := make([]string, len(posts))
 	for i, p := range posts {
 		contents[i] = p.Content
 	}
-	expected := []string{"post1", "reply_to_post1", "post2", "post3"}
+	expected := []string{"post1", "post2", "post3", "reply_to_post1"}
 	for i, want := range expected {
 		if contents[i] != want {
-			t.Errorf("pos %d: got %q, want %q (order: %v)", i, contents[i], want, contents)
+			t.Errorf("pos %d: got %q, want %q (full order: %v)", i, contents[i], want, contents)
 			break
 		}
 	}

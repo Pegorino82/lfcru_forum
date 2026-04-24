@@ -72,6 +72,8 @@ Flow:
 
 `report -> reproduction -> analysis -> fix -> regression coverage -> review`
 
+**Worktree:** баг-фикс ведётся в git worktree на ветке `fix/FT-XXX-slug` с draft PR от начала работы — аналогично фиче (см. [git-workflow.md](../engineering/git-workflow.md)).
+
 **FT-пакет:** облегчённый. Создаётся `FT-XXX/README.md` без `feature.md` и `implementation-plan.md`. README содержит:
 
 - описание бага и условия воспроизведения
@@ -98,6 +100,10 @@ Flow:
 `incident -> timeline -> root cause analysis -> fixes -> prevention work`
 
 Здесь человек обычно подтверждает RCA и приоритеты follow-up задач.
+
+## Источники задач
+
+Задачи могут приходить из Trello-доски. В этом случае агент читает карточку через API и создаёт feature package согласно [trello.md](trello.md). Тип workflow (фича / баг-фикс) определяется по label карточки.
 
 ## Routing Rules
 

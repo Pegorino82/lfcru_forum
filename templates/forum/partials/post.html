@@ -1,5 +1,5 @@
 {{define "post"}}
-<article class="post {{if .ParentID}}reply{{end}}" id="post-{{.ID}}">
+<article class="post" id="post-{{.ID}}">
   <div class="post-author">
     <span>{{.AuthorUsername}}</span>
   </div>
@@ -7,10 +7,10 @@
     {{.CreatedAt.Format "02.01.2006 15:04"}}
   </time>
   {{if .ParentAuthorSnapshot}}
-  <div class="post-quote">
+  <a class="post-quote" {{if .ParentID}}href="#post-{{derefInt64 .ParentID}}"{{end}}>
     <div class="post-quote-author">{{deref .ParentAuthorSnapshot}}:</div>
     <div>{{deref .ParentContentSnapshot}}</div>
-  </div>
+  </a>
   {{end}}
   <div class="post-content">{{.Content}}</div>
 </article>

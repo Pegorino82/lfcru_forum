@@ -44,6 +44,15 @@ Duration формат — Go: `10m`, `1h`, `720h`.
 
 Без префикса. Плоские имена в UPPER_SNAKE_CASE.
 
+## Trello Integration
+
+| Переменная | Тип | Описание |
+|---|---|---|
+| `TRELLO_API_KEY` | string | Trello REST API key |
+| `TRELLO_TOKEN` | string | Trello user token |
+
+Задаются в `.env.local`, не коммитятся. Board и list IDs — в [`memory-bank/ops/trello-board.md`](trello-board.md).
+
 ## Secrets
 
 - `DATABASE_URL` содержит credentials — в prod задаётся через `.env` файл на сервере или секреты CI/CD.
