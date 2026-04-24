@@ -1,6 +1,8 @@
 import { test, expect, Page } from '@playwright/test';
 import { E2E_USER_EMAIL, E2E_USER_PASSWORD } from '../global-setup';
 
+test.use({ storageState: { cookies: [], origins: [] } });
+
 const TOPIC_URL = '/forum/topics/9999';
 
 async function login(page: Page) {
@@ -13,12 +15,11 @@ async function login(page: Page) {
 
 async function submitPost(page: Page, text: string) {
   await page.fill('#post-content', text);
-  await Promise.all([
-    page.waitForResponse(
-      (res) => res.url().includes('/forum/topics/9999/posts') && res.status() < 400,
-    ),
-    page.click('button[type="submit"]:has-text("Отправить")'),
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/forum/topics/9999/posts')),
+    page.locator('.post-form button[type="submit"]').click(),
   ]);
+  expect(response.status()).toBeLessThan(400);
 }
 
 async function submitReply(page: Page, targetPost: ReturnType<Page['locator']>, text: string) {

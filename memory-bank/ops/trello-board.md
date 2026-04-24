@@ -15,7 +15,7 @@ audience: humans_and_agents
 |---|---|
 | Название | `lfcru` |
 | Board ID | `69e90873209865622904312c` |
-| URL | https://trello.com/b/nOS7FYIL/lfcru |
+| URL | <https://trello.com/b/nOS7FYIL/lfcru> |
 
 ## Списки
 

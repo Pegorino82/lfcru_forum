@@ -393,7 +393,7 @@ func (h *Handler) StreamEvents(c echo.Context) error {
 
 	// Catch-up: deliver posts missed since Last-Event-ID (CTR-02)
 	if lastIDStr := c.Request().Header.Get("Last-Event-ID"); lastIDStr != "" {
-		if lastID, parseErr := strconv.ParseInt(lastIDStr, 10, 64); parseErr == nil && lastID > 0 {
+		if lastID, parseErr := strconv.ParseInt(lastIDStr, 10, 64); parseErr == nil && lastID >= 0 {
 			missedPosts, dbErr := h.svc.ListPostsAfter(ctx, topicID, lastID)
 			if dbErr == nil {
 				for _, pv := range missedPosts {
