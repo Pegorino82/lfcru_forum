@@ -5,8 +5,8 @@ doc_function: canonical
 purpose: "Исправляет баг, при котором ответ с цитатой появляется под цитируемым постом вместо конца списка. Добавляет переход к оригинальному посту по клику на цитату."
 derived_from:
   - ../../domain/problem.md
-status: draft
-delivery_status: planned
+status: active
+delivery_status: done
 audience: humans_and_agents
 trello_card: https://trello.com/c/Pwgd2nnJ
 must_not_define:
