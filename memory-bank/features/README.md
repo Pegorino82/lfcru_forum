@@ -41,6 +41,7 @@ audience: humans_and_agents
 | [FT-014](FT-014/) | fix: дублирование ошибок при логине (HTMX) | `planned` |
 | [FT-015](FT-015/) | fix: UX редактора статей (превью + фидбек сохранения) | `planned` |
 | [FT-016](FT-016/) | feat: real-time обновление постов форума (SSE) | `planned` |
+| [FT-017](FT-017/) | fix: позиция цитирующего комментария на форуме | `planned` |
 
 ## Naming
 

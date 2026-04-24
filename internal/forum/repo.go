@@ -113,7 +113,7 @@ func (r *Repo) ListPostsByTopic(ctx context.Context, topicID int64) ([]PostView,
 		FROM forum_posts p
 		LEFT JOIN users u ON u.id = p.author_id
 		WHERE p.topic_id = $1
-		ORDER BY COALESCE(p.parent_id, p.id) ASC, (p.parent_id IS NOT NULL), p.created_at ASC, p.id ASC
+		ORDER BY p.created_at ASC, p.id ASC
 		LIMIT 500
 	`, topicID)
 	if err != nil {
