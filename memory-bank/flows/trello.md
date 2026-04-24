@@ -74,10 +74,12 @@ PUT https://api.trello.com/1/cards/{shortLink}
 | Trello колонка | Flow событие | Подтверждение |
 |---|---|---|
 | `TODO` | карточка не взята в работу | — |
-| `IN PROGRESS` | Bootstrap Feature Package создан (README.md + feature.md draft) | ✅ требуется |
+| `IN PROGRESS` | перед созданием worktree и draft PR (gate Plan Ready → Execution) | не требуется — пользователь уже дал go-ahead |
 | `DONE` | PR merged (gate Execution → Done пройден) | ✅ требуется |
 
-Перемещение выполняется только после явного подтверждения пользователя.
+> **HARD STOP — IN PROGRESS:** карточка обязана быть переведена в IN PROGRESS **до** создания worktree, feature-ветки и draft PR. Это первый шаг gate Plan Ready → Execution, не последний. Пропускать нельзя.
+
+Перемещение в DONE выполняется только после явного подтверждения пользователя.
 
 ## Lifecycle
 
@@ -86,10 +88,14 @@ PUT https://api.trello.com/1/cards/{shortLink}
 2. Агент читает карточку через API
 3. [если нужно] Агент задаёт уточняющие вопросы
 4. Агент создаёт Bootstrap Feature Package (README.md + feature.md draft)
-5. Агент запрашивает подтверждение → перемещает карточку TODO → IN PROGRESS
-6. Пользователь ревьюит Draft
-7. Агент доводит до Design Ready (feature.md: status active)
-8. Стандартный flow согласно feature-flow.md: Plan Ready → Execution (worktree + PR)
+5. Пользователь ревьюит Draft
+6. Агент доводит до Design Ready (feature.md: status active)
+7. Агент создаёт implementation-plan.md → Plan Ready
+8. *** HARD STOP *** Перед первым коммитом с кодом:
+   a. Переместить карточку TODO → IN PROGRESS (Trello API)
+   b. Создать git worktree: git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug
+   c. Создать draft PR
+   d. Вся дальнейшая работа — внутри worktree
 9. После merge PR: агент запрашивает подтверждение → перемещает IN PROGRESS → DONE
 ```
 

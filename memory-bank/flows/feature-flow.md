@@ -94,14 +94,17 @@ flowchart LR
 
 ### Plan Ready → Execution
 
+> **⛔ HARD STOP.** Все пункты ниже выполняются **до первого коммита с кодом** и не могут быть пропущены или отложены. Коммит в `main` без worktree — нарушение flow.
+
 - [ ] `feature.md` → `delivery_status: in_progress`
 - [ ] `implementation-plan.md` → `status: active`
 - [ ] `implementation-plan.md` фиксирует test strategy: automated coverage surfaces, required local suites (и CI suites, когда CI настроен)
 - [ ] каждый manual-only gap имеет причину, ручную процедуру и `AG-*` с approval ref (approver — человек, ответственный за приёмку фичи: автор задачи или team lead)
+- [ ] если карточка Trello связана с фичей → переместить в IN PROGRESS (до worktree)
 - [ ] создана feature-ветка по конвенции из [git-workflow.md](../engineering/git-workflow.md): `feat/FT-XXX-slug` или `fix/FT-XXX-slug`
 - [ ] создан git worktree: `git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug`
 - [ ] создан draft PR до первого коммита с кодом; все последующие commits/push/CI привязаны к нему
-- [ ] вся разработка ведётся внутри worktree-папки `../lfcru_forum-FT-XXX`
+- [ ] вся разработка ведётся **исключительно** внутри worktree-папки `../lfcru_forum-FT-XXX`; прямая работа в `main` запрещена
 
 ### Execution → Done
 

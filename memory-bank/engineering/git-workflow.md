@@ -50,7 +50,8 @@ audience: humans_and_agents
 ```bash
 # из корня основного репозитория
 git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug
-gh pr create --draft --title "[WIP][FT-XXX] Краткое описание" --body "..."
+cd ../lfcru_forum-FT-XXX
+gh pr create --repo Pegorino82/lfcru_forum --draft --title "[WIP][FT-XXX] Краткое описание" --body "..."
 ```
 
 Draft PR создаётся сразу — до первого коммита с кодом.
@@ -63,3 +64,21 @@ Draft PR создаётся сразу — до первого коммита с
 git worktree remove ../lfcru_forum-FT-XXX
 git branch -d feat/FT-XXX-slug
 ```
+
+## Remote Safety
+
+> **⛔ СТРОГИЙ ЗАПРЕТ на работу с upstream.**
+
+Репозиторий имеет два remote:
+
+| Remote | Назначение | Разрешено |
+|---|---|---|
+| `origin` | `Pegorino82/lfcru_forum` — рабочий форк | push, PR, CI |
+| `upstream` | исходный репозиторий | только `git fetch` для синхронизации |
+
+**Правила:**
+
+1. `git push` — только в `origin`. Никогда в `upstream`.
+2. `gh pr create` — всегда с явным флагом `--repo Pegorino82/lfcru_forum`. Без этого флага `gh` может использовать дефолтный репозиторий из контекста (который может быть чужим).
+3. Перед `gh pr create` обязательно выполнить `gh repo view` и убедиться, что контекст — `Pegorino82/lfcru_forum`.
+4. `gh pr`, `gh run`, `gh issue` без `--repo` — допустимы только после проверки контекста через `gh repo view`.
