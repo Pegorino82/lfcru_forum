@@ -216,7 +216,15 @@ func TestHomeHandler_WithData(t *testing.T) {
 		topicID, authorID, "Отличная игра!",
 	)
 
-	e := newTestServer(t, pool)
+	src := &mockFootballSource{
+		match: &football.MatchInfo{
+			Opponent:   "Манчестер Юнайтед",
+			MatchDate:  now.Add(48 * time.Hour),
+			Tournament: "АПЛ",
+		},
+	}
+
+	e := newTestServerWithFootball(t, pool, src)
 	rec := doGet(t, e, "/")
 
 	if rec.Code != http.StatusOK {

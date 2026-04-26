@@ -48,7 +48,7 @@ Duration формат — Go: `10m`, `1h`, `720h`.
 
 | Переменная | Тип | Default | Описание |
 |---|---|---|---|
-| `FOOTBALL_DATA_API_KEY` | string | `""` | API key для football-data.org. При отсутствии блок «Ближайший матч» скрыт (graceful degrade). Регистрация: https://www.football-data.org/client/register |
+| `FOOTBALL_DATA_API_KEY` | string | `""` | API key для football-data.org. При отсутствии блок «Ближайший матч» скрыт (graceful degrade). Регистрация: <https://www.football-data.org/client/register> |
 
 Задаётся в `.env.local`, не коммитится. Используется в `internal/football/client.go` через `internal/config/config.go`.
 
