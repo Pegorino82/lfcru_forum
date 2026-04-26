@@ -139,11 +139,12 @@ must_not_define:
 
 - `EVID-01` Визуальная проверка в браузере — блок «Ближайший матч» отображает Man United vs Liverpool, 2026-05-03 14:30 UTC, Old Trafford, Manchester, England, Выездной. Подтверждено Evgeny, 2026-04-26, сеанс AG-01.
 - `EVID-02` Визуальная проверка в браузере — при удалённом `FOOTBALL_DATA_API_KEY` из `.env.local` блок «Ближайший матч» отсутствует, страница рендерится без ошибок. Подтверждено Evgeny, 2026-04-26.
-- `EVID-03` Unit-тест `TestClient_NextMatch_CacheHit` (`internal/football/client_test.go:54`) — mock-сервер вызывается ровно один раз при двух вызовах `NextMatch` в пределах TTL. CI green: https://github.com/Pegorino82/lfcru_forum/actions/runs/24952806653
+- `EVID-03` Два последовательных GET / в пределах TTL: latency 331ms (API fetch) → 2ms (cache hit), bytes_out идентичны (6258). Подтверждено логами контейнера 2026-04-26. Дополнительно: unit-тест `TestClient_NextMatch_CacheHit` (`internal/football/client_test.go:54`) — CI green.
 
 ### Eval evidence
 
 - `EVID-04` Eval Draft → Design Ready — accept. 2026-04-26. self-check.
+- `EVID-05` Eval Execution → Done — accept. 2026-04-26. evaluator agent. EVID-01..03 verified, CHK-01/02/03 pass, AG-01 approved, simplify review выполнен, CI green.
 
 ### Evidence contract
 
