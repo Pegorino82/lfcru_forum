@@ -1,0 +1,354 @@
+description: "Evaluate create-feature-from-trello-card prompt — gate ordering, worktree path discipline, no file creation in main before setup"
+
+prompts:
+  - id: current-prompt
+    label: "Current (broken) prompt"
+    raw: "{{card_context}}"
+
+  - id: fixed-prompt
+    label: "Fixed prompt v2"
+    raw: "{{card_context}}"
+
+# Fixture-провайдеры — не делают API-вызовов, читают из fixtures/
+providers:
+  - id: "file://provider.js"
+    label: "Current (broken) prompt"
+    config:
+      fixture: broken
+
+  - id: "file://provider.js"
+    label: "Fixed prompt v2"
+    config:
+      fixture: fixed
+
+defaultTest:
+  vars:
+    card_context: ""
+
+tests:
+  # ───────────────────────────────────────────────────────────────────────────
+  # T1: Trello move ПЕРЕД git-операциями
+  # Баг #1: карточка остаётся в TODO
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T1: Trello IN PROGRESS move declared before worktree/branch/PR"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add pagination to forum thread list"
+        Description: "Users need to navigate pages of forum threads. Show 20 per page with prev/next controls."
+        Label: feature
+        Current list: TODO
+        Feature number: FT-006
+    assert:
+      # Конкретный List ID взят из memory-bank/ops/trello-board.md
+      - type: contains
+        value: "69e908732098656229043150"
+
+      # Trello card move — PUT, не POST
+      - type: contains
+        value: "PUT"
+
+      # Trello move (List ID) появляется до git worktree и gh pr create
+      - type: javascript
+        value: |
+          const trelloIdx = output.indexOf('69e908732098656229043150');
+          const worktreeIdx = output.indexOf('git worktree add');
+          const prIdx = output.indexOf('gh pr create');
+          if (trelloIdx === -1) {
+            return { pass: false, score: 0, reason: 'Trello IN PROGRESS list ID not found' };
+          }
+          const gitOps = [worktreeIdx, prIdx].filter(i => i !== -1);
+          const firstGitOp = gitOps.length ? Math.min(...gitOps) : Infinity;
+          const pass = trelloIdx < firstGitOp;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? `Trello move at pos ${trelloIdx}, first git op at pos ${firstGitOp} — correct order`
+              : `Trello move at pos ${trelloIdx} is AFTER git op at pos ${firstGitOp} — wrong order`
+          };
+
+      # Нет создания файлов до завершения gate (Trello + worktree + PR)
+      - type: javascript
+        value: |
+          const trelloIdx = output.indexOf('69e908732098656229043150');
+          const worktreeIdx = output.indexOf('git worktree add');
+          const prIdx = output.indexOf('gh pr create');
+          const gateSteps = [trelloIdx, worktreeIdx, prIdx].filter(i => i !== -1);
+          const gateEnd = gateSteps.length ? Math.max(...gateSteps) : 0;
+          const candidates = ['feature.md', 'README.md', 'implementation-plan.md'].map(s => {
+            const i = output.indexOf(s);
+            return i === -1 ? Infinity : i;
+          });
+          const firstFile = Math.min(...candidates);
+          const pass = firstFile === Infinity || firstFile > gateEnd;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'No feature package file creation before gate completion'
+              : `File creation at pos ${firstFile} before gate end at pos ${gateEnd}`
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T2: Worktree с корректным флагом -b + агент переключается внутрь
+  # Баг #2: агент создаёт worktree, но продолжает работать в main-директории
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T2: Worktree created with -b flag and agent switches into it"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add pagination to forum thread list"
+        Feature number: FT-006
+        Label: feature
+    assert:
+      # Правильный путь в команде worktree
+      - type: contains
+        value: "git worktree add ../lfcru_forum-FT-006"
+
+      # Команда содержит -b feat/FT-006-<slug>
+      - type: javascript
+        value: |
+          const hasCorrectFlag = /git worktree add \.\.\/lfcru_forum-FT-006\s+-b\s+feat\/FT-006-/.test(output);
+          return {
+            pass: hasCorrectFlag,
+            score: hasCorrectFlag ? 1 : 0,
+            reason: hasCorrectFlag
+              ? 'Worktree command has correct format with -b flag'
+              : 'Missing: git worktree add ../lfcru_forum-FT-006 -b feat/FT-006-<slug>'
+          };
+
+      # После создания worktree — дальнейшая работа ссылается на worktree-путь
+      - type: javascript
+        value: |
+          const marker = 'git worktree add ../lfcru_forum-FT-006';
+          const worktreeIdx = output.indexOf(marker);
+          if (worktreeIdx === -1) {
+            return { pass: false, score: 0, reason: 'Worktree creation not found' };
+          }
+          const afterWorktree = output.slice(worktreeIdx + marker.length);
+          const hasPath = /\.\.\/lfcru_forum-FT-006/.test(afterWorktree);
+          return {
+            pass: hasPath,
+            score: hasPath ? 1 : 0,
+            reason: hasPath
+              ? 'Worktree path referenced after worktree creation'
+              : 'After worktree creation, path ../lfcru_forum-FT-006 never referenced — agent stays in main'
+          };
+
+      # Нет абсолютного cd /Users обратно в main
+      - type: not-contains
+        value: "cd /Users"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T3: Нет создания файлов feature package в main до завершения gate
+  # Баг #3: feature.md и README.md создаются в main ветке раньше worktree
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T3: No feature package files created in main dir before gate"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add user profile avatars"
+        Description: "Allow users to set profile avatars. Support JPG/PNG upload up to 2MB."
+        Label: feature
+        Feature number: FT-007
+    assert:
+      # Файлы не появляются до завершения gate
+      - type: javascript
+        value: |
+          const trelloIdx = output.indexOf('69e908732098656229043150');
+          const worktreeIdx = output.indexOf('git worktree add');
+          const prIdx = output.indexOf('gh pr create');
+          const gateSteps = [trelloIdx, worktreeIdx, prIdx].filter(i => i !== -1);
+          if (gateSteps.length < 2) {
+            return { pass: false, score: 0, reason: `Gate incomplete: trello=${trelloIdx}, worktree=${worktreeIdx}, pr=${prIdx}` };
+          }
+          const gateEnd = Math.max(...gateSteps);
+          const files = ['feature.md', 'README.md', 'implementation-plan.md', 'git commit', 'git add'];
+          const firstAction = Math.min(...files.map(s => {
+            const i = output.indexOf(s);
+            return i === -1 ? Infinity : i;
+          }));
+          const pass = firstAction === Infinity || firstAction > gateEnd;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'All file/commit actions appear after gate completion'
+              : `Action at pos ${firstAction} before gate end at pos ${gateEnd}`
+          };
+
+      # Worktree-путь упоминается при создании файлов
+      - type: javascript
+        value: |
+          const hasWorktreePath = /\.\.\/lfcru_forum-FT-007/.test(output);
+          return {
+            pass: hasWorktreePath,
+            score: hasWorktreePath ? 1 : 0,
+            reason: hasWorktreePath
+              ? 'Worktree path ../lfcru_forum-FT-007 referenced'
+              : 'Worktree path not found — files likely created in main dir'
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T4: Draft PR до первого коммита с корректными флагами
+  # Баг #4: PR создаётся после первого коммита, а не до
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T4: Draft PR created before first commit with correct flags"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add search to thread list"
+        Feature number: FT-008
+        Label: feature
+    assert:
+      # Обязателен флаг --draft
+      - type: contains
+        value: "--draft"
+
+      # Обязателен явный --repo (правило remote safety)
+      - type: contains
+        value: "--repo Pegorino82/lfcru_forum"
+
+      # gh pr create появляется до git commit
+      - type: javascript
+        value: |
+          const prIdx = output.indexOf('gh pr create');
+          const commitIdx = output.indexOf('git commit');
+          if (prIdx === -1) {
+            return { pass: false, score: 0, reason: 'gh pr create not found' };
+          }
+          const pass = commitIdx === -1 || prIdx < commitIdx;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? `PR at pos ${prIdx}, commit at ${commitIdx === -1 ? 'not found' : commitIdx} — correct order`
+              : `PR at pos ${prIdx} AFTER commit at pos ${commitIdx} — wrong order`
+          };
+
+      # Заголовок PR по конвенции [WIP][FT-XXX]
+      - type: javascript
+        value: |
+          const hasWipTitle = /\[WIP\]\[FT-\d+\]/i.test(output);
+          return {
+            pass: hasWipTitle,
+            score: hasWipTitle ? 1 : 0,
+            reason: hasWipTitle ? 'PR title follows [WIP][FT-XXX] convention' : 'PR title missing [WIP][FT-XXX] format'
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T5: Полная gate-последовательность (холистический тест)
+  # Trello → worktree → PR → files (в правильном порядке)
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T5: Full gate sequence — Trello → worktree → PR → files (correct order)"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Implement thread bookmarks"
+        Description: "Users should be able to bookmark threads. Show bookmarked threads in profile."
+        Label: feature
+        Feature number: FT-009
+    assert:
+      - type: javascript
+        value: |
+          const steps = {
+            trello:   output.indexOf('69e908732098656229043150'),
+            worktree: output.indexOf('git worktree add ../lfcru_forum-FT-009'),
+            pr:       output.indexOf('gh pr create')
+          };
+          const fileIdxs = ['feature.md', 'README.md', 'implementation-plan.md'].map(s => {
+            const i = output.indexOf(s);
+            return i === -1 ? Infinity : i;
+          });
+          steps.files = Math.min(...fileIdxs);
+
+          const missing = Object.entries(steps)
+            .filter(([, v]) => v === -1 || v === Infinity)
+            .map(([k]) => k);
+          if (missing.length) {
+            return { pass: false, score: 0, reason: `Missing steps: ${missing.join(', ')}` };
+          }
+
+          const ordered =
+            steps.trello < steps.worktree &&
+            steps.worktree < steps.pr &&
+            steps.pr < steps.files;
+
+          return {
+            pass: ordered,
+            score: ordered ? 1 : 0,
+            reason: ordered
+              ? `Correct order: trello(${steps.trello}) < worktree(${steps.worktree}) < pr(${steps.pr}) < files(${steps.files})`
+              : `Order violation: trello=${steps.trello}, worktree=${steps.worktree}, pr=${steps.pr}, files=${steps.files}`
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T6: Тонкая карточка → уточняющие вопросы, нет немедленного создания артефактов
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T6: Thin card description triggers clarifying questions before Draft"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Improve forum"
+        Description: ""
+        Label: feature
+    assert:
+      # Минимум 2 вопросительных знака — агент задаёт вопросы
+      - type: javascript
+        value: |
+          const questionCount = (output.match(/\?/g) || []).length;
+          const pass = questionCount >= 2;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? `Found ${questionCount} question marks — agent asks clarifying questions`
+              : `Only ${questionCount} question mark(s) — agent should ask at least 2 clarifying questions`
+          };
+
+      # Немедленного создания feature.md не должно быть
+      - type: not-contains
+        value: "feature.md"
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T7: Путевая дисциплина — WRITE-операции после worktree идут в worktree-путь
+  # Регрессионный тест для бага #2
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T7: After worktree creation all write operations reference worktree path"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add reply notifications"
+        Feature number: FT-010
+        Label: feature
+        Status: Plan Ready — proceeding to Execution gate
+    assert:
+      - type: javascript
+        value: |
+          const marker = 'git worktree add';
+          const worktreeCreateIdx = output.indexOf(marker);
+          if (worktreeCreateIdx === -1) {
+            return { pass: false, score: 0, reason: 'No worktree creation found' };
+          }
+          // Пропускаем строку команды worktree, берём текст начиная со следующей строки
+          const lineEnd = output.indexOf('\n', worktreeCreateIdx);
+          const afterWorktree = output.slice(lineEnd !== -1 ? lineEnd : worktreeCreateIdx + marker.length);
+
+          // Worktree-путь должен упоминаться после создания worktree
+          const hasWorktreePath = /\.\.\/lfcru_forum-FT-010/.test(afterWorktree);
+
+          // Bare-путь memory-bank/features/FT-010/ без worktree-префикса — признак работы в main
+          // Lookbehind (?<!\/) — совпадает только если memory-bank НЕ предшествует /
+          const hasBareMainPath = /(?<!\/)memory-bank\/features\/FT-010\/(?:feature|README|implementation)/.test(afterWorktree);
+
+          const pass = hasWorktreePath && !hasBareMainPath;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'Write operations reference worktree path after worktree creation'
+              : !hasWorktreePath
+                ? 'Worktree path ../lfcru_forum-FT-010 not referenced after worktree setup'
+                : 'Bare main-repo paths used for writes after worktree creation'
+          };
