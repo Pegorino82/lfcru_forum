@@ -137,9 +137,9 @@ must_not_define:
 
 ### Evidence
 
-- `EVID-01` Скриншот главной страницы с заполненным блоком «Ближайший матч».
-- `EVID-02` Скриншот главной страницы при отсутствующем API ключе — блок скрыт, страница без ошибок.
-- `EVID-03` Фрагмент лога сервера: один запрос к football-data.org за два обращения к главной странице в пределах TTL.
+- `EVID-01` Визуальная проверка в браузере — блок «Ближайший матч» отображает Man United vs Liverpool, 2026-05-03 14:30 UTC, Old Trafford, Manchester, England, Выездной. Подтверждено Evgeny, 2026-04-26, сеанс AG-01.
+- `EVID-02` Визуальная проверка в браузере — при удалённом `FOOTBALL_DATA_API_KEY` из `.env.local` блок «Ближайший матч» отсутствует, страница рендерится без ошибок. Подтверждено Evgeny, 2026-04-26.
+- `EVID-03` Unit-тест `TestClient_NextMatch_CacheHit` (`internal/football/client_test.go:54`) — mock-сервер вызывается ровно один раз при двух вызовах `NextMatch` в пределах TTL. CI green: https://github.com/Pegorino82/lfcru_forum/actions/runs/24952806653
 
 ### Eval evidence
 

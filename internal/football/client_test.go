@@ -32,12 +32,21 @@ func TestClient_NextMatch_HappyPath(t *testing.T) {
 
 	c := NewClient("test-key", time.Hour)
 	c.httpClient = &http.Client{Timeout: 5 * time.Second}
-	// Override base URL via a helper approach: rebuild the fetch URL inline.
-	// Since apiBaseURL is a package-level const, we test via the public interface
-	// but point to the test server by temporarily replacing it.
-	// Full fetch with real football-data.org URL is an integration test.
-	// Cache and nil-key behaviour is covered by the dedicated tests below.
-	_ = srv
+	c.baseURL = srv.URL
+
+	info, err := c.NextMatch(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MatchInfo, got nil")
+	}
+	if info.Opponent != "Manchester United FC" {
+		t.Errorf("opponent: got %q, want %q", info.Opponent, "Manchester United FC")
+	}
+	if info.IsHome {
+		t.Errorf("expected away match")
+	}
 }
 
 func TestClient_NextMatch_EmptyAPIKey(t *testing.T) {
