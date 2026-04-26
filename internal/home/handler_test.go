@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
+	"github.com/Pegorino82/lfcru_forum/internal/football"
 	"github.com/Pegorino82/lfcru_forum/internal/forum"
 	"github.com/Pegorino82/lfcru_forum/internal/home"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
@@ -120,7 +121,7 @@ func newTestServer(t *testing.T, pool *pgxpool.Pool) *echo.Echo {
 	e.Use(appMiddleware.CSRFMiddleware())
 	e.Use(auth.LoadSession(svc))
 
-	homeHandler := home.NewHandler(news.NewRepo(pool), match.NewRepo(pool), forum.NewRepo(pool))
+	homeHandler := home.NewHandler(news.NewRepo(pool), match.NewRepo(pool), forum.NewRepo(pool), nil)
 	e.GET("/", homeHandler.ShowHome)
 
 	return e
@@ -215,7 +216,15 @@ func TestHomeHandler_WithData(t *testing.T) {
 		topicID, authorID, "Отличная игра!",
 	)
 
-	e := newTestServer(t, pool)
+	src := &mockFootballSource{
+		match: &football.MatchInfo{
+			Opponent:   "Манчестер Юнайтед",
+			MatchDate:  now.Add(48 * time.Hour),
+			Tournament: "АПЛ",
+		},
+	}
+
+	e := newTestServerWithFootball(t, pool, src)
 	rec := doGet(t, e, "/")
 
 	if rec.Code != http.StatusOK {
@@ -265,5 +274,120 @@ func TestHomeHandler_GuestAccess(t *testing.T) {
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200 for guest, got %d", rec.Code)
+	}
+}
+
+// ─── Football client mock & new tests ─────────────────────────────────────────
+
+type mockFootballSource struct {
+	match *football.MatchInfo
+	err   error
+}
+
+func (m *mockFootballSource) NextMatch(_ context.Context) (*football.MatchInfo, error) {
+	return m.match, m.err
+}
+
+func newTestServerWithFootball(t *testing.T, pool *pgxpool.Pool, src home.FootballSource) *echo.Echo {
+	t.Helper()
+	renderer, err := tmpl.New(os.DirFS(templatesPath), "templates/")
+	if err != nil {
+		t.Fatalf("load templates: %v", err)
+	}
+	svc := auth.NewService(
+		user.NewRepo(pool),
+		session.NewRepo(pool),
+		ratelimit.NewLoginAttemptRepo(pool),
+		auth.Config{
+			BcryptCost:         bcrypt.MinCost,
+			SessionLifetime:    30 * 24 * time.Hour,
+			RateLimitWindow:    10 * time.Minute,
+			RateLimitMax:       5,
+			SessionGracePeriod: 5 * time.Minute,
+			MaxSessionsPerUser: 10,
+		},
+	)
+	e := echo.New()
+	e.HideBanner = true
+	e.Renderer = renderer
+	e.Use(middleware.Recover())
+	e.Use(appMiddleware.CSRFMiddleware())
+	e.Use(auth.LoadSession(svc))
+	homeHandler := home.NewHandler(news.NewRepo(pool), match.NewRepo(pool), forum.NewRepo(pool), src)
+	e.GET("/", homeHandler.ShowHome)
+	return e
+}
+
+func TestHomeHandler_WithFootballMatch(t *testing.T) {
+	pool := testDB(t)
+	cleanAll(t, pool)
+	defer cleanAll(t, pool)
+
+	src := &mockFootballSource{
+		match: &football.MatchInfo{
+			Opponent:   "Arsenal FC",
+			MatchDate:  time.Date(2026, 5, 10, 15, 0, 0, 0, time.UTC),
+			Stadium:    "Emirates Stadium",
+			City:       "London",
+			Country:    "England",
+			IsHome:     false,
+			Tournament: "Premier League",
+		},
+	}
+
+	e := newTestServerWithFootball(t, pool, src)
+	rec := doGet(t, e, "/")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+
+	checks := []string{
+		"Arsenal FC",
+		"Emirates Stadium",
+		"London",
+		"England",
+		"Premier League",
+		"Выездной",
+	}
+	for _, want := range checks {
+		if !strings.Contains(body, want) {
+			t.Errorf("expected %q in body", want)
+		}
+	}
+}
+
+func TestHomeHandler_FootballClientNil_ShowsEmptyState(t *testing.T) {
+	pool := testDB(t)
+	cleanAll(t, pool)
+	defer cleanAll(t, pool)
+
+	// nil client — graceful degrade
+	e := newTestServer(t, pool)
+	rec := doGet(t, e, "/")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Ближайших матчей нет") {
+		t.Errorf("expected empty-state when football client is nil")
+	}
+}
+
+func TestHomeHandler_FootballClientReturnsNil_ShowsEmptyState(t *testing.T) {
+	pool := testDB(t)
+	cleanAll(t, pool)
+	defer cleanAll(t, pool)
+
+	src := &mockFootballSource{match: nil}
+	e := newTestServerWithFootball(t, pool, src)
+	rec := doGet(t, e, "/")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Ближайших матчей нет") {
+		t.Errorf("expected empty-state when NextMatch returns nil")
 	}
 }

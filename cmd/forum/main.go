@@ -15,6 +15,7 @@ import (
 	"github.com/Pegorino82/lfcru_forum/internal/cleanup"
 	"github.com/Pegorino82/lfcru_forum/internal/comment"
 	"github.com/Pegorino82/lfcru_forum/internal/config"
+	"github.com/Pegorino82/lfcru_forum/internal/football"
 	"github.com/Pegorino82/lfcru_forum/internal/forum"
 	"github.com/Pegorino82/lfcru_forum/internal/home"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
@@ -106,7 +107,8 @@ func main() {
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
-	e.GET("/", home.NewHandler(newsRepo, matchRepo, topicRepo).ShowHome)
+	footballClient := football.NewClient(cfg.FootballAPIKey, 24*time.Hour)
+	e.GET("/", home.NewHandler(newsRepo, matchRepo, topicRepo, footballClient).ShowHome)
 	auth.NewHandler(authSvc).RegisterRoutes(e)
 	news.NewHandler(newsRepo, commentRepo, commentSvc).RegisterRoutes(e)
 

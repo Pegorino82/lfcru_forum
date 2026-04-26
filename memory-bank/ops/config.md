@@ -44,6 +44,14 @@ Duration формат — Go: `10m`, `1h`, `720h`.
 
 Без префикса. Плоские имена в UPPER_SNAKE_CASE.
 
+## Football Data API (FT-018)
+
+| Переменная | Тип | Default | Описание |
+|---|---|---|---|
+| `FOOTBALL_DATA_API_KEY` | string | `""` | API key для football-data.org. При отсутствии блок «Ближайший матч» скрыт (graceful degrade). Регистрация: <https://www.football-data.org/client/register> |
+
+Задаётся в `.env.local`, не коммитится. Используется в `internal/football/client.go` через `internal/config/config.go`.
+
 ## Trello Integration
 
 | Переменная | Тип | Описание |

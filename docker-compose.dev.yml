@@ -13,6 +13,8 @@ services:
       UPLOADS_DIR: "/app/storage/news"
     env_file:
       - .env
+      - path: .env.local
+        required: false
     volumes:
       - storage_data:/app/storage/news
     depends_on:

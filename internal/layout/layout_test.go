@@ -125,7 +125,7 @@ func newServer(t *testing.T, pool *pgxpool.Pool, svc *auth.Service) *echo.Echo {
 	e.Use(appMiddleware.CSRFMiddleware())
 	e.Use(auth.LoadSession(svc))
 
-	homeHandler := home.NewHandler(news.NewRepo(pool), match.NewRepo(pool), forum.NewRepo(pool))
+	homeHandler := home.NewHandler(news.NewRepo(pool), match.NewRepo(pool), forum.NewRepo(pool), nil)
 	e.GET("/", homeHandler.ShowHome)
 	auth.NewHandler(svc).RegisterRoutes(e)
 
