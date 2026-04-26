@@ -280,12 +280,18 @@ func TestHomeHandler_GuestAccess(t *testing.T) {
 // ─── Football client mock & new tests ─────────────────────────────────────────
 
 type mockFootballSource struct {
-	match *football.MatchInfo
-	err   error
+	match    *football.MatchInfo
+	last     *football.LastMatchInfo
+	err      error
+	lastErr  error
 }
 
 func (m *mockFootballSource) NextMatch(_ context.Context) (*football.MatchInfo, error) {
 	return m.match, m.err
+}
+
+func (m *mockFootballSource) LastMatch(_ context.Context) (*football.LastMatchInfo, error) {
+	return m.last, m.lastErr
 }
 
 func newTestServerWithFootball(t *testing.T, pool *pgxpool.Pool, src home.FootballSource) *echo.Echo {
@@ -380,14 +386,90 @@ func TestHomeHandler_FootballClientReturnsNil_ShowsEmptyState(t *testing.T) {
 	cleanAll(t, pool)
 	defer cleanAll(t, pool)
 
-	src := &mockFootballSource{match: nil}
+	src := &mockFootballSource{match: nil, last: nil}
 	e := newTestServerWithFootball(t, pool, src)
 	rec := doGet(t, e, "/")
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "Ближайших матчей нет") {
+	body := rec.Body.String()
+	if !strings.Contains(body, "Ближайших матчей нет") {
 		t.Errorf("expected empty-state when NextMatch returns nil")
+	}
+	if !strings.Contains(body, "Данные о последнем матче недоступны") {
+		t.Errorf("expected empty-state when LastMatch returns nil")
+	}
+}
+
+func TestHomeHandler_WithLastFootballMatch(t *testing.T) {
+	pool := testDB(t)
+	cleanAll(t, pool)
+	defer cleanAll(t, pool)
+
+	src := &mockFootballSource{
+		last: &football.LastMatchInfo{
+			Opponent:   "Everton FC",
+			MatchDate:  time.Date(2026, 4, 19, 15, 30, 0, 0, time.UTC),
+			Stadium:    "Anfield",
+			City:       "Liverpool",
+			Country:    "England",
+			IsHome:     true,
+			Tournament: "Premier League",
+			HomeScore:  3,
+			AwayScore:  0,
+			ForumURL:   "#",
+		},
+	}
+
+	e := newTestServerWithFootball(t, pool, src)
+	rec := doGet(t, e, "/")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+
+	checks := []string{
+		"Последний матч",
+		"Everton FC",
+		"Anfield",
+		"Liverpool",
+		"England",
+		"Домашний",
+		"3:0",
+		"Тема на форуме",
+	}
+	for _, want := range checks {
+		if !strings.Contains(body, want) {
+			t.Errorf("expected %q in body", want)
+		}
+	}
+
+	// Блок «Последний матч» должен быть выше блока «Ближайший матч»
+	lastIdx := strings.Index(body, "last-match-heading")
+	nextIdx := strings.Index(body, "match-heading")
+	if lastIdx == -1 || nextIdx == -1 {
+		t.Fatal("could not find expected headings in body")
+	}
+	if lastIdx > nextIdx {
+		t.Errorf("last-match block should appear before next-match block in HTML")
+	}
+}
+
+func TestHomeHandler_LastFootballMatchNil_ShowsEmptyState(t *testing.T) {
+	pool := testDB(t)
+	cleanAll(t, pool)
+	defer cleanAll(t, pool)
+
+	src := &mockFootballSource{last: nil}
+	e := newTestServerWithFootball(t, pool, src)
+	rec := doGet(t, e, "/")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Данные о последнем матче недоступны") {
+		t.Errorf("expected last-match empty-state when LastMatch returns nil")
 	}
 }

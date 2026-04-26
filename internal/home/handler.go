@@ -17,18 +17,20 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// FootballSource is the interface for fetching the next Liverpool FC match.
+// FootballSource is the interface for fetching Liverpool FC match data.
 type FootballSource interface {
 	NextMatch(ctx context.Context) (*football.MatchInfo, error)
+	LastMatch(ctx context.Context) (*football.LastMatchInfo, error)
 }
 
 type HomeData struct {
-	User               *user.User
-	CSRFToken          string
-	News               []news.News
-	NextMatch          *match.Match
-	NextFootballMatch  *football.MatchInfo
-	Topics             []forum.TopicWithLastAuthor
+	User              *user.User
+	CSRFToken         string
+	News              []news.News
+	NextMatch         *match.Match
+	NextFootballMatch *football.MatchInfo
+	LastFootballMatch *football.LastMatchInfo
+	Topics            []forum.TopicWithLastAuthor
 }
 
 type Handler struct {
@@ -69,10 +71,15 @@ func (h *Handler) ShowHome(c echo.Context) error {
 	}
 
 	var nextFootballMatch *football.MatchInfo
+	var lastFootballMatch *football.LastMatchInfo
 	if h.footballClient != nil {
 		nextFootballMatch, err = h.footballClient.NextMatch(ctx)
 		if err != nil {
-			slog.Warn("home: failed to load football match", "err", err)
+			slog.Warn("home: failed to load next football match", "err", err)
+		}
+		lastFootballMatch, err = h.footballClient.LastMatch(ctx)
+		if err != nil {
+			slog.Warn("home: failed to load last football match", "err", err)
 		}
 	}
 
@@ -82,6 +89,7 @@ func (h *Handler) ShowHome(c echo.Context) error {
 		News:              newsList,
 		NextMatch:         nextMatch,
 		NextFootballMatch: nextFootballMatch,
+		LastFootballMatch: lastFootballMatch,
 		Topics:            topics,
 	}
 
