@@ -13,6 +13,10 @@
 .news-list time, .forum-meta { color: #666; font-size: 0.875rem; }
 .match-card { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 1rem; text-align: center; }
 .match-opponent { font-size: 1.25rem; font-weight: bold; }
+.match-type { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; }
+.match-type-home { background: #e8f5e9; color: #2e7d32; }
+.match-type-away { background: #fff3e0; color: #e65100; }
+.match-venue { color: #555; font-size: 0.875rem; }
 .match-tournament { color: #666; font-size: 0.875rem; }
 .empty-state { color: #999; font-style: italic; }
 section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px solid #c8102e; padding-bottom: 0.5rem; }
@@ -46,15 +50,25 @@ section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px soli
 
   <section class="home-match" aria-labelledby="match-heading">
     <h2 id="match-heading">Ближайший матч</h2>
-    {{if .NextMatch}}
+    {{if .NextFootballMatch}}
       <div class="match-card">
-        <p class="match-opponent">{{.NextMatch.Opponent}}</p>
+        {{if .NextFootballMatch.IsHome}}
+          <span class="match-type match-type-home">Домашний</span>
+        {{else}}
+          <span class="match-type match-type-away">Выездной</span>
+        {{end}}
+        <p class="match-opponent">Liverpool FC — {{.NextFootballMatch.Opponent}}</p>
         <p class="match-date">
-          <time datetime="{{.NextMatch.MatchDate.Format "2006-01-02T15:04:05Z07:00"}}">
-            {{.NextMatch.MatchDate.Format "02.01.2006 15:04"}} МСК
+          <time datetime="{{.NextFootballMatch.MatchDate.Format "2006-01-02T15:04:05Z07:00"}}">
+            {{.NextFootballMatch.MatchDate.Format "02.01.2006 15:04"}} UTC
           </time>
         </p>
-        <p class="match-tournament">{{.NextMatch.Tournament}}</p>
+        {{if .NextFootballMatch.Stadium}}
+          <p class="match-venue">
+            {{.NextFootballMatch.Stadium}}{{if .NextFootballMatch.City}}, {{.NextFootballMatch.City}}{{end}}{{if .NextFootballMatch.Country}}, {{.NextFootballMatch.Country}}{{end}}
+          </p>
+        {{end}}
+        <p class="match-tournament">{{.NextFootballMatch.Tournament}}</p>
       </div>
     {{else}}
       <p class="empty-state">Ближайших матчей нет</p>

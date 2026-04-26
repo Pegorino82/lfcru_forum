@@ -1,11 +1,13 @@
 package home
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
+	"github.com/Pegorino82/lfcru_forum/internal/football"
 	"github.com/Pegorino82/lfcru_forum/internal/forum"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
 	"github.com/Pegorino82/lfcru_forum/internal/match"
@@ -15,22 +17,34 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// FootballSource is the interface for fetching the next Liverpool FC match.
+type FootballSource interface {
+	NextMatch(ctx context.Context) (*football.MatchInfo, error)
+}
+
 type HomeData struct {
-	User      *user.User
-	CSRFToken string
-	News      []news.News
-	NextMatch *match.Match
-	Topics    []forum.TopicWithLastAuthor
+	User               *user.User
+	CSRFToken          string
+	News               []news.News
+	NextMatch          *match.Match
+	NextFootballMatch  *football.MatchInfo
+	Topics             []forum.TopicWithLastAuthor
 }
 
 type Handler struct {
-	newsRepo  *news.Repo
-	matchRepo *match.Repo
-	topicRepo *forum.Repo
+	newsRepo       *news.Repo
+	matchRepo      *match.Repo
+	topicRepo      *forum.Repo
+	footballClient FootballSource
 }
 
-func NewHandler(newsRepo *news.Repo, matchRepo *match.Repo, topicRepo *forum.Repo) *Handler {
-	return &Handler{newsRepo: newsRepo, matchRepo: matchRepo, topicRepo: topicRepo}
+func NewHandler(newsRepo *news.Repo, matchRepo *match.Repo, topicRepo *forum.Repo, footballClient FootballSource) *Handler {
+	return &Handler{
+		newsRepo:       newsRepo,
+		matchRepo:      matchRepo,
+		topicRepo:      topicRepo,
+		footballClient: footballClient,
+	}
 }
 
 func (h *Handler) ShowHome(c echo.Context) error {
@@ -54,12 +68,21 @@ func (h *Handler) ShowHome(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Что-то пошло не так. Попробуйте обновить страницу.")
 	}
 
+	var nextFootballMatch *football.MatchInfo
+	if h.footballClient != nil {
+		nextFootballMatch, err = h.footballClient.NextMatch(ctx)
+		if err != nil {
+			slog.Warn("home: failed to load football match", "err", err)
+		}
+	}
+
 	data := HomeData{
-		User:      auth.UserFromContext(c),
-		CSRFToken: appMiddleware.CSRFToken(c),
-		News:      newsList,
-		NextMatch: nextMatch,
-		Topics:    topics,
+		User:              auth.UserFromContext(c),
+		CSRFToken:         appMiddleware.CSRFToken(c),
+		News:              newsList,
+		NextMatch:         nextMatch,
+		NextFootballMatch: nextFootballMatch,
+		Topics:            topics,
 	}
 
 	if c.Request().Header.Get("HX-Request") == "true" {
