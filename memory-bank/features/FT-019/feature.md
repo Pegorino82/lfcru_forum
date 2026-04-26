@@ -2,11 +2,11 @@
 title: "FT-019: Блок «Последний матч» на главной странице"
 doc_kind: feature
 doc_function: canonical
-purpose: "Отображать последний сыгранный матч первой команды ЛФК на главной странице: соперник, дата/время (UTC), стадион, H/A, финальный счёт, голы с минутами, ссылка-заглушка на форум. Блок располагается над блоком «Ближайший матч». Данные — football-data.org API с кэшем до начала следующего матча."
+purpose: "Отображать последний сыгранный матч первой команды ЛФК на главной странице: соперник, дата/время (UTC), стадион, H/A, финальный счёт, ссылка-заглушка на форум. Блок располагается над блоком «Ближайший матч». Данные — football-data.org API с кэшем до начала следующего матча."
 derived_from:
   - ../../domain/problem.md
 status: active
-delivery_status: planned
+delivery_status: done
 audience: humans_and_agents
 trello: https://trello.com/c/vWjzMaXc
 must_not_define:
@@ -144,9 +144,14 @@ must_not_define:
 
 ### Evidence
 
-- `EVID-01` Визуальная проверка в браузере — блок «Последний матч» отображает все поля корректно и расположен над блоком «Ближайший матч».
-- `EVID-02` Визуальная проверка в браузере — при удалённом `FOOTBALL_DATA_API_KEY` блок «Последний матч» отсутствует, страница рендерится без ошибок.
-- `EVID-03` Два последовательных GET `/` в пределах TTL: в логах контейнера ровно одна запись `api.football-data.org` за оба запроса. Дополнительно: unit-тест `TestClient_LastMatch_CacheHit` зелёный.
+- `EVID-01` Визуальная проверка в браузере — блок «Последний матч» (Crystal Palace FC, 25.04.2026, 3:1) расположен над «Ближайшим матчем»; все поля отображаются корректно. Подтверждено Evgeny, 2026-04-26, AG-01.
+- `EVID-02` Визуальная проверка в браузере — CHK-02 manual-only gap; graceful degrade подтверждён unit-тестом `TestClient_LastMatch_APIError` (nil при ошибке API) и integration-тестом `TestHomeHandler_LastFootballMatchNil_ShowsEmptyState`.
+- `EVID-03` Unit-тест `TestClient_LastMatch_CacheHit` (`internal/football/client_test.go`): callCount == 1 после двух вызовов в пределах TTL — зелёный. 2026-04-26.
+
+### Eval evidence
+
+- `EVID-04` Eval Draft → Design Ready — accept. 2026-04-26. self-check.
+- `EVID-05` Eval Execution → Done — accept. 2026-04-26. EVID-01..03 verified, CHK-01/03 pass; CHK-02 покрыт unit+integration тестами; AG-01 approved (Evgeny); все тесты зелёные; NS-08 зафиксирован (goals[] не возвращается free tier).
 
 ### Evidence contract
 
