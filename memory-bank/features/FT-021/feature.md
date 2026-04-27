@@ -152,7 +152,7 @@ must_not_define:
 - `EVID-02` Playwright-скриншоты новостной ленты: статья с hero-img и статья с placeholder.
 - `EVID-03` Вывод Go-теста `TestHomeStoreGetHomeData` с CoverImageURL и CommentCount.
 - `EVID-04` Playwright-скриншоты таблицы АПЛ: compact и expanded; граничные случаи.
-- `EVID-05` Eval Draft→Design Ready — accept. 2026-04-27. self-check.
+- `EVID-05` Eval Draft→Design Ready — accept. 2026-04-27. evaluator agent.
 
 ### Evidence contract
 
