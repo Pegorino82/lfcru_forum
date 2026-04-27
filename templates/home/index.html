@@ -5,9 +5,10 @@
 {{define "content"}}
 <style>
 .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1rem 0; }
-.home-news  { grid-column: 1 / 2; grid-row: 1 / 2; }
-.home-match { grid-column: 2 / 3; grid-row: 1 / 2; }
-.home-forum { grid-column: 1 / -1; grid-row: 2 / 3; }
+.home-news       { grid-column: 1 / 2; grid-row: 1 / 3; }
+.home-last-match { grid-column: 2 / 3; grid-row: 1 / 2; }
+.home-match      { grid-column: 2 / 3; grid-row: 2 / 3; }
+.home-forum      { grid-column: 1 / -1; grid-row: 3 / 4; }
 .news-list, .forum-list { list-style: none; padding: 0; margin: 0; }
 .news-list li, .forum-list li { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
 .news-list time, .forum-meta { color: #666; font-size: 0.875rem; }
@@ -18,11 +19,13 @@
 .match-type-away { background: #fff3e0; color: #e65100; }
 .match-venue { color: #555; font-size: 0.875rem; }
 .match-tournament { color: #666; font-size: 0.875rem; }
+.match-score { font-size: 2rem; font-weight: bold; margin: 0.5rem 0; }
+.match-forum-link { display: inline-block; margin-top: 0.5rem; font-size: 0.875rem; color: #0066cc; text-decoration: none; }
 .empty-state { color: #999; font-style: italic; }
 section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px solid #c8102e; padding-bottom: 0.5rem; }
 @media (max-width: 768px) {
   .home-grid { grid-template-columns: 1fr; }
-  .home-news, .home-match, .home-forum { grid-column: 1 / -1; }
+  .home-news, .home-last-match, .home-match, .home-forum { grid-column: 1 / -1; grid-row: auto; }
 }
 </style>
 
@@ -45,6 +48,39 @@ section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px soli
       </ul>
     {{else}}
       <p class="empty-state">На сайте еще не добавлены новости</p>
+    {{end}}
+  </section>
+
+  <section class="home-last-match" aria-labelledby="last-match-heading">
+    <h2 id="last-match-heading">Последний матч</h2>
+    {{if .LastFootballMatch}}
+      <div class="match-card">
+        {{if .LastFootballMatch.IsHome}}
+          <span class="match-type match-type-home">Домашний</span>
+        {{else}}
+          <span class="match-type match-type-away">Выездной</span>
+        {{end}}
+        <p class="match-opponent">Liverpool FC — {{.LastFootballMatch.Opponent}}</p>
+        <p class="match-date">
+          <time datetime="{{.LastFootballMatch.MatchDate.Format "2006-01-02T15:04:05Z07:00"}}">
+            {{.LastFootballMatch.MatchDate.Format "02.01.2006 15:04"}} UTC
+          </time>
+        </p>
+        {{if .LastFootballMatch.IsHome}}
+          <p class="match-score">{{.LastFootballMatch.HomeScore}}:{{.LastFootballMatch.AwayScore}}</p>
+        {{else}}
+          <p class="match-score">{{.LastFootballMatch.AwayScore}}:{{.LastFootballMatch.HomeScore}}</p>
+        {{end}}
+        {{if .LastFootballMatch.Stadium}}
+          <p class="match-venue">
+            {{.LastFootballMatch.Stadium}}{{if .LastFootballMatch.City}}, {{.LastFootballMatch.City}}{{end}}{{if .LastFootballMatch.Country}}, {{.LastFootballMatch.Country}}{{end}}
+          </p>
+        {{end}}
+        <p class="match-tournament">{{.LastFootballMatch.Tournament}}</p>
+        <a href="{{.LastFootballMatch.ForumURL}}" class="match-forum-link">Тема на форуме</a>
+      </div>
+    {{else}}
+      <p class="empty-state">Данные о последнем матче недоступны</p>
     {{end}}
   </section>
 

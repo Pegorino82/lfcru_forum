@@ -161,12 +161,153 @@ func TestLookupVenue_UnknownTeam(t *testing.T) {
 	}
 }
 
+func TestClient_LastMatch_HappyPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Auth-Token") != "test-key" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		resp := map[string]any{
+			"matches": []map[string]any{
+				{
+					"utcDate":     "2026-04-19T15:30:00Z",
+					"competition": map[string]any{"name": "Premier League"},
+					"homeTeam":    map[string]any{"id": 64, "name": "Liverpool FC"},
+					"awayTeam":    map[string]any{"id": 57, "name": "Arsenal FC"},
+					"score": map[string]any{
+						"fullTime": map[string]any{"home": 3, "away": 1},
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+
+	info, err := c.LastMatch(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected LastMatchInfo, got nil")
+	}
+	if info.Opponent != "Arsenal FC" {
+		t.Errorf("opponent: got %q, want %q", info.Opponent, "Arsenal FC")
+	}
+	if !info.IsHome {
+		t.Errorf("expected home match")
+	}
+	if info.HomeScore != 3 || info.AwayScore != 1 {
+		t.Errorf("score: got %d:%d, want 3:1", info.HomeScore, info.AwayScore)
+	}
+	if info.ForumURL != "#" {
+		t.Errorf("forumURL: got %q, want %q", info.ForumURL, "#")
+	}
+}
+
+func TestClient_LastMatch_CacheHit(t *testing.T) {
+	callCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		resp := map[string]any{
+			"matches": []map[string]any{
+				{
+					"utcDate":     "2026-04-19T15:30:00Z",
+					"competition": map[string]any{"name": "Premier League"},
+					"homeTeam":    map[string]any{"id": 64, "name": "Liverpool FC"},
+					"awayTeam":    map[string]any{"id": 57, "name": "Arsenal FC"},
+					"score": map[string]any{
+						"fullTime": map[string]any{"home": 2, "away": 0},
+					},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	// Set nextKickoff in the future so lastMatchTTL returns a positive duration.
+	c.nextKickoff = time.Now().Add(2 * time.Hour)
+
+	ctx := context.Background()
+	info1, err := c.LastMatch(ctx)
+	if err != nil {
+		t.Fatalf("first call error: %v", err)
+	}
+	if info1 == nil {
+		t.Fatal("expected non-nil on first call")
+	}
+
+	info2, err := c.LastMatch(ctx)
+	if err != nil {
+		t.Fatalf("second call error: %v", err)
+	}
+
+	if callCount != 1 {
+		t.Errorf("expected exactly 1 API call, got %d", callCount)
+	}
+	if info2.Opponent != info1.Opponent {
+		t.Errorf("cache returned different data")
+	}
+}
+
+func TestClient_LastMatch_NoFinished(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]any{"matches": []any{}}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	info, err := c.LastMatch(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info != nil {
+		t.Errorf("expected nil for empty matches, got %+v", info)
+	}
+}
+
+func TestClient_LastMatch_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	info, err := c.LastMatch(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// No stale cache — should return nil gracefully.
+	if info != nil {
+		t.Errorf("expected nil on API error with empty cache, got %+v", info)
+	}
+}
+
+func TestClient_LastMatch_EmptyAPIKey(t *testing.T) {
+	c := NewClient("", time.Hour)
+	info, err := c.LastMatch(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info != nil {
+		t.Errorf("expected nil for empty API key, got %+v", info)
+	}
+}
+
 // newTestClient creates a Client pointing to a test HTTP server instead of the real API.
 func newTestClient(apiKey string, ttl time.Duration, serverURL string) *Client {
 	return &Client{
-		apiKey:    apiKey,
+		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
-		ttl:       ttl,
-		baseURL:   serverURL,
+		ttl:        ttl,
+		baseURL:    serverURL,
 	}
 }
