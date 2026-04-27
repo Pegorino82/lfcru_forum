@@ -45,7 +45,7 @@ audience: humans_and_agents
 ../lfcru_forum-FT-XXX/
 ```
 
-**Создание** (выполняется при переходе Plan Ready → Execution):
+**Создание** (выполняется на Bootstrap — сразу после обсуждения, до создания feature-файлов):
 
 ```bash
 # из корня основного репозитория

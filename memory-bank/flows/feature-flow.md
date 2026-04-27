@@ -70,9 +70,13 @@ flowchart LR
 
 ### Bootstrap Feature Package
 
-- [ ] `README.md` создан по шаблону `templates/feature/README.md`
+- [ ] определён номер фичи (следующий FT-XXX из `memory-bank/features/`)
+- [ ] создан git worktree: `git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug`
+- [ ] создан draft PR до первого коммита; все последующие commits/push/CI привязаны к нему
+- [ ] вся дальнейшая работа ведётся **исключительно** внутри worktree-папки `../lfcru_forum-FT-XXX`; прямая работа в `main` запрещена
+- [ ] `README.md` создан по шаблону `templates/feature/README.md` (внутри worktree)
 - [ ] выбран template-тип `feature.md` по критериям из секции «Выбор шаблона `feature.md`» (`short.md` или `large.md`)
-- [ ] `feature.md` создан по выбранному шаблону
+- [ ] `feature.md` создан по выбранному шаблону (внутри worktree)
 - [ ] `implementation-plan.md` отсутствует
 
 ### Draft → Design Ready
@@ -106,11 +110,7 @@ flowchart LR
 - [ ] `implementation-plan.md` → `status: active`
 - [ ] `implementation-plan.md` фиксирует test strategy: automated coverage surfaces, required local suites (и CI suites, когда CI настроен)
 - [ ] каждый manual-only gap имеет причину, ручную процедуру и `AG-*` с approval ref (approver — человек, ответственный за приёмку фичи: автор задачи или team lead)
-- [ ] если карточка Trello связана с фичей → переместить в IN PROGRESS (до worktree)
-- [ ] создана feature-ветка по конвенции из [git-workflow.md](../engineering/git-workflow.md): `feat/FT-XXX-slug` или `fix/FT-XXX-slug`
-- [ ] создан git worktree: `git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug`
-- [ ] создан draft PR до первого коммита с кодом; все последующие commits/push/CI привязаны к нему
-- [ ] вся разработка ведётся **исключительно** внутри worktree-папки `../lfcru_forum-FT-XXX`; прямая работа в `main` запрещена
+- [ ] если задача зафиксирована в task tracker → обновить статус до in progress
 
 ### Execution → Done
 

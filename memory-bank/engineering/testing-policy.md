@@ -43,6 +43,9 @@ audience: humans_and_agents
     go test -tags integration -p 1 ./internal/...
   ```
 - **Флаг `-p 1` обязателен** для integration-тестов: каждый пакет вызывает `goose.Up()` независимо, параллельный запуск вызывает race condition
+
+⛔ **Не изобретать docker run вручную.** Использовать только команды выше дословно.
+Причина: без `--network lfcru_forum_default` hostname `postgres` не резолвится — тесты падают с `no such host`, хотя контейнер healthy.
 - Тестовая БД создаётся автоматически скриптом `scripts/init-test-db.sql` при первом старте postgres-контейнера
 
 ### E2E-тесты (Playwright)
@@ -143,7 +146,8 @@ Canonical lifecycle gates живут в [../flows/feature-flow.md](../flows/feat
 - Integration-тесты помечаются build tag `//go:build integration` и также живут в пакете рядом с кодом
 - Каждый пакет самостоятельно вызывает `goose.Up()` в `TestMain` — setup изолирован
 - Моки репозиториев используются в unit-тестах сервисов; integration-тесты обязаны попадать в реальную БД
-- Перед handoff агент прогоняет unit-тесты (Docker-командой из раздела Stack выше) и integration-тесты затронутых пакетов
+- Перед handoff агент прогоняет **только unit-тесты** (Docker-командой из раздела Stack выше). Integration-тесты запускаются только в CI.
+- Причина split: integration-тесты требуют docker-compose-сети; CI гарантирует правильное окружение без дополнительных токенов на диагностику сети
 
 ### E2E-тесты (Playwright)
 - Спеки (`*.spec.ts`) живут в `e2e/<домен>/` — зеркалируют структуру `internal/<домен>/`

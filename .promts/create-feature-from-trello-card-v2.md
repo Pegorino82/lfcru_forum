@@ -8,14 +8,9 @@
 
 Давай обсудим карточку. Если описание неполное — задай уточняющие вопросы **перед** созданием Draft.
 
-После получения ответов создай Bootstrap Feature Package:
-1. Определи номер фичи (следующий FT-XXX из `memory-bank/features/`)
-2. Создай `memory-bank/features/FT-XXX/README.md`
-3. Создай `memory-bank/features/FT-XXX/feature.md` в статусе draft
-4. Доведи feature.md до Design Ready (status: active, ≥1 REQ-*, NS-*, SC-*, CHK-*, EVID-*)
-5. Создай `memory-bank/features/FT-XXX/implementation-plan.md` → Plan Ready
+После получения ответов определи номер фичи (следующий FT-XXX из `memory-bank/features/`).
 
-⛔ HARD STOP — ПЕРЕД ПЕРВЫМ КОММИТОМ С КОДОМ. Выполни в точном порядке:
+⛔ HARD STOP — ПЕРЕД СОЗДАНИЕМ ЛЮБЫХ ФАЙЛОВ. Выполни в точном порядке:
 
 **Шаг 1 — Trello (ПЕРВЫМ, до всего остального):**
 ```
@@ -35,8 +30,14 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 ```
 
 **Шаг 4 — Вся дальнейшая работа исключительно внутри `../lfcru_forum-FT-XXX`.**
-Прямая работа в основной директории после создания worktree ЗАПРЕЩЕНА.
+Прямая работа в основной директории ЗАПРЕЩЕНА.
 Все создание файлов, коммиты и push — только из worktree-папки.
+
+Создай Bootstrap Feature Package (внутри worktree):
+1. Создай `memory-bank/features/FT-XXX/README.md`
+2. Создай `memory-bank/features/FT-XXX/feature.md` в статусе draft
+3. Доведи feature.md до Design Ready (status: active, ≥1 REQ-*, NS-*, SC-*, CHK-*, EVID-*)
+4. Создай `memory-bank/features/FT-XXX/implementation-plan.md` → Plan Ready
 
 После завершения разработки:
 - Обнови `feature.md` → `delivery_status: done`
