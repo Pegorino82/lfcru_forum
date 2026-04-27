@@ -92,7 +92,7 @@ flowchart LR
 
 ### Design Ready → Plan Ready
 
-> Eval: для `large.md` — evaluator agent по [eval.md#design-ready--plan-ready](eval.md).
+> Eval: для `large.md` — запусти evaluator через **Agent tool** с промптом из [eval.md#evaluator-agent-protocol](eval.md). Если `revise` — исправь и перезапусти (max 2 итерации, после — escalate к человеку). Для `short.md` — self-check достаточен.
 
 - [ ] агент выполнил grounding: прошёлся по текущему состоянию системы (relevant paths, existing patterns, dependencies) и зафиксировал результат в discovery context секции `implementation-plan.md`
 - [ ] `implementation-plan.md` создан по шаблону `templates/feature/implementation-plan.md`
@@ -114,7 +114,7 @@ flowchart LR
 
 ### Execution → Done
 
-> Eval: execution + workflow-level по [eval.md#execution--done](eval.md); для `large.md` — evaluator agent обязателен.
+> Eval: для `large.md` — запусти evaluator через **Agent tool** с промптом из [eval.md#evaluator-agent-protocol](eval.md). Если `revise` — исправь и перезапусти (max 2 итерации, после — escalate к человеку). Для `short.md` — self-check достаточен.
 
 - [ ] все `CHK-*` из `feature.md` имеют результат pass/fail в evidence
 - [ ] все `EVID-*` из `feature.md` заполнены конкретными carriers (путь к файлу, CI run, screenshot)
@@ -124,7 +124,10 @@ flowchart LR
 - [ ] simplify review выполнен: код минимально сложен или complexity обоснована ссылкой на `CON-*`, `FM-*` или `DEC-*`
 - [ ] если feature добавляет новый stable flow или materially changes существующий project-level scenario, соответствующий `UC-*` создан или обновлен и зарегистрирован в `memory-bank/use-cases/README.md`
 - [ ] PR переведён из draft в ready for review
-- [ ] PR merged в `main`
+
+> **⛔ HARD STOP — ждать merge.** Шаги ниже выполняются **только после того, как PR смержен в `main`**. Закрывать артефакты и удалять worktree до merge — нарушение flow. Агент ждёт подтверждения от человека (или видит merge в `git log`/GitHub) перед продолжением.
+
+- [ ] `[human]` PR merged в `main`
 - [ ] worktree удалён: `git worktree remove ../lfcru_forum-FT-XXX` и `git branch -d feat/FT-XXX-slug`
 - [ ] `feature.md` → `delivery_status: done`
 - [ ] `implementation-plan.md` → `status: archived`

@@ -148,4 +148,6 @@ Flow:
 
 **Только для «Средняя или большая фича»:** если сессия закрывает feature package, выполни gate «Execution → Done» из [feature-flow.md](feature-flow.md).
 
-Если сессия закрывает любой gate (переводит feature между стадиями), выполни соответствующий eval-чеклист из [eval.md](eval.md) до docs-коммита.
+Если сессия закрывает любой gate (переводит feature между стадиями):
+- `short.md` → выполни self-check по чеклисту из [eval.md](eval.md) до docs-коммита.
+- `large.md` → запусти evaluator через Agent tool (промпт в [eval.md#evaluator-agent-protocol](eval.md)); builder не выполняет eval сам.

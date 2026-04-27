@@ -118,6 +118,7 @@ Canonical lifecycle gates живут в [../flows/feature-flow.md](../flows/feat
 - Сценарий зависит от live infra, внешних систем, hardware, недетерминированной среды или human оценки UI.
 - Сценарий зависит от SSE/real-time поведения или визуального рендеринга, которое Playwright не покрывает (анимации, шрифты, пиксельный layout).
 - Browser-специфика и HTMX/Alpine.js-взаимодействия — **покрываются Playwright**, не являются основанием для manual-only.
+- UI-изменения обязаны пройти Playwright-верификацию: отсутствие JS-ошибок в консоли + assertions на наличие элементов, текст и видимость. Падение Playwright — блокер closure gate.
 - Для каждого manual-only gap: причина, ручная процедура, owner follow-up.
 - Если manual-only gap оставляет без regression protection критичный путь (auth, сессии, CSRF), feature не считается завершённой.
 
