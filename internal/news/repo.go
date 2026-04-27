@@ -41,6 +41,46 @@ func (r *Repo) LatestPublished(ctx context.Context, limit int) ([]News, error) {
 	return result, rows.Err()
 }
 
+// LatestPublishedForHome возвращает до limit опубликованных новостей для главной страницы.
+// Каждая запись включает CoverImageURL (первое изображение статьи) и CommentCount.
+func (r *Repo) LatestPublishedForHome(ctx context.Context, limit int) ([]HomeNewsItem, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT
+			n.id,
+			n.title,
+			LEFT(n.content, 600),
+			n.published_at,
+			COALESCE(ai.filename, '') AS cover_image_url,
+			(SELECT COUNT(*) FROM news_comments WHERE news_id = n.id) AS comment_count
+		FROM news n
+		LEFT JOIN (
+			SELECT DISTINCT ON (article_id) article_id, filename
+			FROM article_images
+			ORDER BY article_id, created_at ASC
+		) ai ON ai.article_id = n.id
+		WHERE n.status = 'published'
+		ORDER BY n.published_at DESC
+		LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := []HomeNewsItem{}
+	for rows.Next() {
+		var item HomeNewsItem
+		if err := rows.Scan(
+			&item.ID, &item.Title, &item.Content,
+			&item.PublishedAt, &item.CoverImageURL, &item.CommentCount,
+		); err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+	return result, rows.Err()
+}
+
 // ListPublished возвращает опубликованные новости с пагинацией и общее количество.
 // Результаты отсортированы по published_at DESC.
 func (r *Repo) ListPublished(ctx context.Context, limit, offset int) ([]News, int64, error) {

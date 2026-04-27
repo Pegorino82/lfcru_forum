@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
@@ -25,14 +26,46 @@ type FootballSource interface {
 }
 
 type HomeData struct {
-	User              *user.User
-	CSRFToken         string
-	News              []news.News
-	NextMatch         *match.Match
-	NextFootballMatch *football.MatchInfo
-	LastFootballMatch *football.LastMatchInfo
-	Topics            []forum.TopicWithLastAuthor
-	Standings         []football.StandingsEntry
+	User                   *user.User
+	CSRFToken              string
+	News                   []news.HomeNewsItem
+	NextMatch              *match.Match
+	NextFootballMatch      *football.MatchInfo
+	LastFootballMatch      *football.LastMatchInfo
+	Topics                 []forum.TopicWithLastAuthor
+	Standings              []football.StandingsEntry
+	CompactStandingsStart  int
+	CompactStandingsEnd    int
+}
+
+// compactStandingsRange returns start (inclusive) and end (exclusive) indices
+// for a 5-entry slice centred on Liverpool (±2). Gracefully handles edge positions
+// and returns 0, 0 when Liverpool is not found.
+func compactStandingsRange(standings []football.StandingsEntry) (start, end int) {
+	lfcIdx := -1
+	for i, e := range standings {
+		if strings.Contains(e.TeamName, "Liverpool") {
+			lfcIdx = i
+			break
+		}
+	}
+	if lfcIdx < 0 {
+		return 0, 0
+	}
+	n := len(standings)
+	start = lfcIdx - 2
+	if start < 0 {
+		start = 0
+	}
+	end = start + 5
+	if end > n {
+		end = n
+		start = end - 5
+		if start < 0 {
+			start = 0
+		}
+	}
+	return start, end
 }
 
 type Handler struct {
@@ -54,7 +87,7 @@ func NewHandler(newsRepo *news.Repo, matchRepo *match.Repo, topicRepo *forum.Rep
 func (h *Handler) ShowHome(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	newsList, err := h.newsRepo.LatestPublished(ctx, 5)
+	newsList, err := h.newsRepo.LatestPublishedForHome(ctx, 5)
 	if err != nil {
 		slog.Error("home: failed to load news", "err", err)
 		return c.String(http.StatusInternalServerError, "Что-то пошло не так. Попробуйте обновить страницу.")
@@ -90,15 +123,19 @@ func (h *Handler) ShowHome(c echo.Context) error {
 		}
 	}
 
+	compactStart, compactEnd := compactStandingsRange(standings)
+
 	data := HomeData{
-		User:              auth.UserFromContext(c),
-		CSRFToken:         appMiddleware.CSRFToken(c),
-		News:              newsList,
-		NextMatch:         nextMatch,
-		NextFootballMatch: nextFootballMatch,
-		LastFootballMatch: lastFootballMatch,
-		Topics:            topics,
-		Standings:         standings,
+		User:                  auth.UserFromContext(c),
+		CSRFToken:             appMiddleware.CSRFToken(c),
+		News:                  newsList,
+		NextMatch:             nextMatch,
+		NextFootballMatch:     nextFootballMatch,
+		LastFootballMatch:     lastFootballMatch,
+		Topics:                topics,
+		Standings:             standings,
+		CompactStandingsStart: compactStart,
+		CompactStandingsEnd:   compactEnd,
 	}
 
 	if c.Request().Header.Get("HX-Request") == "true" {
