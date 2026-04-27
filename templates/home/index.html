@@ -64,6 +64,12 @@
 .match-info-row { display: flex; align-items: center; gap: 0.4rem;
                   font-size: 0.8rem; color: #666; margin-top: 0.3rem; }
 .match-vs { font-size: 0.9rem; font-weight: 700; color: #888; }
+.match-type { display: inline-block; font-size: 0.75rem; font-weight: 600;
+              padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.4rem; }
+.match-type-home { background: #e8f5e9; color: #2e7d32; }
+.match-type-away { background: #fff3e0; color: #e65100; }
+.match-forum-link { display: inline-block; margin-top: 0.5rem; font-size: 0.875rem;
+                    color: #0066cc; text-decoration: none; }
 
 /* Standings widget */
 .standings-widget { background: #fff; border: 1px solid #eee; border-radius: 6px;
@@ -135,7 +141,7 @@
         {{end}}
       </div>
     {{else}}
-      <p class="empty-state">На сайте ещё не добавлены новости</p>
+      <p class="empty-state">На сайте еще не добавлены новости</p>
     {{end}}
   </div>
 
@@ -143,20 +149,25 @@
   <div class="home-right">
 
     <!-- Last match -->
-    <div class="match-widget">
+    <div class="match-widget" id="last-match-heading">
       <div class="match-widget-header">
         <span class="widget-title" style="border-bottom:none;margin-bottom:0;">Последний матч</span>
         {{if .LastFootballMatch}}<span class="league">{{.LastFootballMatch.Tournament}}</span>{{end}}
       </div>
       {{if .LastFootballMatch}}
+        {{if .LastFootballMatch.IsHome}}
+          <span class="match-type match-type-home">Домашний</span>
+        {{else}}
+          <span class="match-type match-type-away">Выездной</span>
+        {{end}}
         <div class="match-teams">
           {{if .LastFootballMatch.IsHome}}
             <span class="match-team-lfc">Liverpool</span>
-            <span class="match-score-big">{{.LastFootballMatch.HomeScore}} - {{.LastFootballMatch.AwayScore}}</span>
+            <span class="match-score-big">{{.LastFootballMatch.HomeScore}}:{{.LastFootballMatch.AwayScore}}</span>
             <span class="match-team-opp">{{.LastFootballMatch.Opponent}}</span>
           {{else}}
             <span class="match-team-opp">{{.LastFootballMatch.Opponent}}</span>
-            <span class="match-score-big">{{.LastFootballMatch.AwayScore}} - {{.LastFootballMatch.HomeScore}}</span>
+            <span class="match-score-big">{{.LastFootballMatch.AwayScore}}:{{.LastFootballMatch.HomeScore}}</span>
             <span class="match-team-lfc">Liverpool</span>
           {{end}}
         </div>
@@ -165,21 +176,29 @@
         </div>
         {{if .LastFootballMatch.Stadium}}
         <div class="match-info-row">
-          📍 {{.LastFootballMatch.Stadium}}
+          📍 {{.LastFootballMatch.Stadium}}{{if .LastFootballMatch.City}}, {{.LastFootballMatch.City}}{{end}}{{if .LastFootballMatch.Country}}, {{.LastFootballMatch.Country}}{{end}}
         </div>
         {{end}}
+        {{if .LastFootballMatch.ForumURL}}
+        <a href="{{.LastFootballMatch.ForumURL}}" class="match-forum-link">Тема на форуме</a>
+        {{end}}
       {{else}}
-        <p class="empty-state">Данные недоступны</p>
+        <p class="empty-state">Данные о последнем матче недоступны</p>
       {{end}}
     </div>
 
     <!-- Next match -->
-    <div class="match-widget">
+    <div class="match-widget" id="match-heading">
       <div class="match-widget-header">
         <span class="widget-title" style="border-bottom:none;margin-bottom:0;">Следующий матч</span>
         {{if .NextFootballMatch}}<span class="league">{{.NextFootballMatch.Tournament}}</span>{{end}}
       </div>
       {{if .NextFootballMatch}}
+        {{if .NextFootballMatch.IsHome}}
+          <span class="match-type match-type-home">Домашний</span>
+        {{else}}
+          <span class="match-type match-type-away">Выездной</span>
+        {{end}}
         <div class="match-teams">
           {{if .NextFootballMatch.IsHome}}
             <span class="match-team-lfc">Liverpool</span>
@@ -198,7 +217,7 @@
         </div>
         {{if .NextFootballMatch.Stadium}}
         <div class="match-info-row">
-          📍 {{.NextFootballMatch.Stadium}}
+          📍 {{.NextFootballMatch.Stadium}}{{if .NextFootballMatch.City}}, {{.NextFootballMatch.City}}{{end}}{{if .NextFootballMatch.Country}}, {{.NextFootballMatch.Country}}{{end}}
         </div>
         {{end}}
       {{else}}
@@ -269,7 +288,7 @@
           <a href="/forum" style="color:#0066cc;text-decoration:none;font-size:0.85rem;font-weight:600;">Все разделы →</a>
         </p>
       {{else}}
-        <p class="empty-state">Нет активных обсуждений</p>
+        <p class="empty-state">В форуме пока нет активных обсуждений</p>
       {{end}}
     </div>
 

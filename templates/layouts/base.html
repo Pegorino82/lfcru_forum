@@ -14,7 +14,7 @@
                display: flex; flex-direction: column; min-height: 100vh; }
 
         /* Header */
-        .site-header { background: #c8102e; color: #fff; }
+        header { background: #c8102e; color: #fff; }
         .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0.75rem 1.5rem;
                      display: flex; align-items: center; gap: 1rem; }
         .hamburger { background: none; border: none; color: #fff; cursor: pointer;
@@ -43,7 +43,7 @@
         .flash.error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
 
         /* Footer */
-        .site-footer { background: #1a1a2e; color: #aaa; }
+        footer { background: #1a1a2e; color: #aaa; }
         .footer-inner { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem 1.5rem;
                         display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5rem; }
         .footer-col h4 { color: #fff; font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; }
@@ -78,7 +78,7 @@
 <body>
   <a href="#content" class="skip-link">Перейти к содержимому</a>
 
-  <header class="site-header">
+  <header>
     <nav class="nav-inner" aria-label="Основная навигация">
       <button class="hamburger" aria-label="Меню">&#9776;</button>
       <div class="main-nav">
@@ -99,7 +99,7 @@
     {{block "content" .}}{{end}}
   </main>
 
-  <footer class="site-footer">
+  <footer>
     <div class="footer-inner">
       <div class="footer-col">
         <h4>О сообществе</h4>
@@ -133,7 +133,8 @@
       </div>
     </div>
     <div class="footer-copy">
-      © 2026 Liverpool FC Русскоязычное сообщество. You'll Never Walk Alone.
+      © 2026 LFC.ru — фан-сайт болельщиков ФК «Ливерпуль»<br>
+      Не является официальным сайтом Liverpool FC
     </div>
   </footer>
 
