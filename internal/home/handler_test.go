@@ -280,10 +280,12 @@ func TestHomeHandler_GuestAccess(t *testing.T) {
 // ─── Football client mock & new tests ─────────────────────────────────────────
 
 type mockFootballSource struct {
-	match    *football.MatchInfo
-	last     *football.LastMatchInfo
-	err      error
-	lastErr  error
+	match        *football.MatchInfo
+	last         *football.LastMatchInfo
+	standings    []football.StandingsEntry
+	err          error
+	lastErr      error
+	standingsErr error
 }
 
 func (m *mockFootballSource) NextMatch(_ context.Context) (*football.MatchInfo, error) {
@@ -292,6 +294,10 @@ func (m *mockFootballSource) NextMatch(_ context.Context) (*football.MatchInfo, 
 
 func (m *mockFootballSource) LastMatch(_ context.Context) (*football.LastMatchInfo, error) {
 	return m.last, m.lastErr
+}
+
+func (m *mockFootballSource) Standings(_ context.Context) ([]football.StandingsEntry, error) {
+	return m.standings, m.standingsErr
 }
 
 func newTestServerWithFootball(t *testing.T, pool *pgxpool.Pool, src home.FootballSource) *echo.Echo {
@@ -471,5 +477,51 @@ func TestHomeHandler_LastFootballMatchNil_ShowsEmptyState(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "Данные о последнем матче недоступны") {
 		t.Errorf("expected last-match empty-state when LastMatch returns nil")
+	}
+}
+
+func TestHomeHandler_WithStandings(t *testing.T) {
+	pool := testDB(t)
+	cleanAll(t, pool)
+	defer cleanAll(t, pool)
+
+	src := &mockFootballSource{
+		standings: []football.StandingsEntry{
+			{Position: 1, TeamName: "Liverpool FC", TeamCrest: "", PlayedGames: 32, GoalsFor: 70, GoalsAgainst: 28, GoalDifference: 42, Points: 79},
+			{Position: 6, TeamName: "Chelsea FC", TeamCrest: "", PlayedGames: 32, GoalsFor: 55, GoalsAgainst: 40, GoalDifference: 15, Points: 55},
+			{Position: 18, TeamName: "Ipswich Town FC", TeamCrest: "", PlayedGames: 32, GoalsFor: 28, GoalsAgainst: 65, GoalDifference: -37, Points: 22},
+		},
+	}
+
+	e := newTestServerWithFootball(t, pool, src)
+	rec := doGet(t, e, "/")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+
+	for _, want := range []string{"Liverpool FC", "Chelsea FC", "Ipswich Town FC"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("expected %q in standings body", want)
+		}
+	}
+}
+
+func TestHomeHandler_StandingsNil_NoBlock(t *testing.T) {
+	pool := testDB(t)
+	cleanAll(t, pool)
+	defer cleanAll(t, pool)
+
+	src := &mockFootballSource{standings: nil}
+	e := newTestServerWithFootball(t, pool, src)
+	rec := doGet(t, e, "/")
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	// Page must render without errors even with nil standings.
+	if strings.Contains(rec.Body.String(), "500") {
+		t.Error("page must not return error when standings is nil")
 	}
 }

@@ -5,10 +5,11 @@
 {{define "content"}}
 <style>
 .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1rem 0; }
-.home-news       { grid-column: 1 / 2; grid-row: 1 / 3; }
-.home-last-match { grid-column: 2 / 3; grid-row: 1 / 2; }
-.home-match      { grid-column: 2 / 3; grid-row: 2 / 3; }
-.home-forum      { grid-column: 1 / -1; grid-row: 3 / 4; }
+.home-news        { grid-column: 1 / 2; grid-row: 1 / 2; }
+.home-forum       { grid-column: 1 / 2; grid-row: 2 / 3; }
+.home-last-match  { grid-column: 2 / 3; grid-row: 1 / 2; }
+.home-match       { grid-column: 2 / 3; grid-row: 2 / 3; }
+.home-standings   { grid-column: 2 / 3; grid-row: 3 / 4; }
 .news-list, .forum-list { list-style: none; padding: 0; margin: 0; }
 .news-list li, .forum-list li { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
 .news-list time, .forum-meta { color: #666; font-size: 0.875rem; }
@@ -23,9 +24,20 @@
 .match-forum-link { display: inline-block; margin-top: 0.5rem; font-size: 0.875rem; color: #0066cc; text-decoration: none; }
 .empty-state { color: #999; font-style: italic; }
 section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px solid #c8102e; padding-bottom: 0.5rem; }
+/* Standings table */
+.standings-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.standings-table th { text-align: center; padding: 0.3rem 0.4rem; color: #555; font-weight: 600; border-bottom: 1px solid #ddd; }
+.standings-table th:nth-child(2) { text-align: left; }
+.standings-table td { text-align: center; padding: 0.3rem 0.4rem; border-bottom: 1px solid #f0f0f0; }
+.standings-table td:nth-child(2) { text-align: left; }
+.standings-team { display: flex; align-items: center; gap: 0.4rem; }
+.standings-team img { width: 18px; height: 18px; object-fit: contain; }
+.standings-row-champions { background: #e3f2fd; }
+.standings-row-europa    { background: #ede7f6; }
+.standings-row-relegation { background: #ffebee; }
 @media (max-width: 768px) {
   .home-grid { grid-template-columns: 1fr; }
-  .home-news, .home-last-match, .home-match, .home-forum { grid-column: 1 / -1; grid-row: auto; }
+  .home-news, .home-forum, .home-last-match, .home-match, .home-standings { grid-column: 1 / -1; grid-row: auto; }
 }
 </style>
 
@@ -48,6 +60,30 @@ section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px soli
       </ul>
     {{else}}
       <p class="empty-state">На сайте еще не добавлены новости</p>
+    {{end}}
+  </section>
+
+  <section class="home-forum" aria-labelledby="forum-heading">
+    <h2 id="forum-heading">Последнее на форуме</h2>
+    {{if .Topics}}
+      <ul class="forum-list">
+        {{range .Topics}}
+        <li>
+          <a href="/forum/topics/{{.ID}}">{{.Title}}</a>
+          <span class="forum-meta">
+            {{.LastPostByName}} —
+            <time datetime="{{.LastPostAt.Format "2006-01-02T15:04:05Z07:00"}}">
+              {{.LastPostAt.Format "02.01.2006 15:04"}}
+            </time>
+          </span>
+        </li>
+        {{end}}
+      </ul>
+      <p style="margin-top: 1rem; text-align: center;">
+        <a href="/forum" style="color: #0066cc; text-decoration: none; font-weight: 600;">Все разделы →</a>
+      </p>
+    {{else}}
+      <p class="empty-state">В форуме пока нет активных обсуждений</p>
     {{end}}
   </section>
 
@@ -111,29 +147,42 @@ section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px soli
     {{end}}
   </section>
 
-  <section class="home-forum" aria-labelledby="forum-heading">
-    <h2 id="forum-heading">Последнее на форуме</h2>
-    {{if .Topics}}
-      <ul class="forum-list">
-        {{range .Topics}}
-        <li>
-          <a href="/forum/topics/{{.ID}}">{{.Title}}</a>
-          <span class="forum-meta">
-            {{.LastPostByName}} —
-            <time datetime="{{.LastPostAt.Format "2006-01-02T15:04:05Z07:00"}}">
-              {{.LastPostAt.Format "02.01.2006 15:04"}}
-            </time>
-          </span>
-        </li>
+  {{if .Standings}}
+  <section class="home-standings" aria-labelledby="standings-heading">
+    <h2 id="standings-heading">Таблица АПЛ</h2>
+    <table class="standings-table">
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Команда</th>
+          <th>И</th>
+          <th>ЗМ</th>
+          <th>ПМ</th>
+          <th>РМ</th>
+          <th>О</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Standings}}
+        <tr class="{{if le .Position 5}}standings-row-champions{{else if eq .Position 6}}standings-row-europa{{else if ge .Position 18}}standings-row-relegation{{end}}">
+          <td>{{.Position}}</td>
+          <td>
+            <span class="standings-team">
+              {{if .TeamCrest}}<img src="{{.TeamCrest}}" alt="{{.TeamName}}" loading="lazy">{{end}}
+              {{.TeamName}}
+            </span>
+          </td>
+          <td>{{.PlayedGames}}</td>
+          <td>{{.GoalsFor}}</td>
+          <td>{{.GoalsAgainst}}</td>
+          <td>{{if ge .GoalDifference 0}}+{{end}}{{.GoalDifference}}</td>
+          <td><strong>{{.Points}}</strong></td>
+        </tr>
         {{end}}
-      </ul>
-      <p style="margin-top: 1rem; text-align: center;">
-        <a href="/forum" style="color: #0066cc; text-decoration: none; font-weight: 600;">Все разделы →</a>
-      </p>
-    {{else}}
-      <p class="empty-state">В форуме пока нет активных обсуждений</p>
-    {{end}}
+      </tbody>
+    </table>
   </section>
+  {{end}}
 
 </div>
 {{end}}
