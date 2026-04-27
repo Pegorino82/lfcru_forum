@@ -21,7 +21,7 @@ audience: humans_and_agents
 - Запускать тесты и линтеры (unit + integration для затронутых пакетов)
 - Читать логи и файлы конфигурации
 - Создавать и обновлять документацию и `memory-bank`
-- Workflow-действия по feature-flow: создание worktree, папки фичи, SQL-файла миграции
+- Workflow-действия по feature-flow: создание worktree, draft PR, папки фичи, SQL-файла миграции
 - Trello workflow-действия, предписанные flow: перевод карточки TODO→IN PROGRESS, обновление ссылок в карточке
 - UI-верификация через Playwright (см. раздел ниже)
 
