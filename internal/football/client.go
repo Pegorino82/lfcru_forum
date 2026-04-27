@@ -10,9 +10,11 @@ import (
 )
 
 const (
-	liverpoolTeamID   = 64
-	defaultAPIBaseURL = "https://api.football-data.org/v4"
-	fallbackLastTTL   = 24 * time.Hour
+	liverpoolTeamID      = 64
+	defaultAPIBaseURL    = "https://api.football-data.org/v4"
+	fallbackLastTTL      = 24 * time.Hour
+	standingsTTLWeekday  = 24 * time.Hour
+	standingsTTLWeekend  = time.Hour
 )
 
 // MatchInfo holds the data for the next upcoming match.
@@ -40,6 +42,18 @@ type LastMatchInfo struct {
 	ForumURL   string
 }
 
+// StandingsEntry holds one row of the Premier League standings table.
+type StandingsEntry struct {
+	Position       int
+	TeamName       string
+	TeamCrest      string
+	PlayedGames    int
+	GoalsFor       int
+	GoalsAgainst   int
+	GoalDifference int
+	Points         int
+}
+
 // Client fetches Liverpool FC matches from football-data.org
 // and caches the results.
 type Client struct {
@@ -53,8 +67,12 @@ type Client struct {
 	fetchedAt   time.Time
 	nextKickoff time.Time
 
-	cachedLast      *LastMatchInfo
-	lastFetchedAt   time.Time
+	cachedLast          *LastMatchInfo
+	lastFetchedAt       time.Time
+	lastKnownMatchDate  time.Time
+
+	cachedStandings    []StandingsEntry
+	standingsFetchedAt time.Time
 }
 
 // NewClient creates a Client with the given API key and cache TTL.
@@ -115,6 +133,13 @@ func (c *Client) LastMatch(ctx context.Context) (*LastMatchInfo, error) {
 	info, err := c.fetchLast(ctx)
 	if err != nil {
 		return c.cachedLast, nil
+	}
+
+	if info != nil && !info.MatchDate.Equal(c.lastKnownMatchDate) {
+		// New match detected — invalidate standings cache.
+		c.cachedStandings = nil
+		c.standingsFetchedAt = time.Time{}
+		c.lastKnownMatchDate = info.MatchDate
 	}
 
 	c.cachedLast = info
@@ -285,4 +310,109 @@ func (c *Client) fetchLast(ctx context.Context) (*LastMatchInfo, error) {
 		AwayScore:  awayScore,
 		ForumURL:   "#",
 	}, nil
+}
+
+// standingsTTL returns the cache TTL for standings based on the current day of week.
+func standingsTTL(now time.Time) time.Duration {
+	switch now.Weekday() {
+	case time.Saturday, time.Sunday:
+		return standingsTTLWeekend
+	default:
+		return standingsTTLWeekday
+	}
+}
+
+// standingsAPIResponse is the relevant subset of the football-data.org
+// /v4/competitions/PL/standings response.
+type standingsAPIResponse struct {
+	Standings []struct {
+		Type  string `json:"type"`
+		Table []struct {
+			Position int `json:"position"`
+			Team     struct {
+				Name  string `json:"name"`
+				Crest string `json:"crest"`
+			} `json:"team"`
+			PlayedGames    int `json:"playedGames"`
+			GoalsFor       int `json:"goalsFor"`
+			GoalsAgainst   int `json:"goalsAgainst"`
+			GoalDifference int `json:"goalDifference"`
+			Points         int `json:"points"`
+		} `json:"table"`
+	} `json:"standings"`
+}
+
+// Standings returns the current Premier League standings table.
+// Results are cached with a TTL that depends on the day of week (24h weekdays, 1h weekends).
+// The cache is also invalidated when a new finished LFC match is detected via LastMatch.
+// Returns nil if the API key is absent, the API is unavailable, or no data is returned.
+func (c *Client) Standings(ctx context.Context) ([]StandingsEntry, error) {
+	if c.apiKey == "" {
+		return nil, nil
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	ttl := standingsTTL(time.Now())
+	if c.cachedStandings != nil && time.Since(c.standingsFetchedAt) < ttl {
+		return c.cachedStandings, nil
+	}
+
+	entries, err := c.fetchStandings(ctx)
+	if err != nil {
+		return c.cachedStandings, nil
+	}
+
+	c.cachedStandings = entries
+	c.standingsFetchedAt = time.Now()
+	return c.cachedStandings, nil
+}
+
+func (c *Client) fetchStandings(ctx context.Context) ([]StandingsEntry, error) {
+	url := fmt.Sprintf("%s/competitions/PL/standings", c.baseURL)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Auth-Token", c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("football-data.org: status %d", resp.StatusCode)
+	}
+
+	var data standingsAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	// Find the TOTAL standings table.
+	for _, s := range data.Standings {
+		if s.Type != "TOTAL" {
+			continue
+		}
+		entries := make([]StandingsEntry, 0, len(s.Table))
+		for _, row := range s.Table {
+			entries = append(entries, StandingsEntry{
+				Position:       row.Position,
+				TeamName:       row.Team.Name,
+				TeamCrest:      row.Team.Crest,
+				PlayedGames:    row.PlayedGames,
+				GoalsFor:       row.GoalsFor,
+				GoalsAgainst:   row.GoalsAgainst,
+				GoalDifference: row.GoalDifference,
+				Points:         row.Points,
+			})
+		}
+		return entries, nil
+	}
+
+	return nil, nil
 }

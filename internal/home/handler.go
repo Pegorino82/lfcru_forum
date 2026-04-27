@@ -21,6 +21,7 @@ import (
 type FootballSource interface {
 	NextMatch(ctx context.Context) (*football.MatchInfo, error)
 	LastMatch(ctx context.Context) (*football.LastMatchInfo, error)
+	Standings(ctx context.Context) ([]football.StandingsEntry, error)
 }
 
 type HomeData struct {
@@ -31,6 +32,7 @@ type HomeData struct {
 	NextFootballMatch *football.MatchInfo
 	LastFootballMatch *football.LastMatchInfo
 	Topics            []forum.TopicWithLastAuthor
+	Standings         []football.StandingsEntry
 }
 
 type Handler struct {
@@ -72,6 +74,7 @@ func (h *Handler) ShowHome(c echo.Context) error {
 
 	var nextFootballMatch *football.MatchInfo
 	var lastFootballMatch *football.LastMatchInfo
+	var standings []football.StandingsEntry
 	if h.footballClient != nil {
 		nextFootballMatch, err = h.footballClient.NextMatch(ctx)
 		if err != nil {
@@ -80,6 +83,10 @@ func (h *Handler) ShowHome(c echo.Context) error {
 		lastFootballMatch, err = h.footballClient.LastMatch(ctx)
 		if err != nil {
 			slog.Warn("home: failed to load last football match", "err", err)
+		}
+		standings, err = h.footballClient.Standings(ctx)
+		if err != nil {
+			slog.Warn("home: failed to load standings", "err", err)
 		}
 	}
 
@@ -91,6 +98,7 @@ func (h *Handler) ShowHome(c echo.Context) error {
 		NextFootballMatch: nextFootballMatch,
 		LastFootballMatch: lastFootballMatch,
 		Topics:            topics,
+		Standings:         standings,
 	}
 
 	if c.Request().Header.Get("HX-Request") == "true" {
