@@ -19,6 +19,7 @@ var funcMap = template.FuncMap{
 		}
 		return string(r[:n]) + "…"
 	},
+	"contains": strings.Contains,
 	"deref": func(s *string) string {
 		if s == nil {
 			return ""

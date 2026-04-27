@@ -69,4 +69,6 @@ type TopicWithLastAuthor struct {
 	Title          string
 	LastPostAt     time.Time
 	LastPostByName string
+	SectionName    string
+	PostCount      int
 }

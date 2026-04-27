@@ -331,9 +331,13 @@ func (r *Repo) UpdateTopic(ctx context.Context, id int64, title string) error {
 // Темы без сообщений (last_post_at IS NULL) не включаются.
 func (r *Repo) LatestActive(ctx context.Context, limit int) ([]TopicWithLastAuthor, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT t.id, t.title, t.last_post_at, COALESCE(u.username, '[удалён]') AS last_post_by_name
+		SELECT t.id, t.title, t.last_post_at,
+		       COALESCE(u.username, '[удалён]') AS last_post_by_name,
+		       COALESCE(s.name, '') AS section_name,
+		       t.post_count
 		FROM forum_topics t
 		LEFT JOIN users u ON u.id = t.last_post_by
+		LEFT JOIN forum_sections s ON s.id = t.section_id
 		WHERE t.last_post_at IS NOT NULL
 		ORDER BY t.last_post_at DESC
 		LIMIT $1
@@ -346,7 +350,8 @@ func (r *Repo) LatestActive(ctx context.Context, limit int) ([]TopicWithLastAuth
 	var result []TopicWithLastAuthor
 	for rows.Next() {
 		var t TopicWithLastAuthor
-		if err := rows.Scan(&t.ID, &t.Title, &t.LastPostAt, &t.LastPostByName); err != nil {
+		if err := rows.Scan(&t.ID, &t.Title, &t.LastPostAt, &t.LastPostByName,
+			&t.SectionName, &t.PostCount); err != nil {
 			return nil, err
 		}
 		result = append(result, t)
