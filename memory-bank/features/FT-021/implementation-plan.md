@@ -5,7 +5,7 @@ doc_function: derived
 purpose: "Execution-план реализации FT-021. Фиксирует discovery context, шаги, риски и test strategy без переопределения canonical feature-фактов."
 derived_from:
   - feature.md
-status: draft
+status: active
 audience: humans_and_agents
 must_not_define:
   - ft_021_scope
@@ -166,3 +166,4 @@ must_not_define:
 - CP-04 пройден: Playwright-тесты зелёные, evidence artifacts зафиксированы
 - `feature.md` → `delivery_status: in_progress`
 - Все условия из gate Plan Ready → Execution в `feature-flow.md` выполнены
+- `EVID-06: Eval DR→PR — accept. 2026-04-27. evaluator agent.`
