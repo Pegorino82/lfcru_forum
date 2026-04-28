@@ -65,7 +65,8 @@ must_not_define:
 | --- | --- | --- |
 | `templates/admin/articles/edit.html` | code | Заменить `<textarea>` на TipTap-контейнер + тулбар |
 | `static/js/editor.js` (new) | code | Инициализация TipTap, тулбар, upload-интеграция |
-| `internal/handler/article.go` | code | Добавить bluemonday-санитизацию поля body при save |
+| `internal/admin/articles_handler.go` | code | Добавить bluemonday-санитизацию поля content при save (Create/Update) |
+| `internal/news/handler.go` | code | Заменить RenderMarkdown на template.HTML в ShowArticle |
 | `templates/news/article.html` | code | Рендеринг body через `safeHTML` вместо Markdown-рендерера |
 | `go.mod` / `go.sum` | config | Добавить зависимость bluemonday |
 | `templates/admin/articles/edit.html` (инлайн-стили) | code | Стили для TipTap-контента и тулбара — инлайн внутри шаблона редактора |
