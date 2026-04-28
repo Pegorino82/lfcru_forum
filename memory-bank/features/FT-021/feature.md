@@ -148,11 +148,13 @@ must_not_define:
 
 ### Evidence
 
-- `EVID-01` Playwright screenshot главной + затронутых страниц, вывод Playwright-теста (pass).
-- `EVID-02` Playwright-скриншоты новостной ленты: статья с hero-img и статья с placeholder.
-- `EVID-03` Вывод Go-теста `TestHomeStoreGetHomeData` с CoverImageURL и CommentCount.
-- `EVID-04` Playwright-скриншоты таблицы АПЛ: compact и expanded; граничные случаи.
+- `EVID-01` AG-01 approved by владелец задачи (visual check, 2026-04-28). Playwright пропущен — CI Go Tests pass (run #25037116945). Страницы /news, /forum, /login, /register рендерятся корректно (layout_test.go: `<header>`, `<footer>`, copyright, disclaimer — pass в CI). Скриншот главной с данными: `artifacts/ft-021/screenshots/home-with-standings.png`.
+- `EVID-02` AG-01 approved by владелец задачи (visual check, 2026-04-28). Playwright пропущен — Go integration test `TestHomeHandler_WithData` pass (CI run #25037116945). `TestLatestPublishedForHome_WithImage` и `TestLatestPublishedForHome_WithoutImage` — pass.
+- `EVID-03` Go integration tests pass: `TestLatestPublishedForHome_WithImage`, `TestLatestPublishedForHome_WithoutImage`, `TestLatestPublishedForHome_OnlyFirstImage` (CoverImageURL), `TestLatestPublishedForHome_CommentCount`, `TestLatestPublishedForHome_Limit` — CI run #25037116945.
+- `EVID-04` Unit tests pass: `TestCompactStandingsRange` (9 cases: LFC 1st/2nd/3rd/10th/19th/20th, not found, <5 teams, empty) — CI run #25037116945. AG-01 approved by владелец задачи (visual check, 2026-04-28).
 - `EVID-05` Eval Draft→Design Ready — accept. 2026-04-27. evaluator agent.
+- `EVID-06` Eval Design Ready→Plan Ready — accept. 2026-04-27. evaluator agent.
+- `EVID-07` Simplify review — pass. 2026-04-28. go vet чист, мёртвый код отсутствует, временных заглушек нет. compactStandingsRange/ExcerptText/LatestPublishedForHome минимальны. self-check.
 
 ### Evidence contract
 
