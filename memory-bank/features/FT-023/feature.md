@@ -25,7 +25,7 @@ must_not_define:
 
 | Metric ID | Metric | Baseline | Target | Measurement method |
 | --- | --- | --- | --- | --- |
-| `MET-01` | Поддержка всех formatting actions из acceptance criteria | 0 из 7 | 7 из 7 | ручная проверка каждого пункта |
+| `MET-01` | Поддержка всех formatting actions из acceptance criteria | 0 из 7 | 7 из 7 | Playwright E2E (CHK-01) |
 | `MET-02` | XSS-векторы в rendered HTML | не проверяется | 0 (все sanitized) | CHK-03 |
 
 ### Scope
@@ -61,12 +61,12 @@ must_not_define:
 
 | Surface | Type | Why it changes |
 | --- | --- | --- |
-| `web/templates/article/edit.html` | code | Заменить `<textarea>` на TipTap-контейнер + тулбар |
-| `web/static/js/editor.js` (new) | code | Инициализация TipTap, тулбар, upload-интеграция |
+| `templates/admin/articles/edit.html` | code | Заменить `<textarea>` на TipTap-контейнер + тулбар |
+| `static/js/editor.js` (new) | code | Инициализация TipTap, тулбар, upload-интеграция |
 | `internal/handler/article.go` | code | Добавить bluemonday-санитизацию поля body при save |
-| `web/templates/article/view.html` | code | Рендеринг body через `safeHTML` вместо Markdown-рендерера |
+| `templates/news/article.html` | code | Рендеринг body через `safeHTML` вместо Markdown-рендерера |
 | `go.mod` / `go.sum` | config | Добавить зависимость bluemonday |
-| `web/static/css/` или inline | code | Стили для TipTap-контента и тулбара |
+| `static/css/` или inline | code | Стили для TipTap-контента и тулбара |
 
 ### Flow
 
@@ -124,8 +124,8 @@ must_not_define:
 
 | Check ID | Covers | How to check | Expected result | Evidence path |
 | --- | --- | --- | --- | --- |
-| `CHK-01` | `EC-01`, `SC-01` | Ручная: открыть `/articles/{id}/edit`, применить bold/italic/strikethrough/h1/h2/h3/link/align-center/align-right, сохранить, открыть просмотр | Все стили применены, HTML-разметка корректна | `artifacts/ft-023/verify/chk-01/` |
-| `CHK-02` | `EC-02`, `SC-02` | Ручная: вставить изображение через тулбар в середину параграфа, ввести подпись, сохранить, открыть просмотр | `<figure><img><figcaption>` в нужном месте DOM | `artifacts/ft-023/verify/chk-02/` |
+| `CHK-01` | `EC-01`, `SC-01` | Playwright E2E: открыть `/articles/{id}/edit`, применить bold/italic/strikethrough/h2/link/align-center, сохранить, открыть просмотр — проверить наличие `<strong>`, `<em>`, `<s>`, `<h2>`, `<a>`, `style="text-align:center"` в DOM; дополнительно: визуальная проверка отсутствия JS-ошибок в консоли | Все элементы присутствуют в DOM; нет JS-ошибок | `artifacts/ft-023/verify/chk-01/` |
+| `CHK-02` | `EC-02`, `SC-02` | Playwright E2E: вставить изображение через тулбар в середину параграфа, ввести подпись, сохранить, открыть просмотр — проверить наличие `<figure>`, `<img>`, `<figcaption>` в нужном месте DOM; дополнительно: визуальная проверка корректного отображения | `<figure><img><figcaption>` в нужном месте DOM; нет JS-ошибок | `artifacts/ft-023/verify/chk-02/` |
 | `CHK-03` | `EC-03`, `SC-03`, `NEG-01` | Авто: HTTP POST article с body содержащим XSS payload → GET → проверить отсутствие `<script>` и `<iframe>` в ответе | Payload stripped; статус 200 | `artifacts/ft-023/verify/chk-03/` |
 
 ### Test matrix
