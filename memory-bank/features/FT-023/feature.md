@@ -81,7 +81,7 @@ must_not_define:
 
 | Contract ID | Input / Output | Producer / Consumer | Notes |
 | --- | --- | --- | --- |
-| `CTR-01` | `articles.body` — HTML-строка | Go handler (producer) / шаблон view (consumer) | Ранее поле могло содержать Markdown; после FT-023 ожидается только sanitized HTML. Исторические статьи — OQ-01. |
+| `CTR-01` | `articles.body` — HTML-строка | Go handler (producer) / шаблон view (consumer) | Ранее поле могло содержать Markdown; после FT-023 ожидается только sanitized HTML. Исторические статьи рендерятся as-is согласно ASM-03. |
 | `CTR-02` | Bluemonday allowlist | handler save (producer) / БД (consumer) | Allowlist: `<p>`, `<h1>`-`<h3>`, `<strong>`, `<em>`, `<s>`, `<a href>`, `<img src alt>`, `<figure>`, `<figcaption>`, `<div style="text-align:*">`, `<br>`. Расширяется только через явное изменение allowlist. |
 
 ### Failure Modes
