@@ -45,6 +45,11 @@ canonical_for:
 | **DI** (Dependency Injection) | Паттерн инициализации зависимостей. В проекте реализован вручную в `cmd/forum/main.go`: config → pool → repos → services → handlers. |
 | **PCON-NN** | Идентификатор project constraint из `domain/problem.md` (например, `PCON-01` — запрет `fmt.Sprintf` в SQL). |
 | **MET-NN** | Идентификатор outcome-метрики. |
+| **WYSIWYG** | What You See Is What You Get — класс визуальных редакторов, в которых контент отображается в процессе редактирования так, как будет выглядеть на публикации. |
+| **TipTap** | Headless WYSIWYG-редактор на базе ProseMirror (vanilla JS). Используется в FT-023 как редактор тела статьи; генерирует HTML-вывод. |
+| **bluemonday** | Go-библиотека HTML-санитизации. Пропускает HTML через allowlist-политику: удаляет любые теги и атрибуты, не указанные явно. Используется для защиты от XSS при сохранении тела статьи. |
+| **allowlist** | Список явно разрешённых HTML-тегов и атрибутов для санитизации. Противоположность denylist: всё, что не разрешено — запрещено. |
+| **safeHTML / template.HTML** | Тип Go (`template.HTML`) — строка, помеченная как безопасный HTML; `html/template` не экранирует её автоматически. Требует предварительной санитизации (bluemonday) перед использованием. |
 
 ## Memory-bank шаблон
 

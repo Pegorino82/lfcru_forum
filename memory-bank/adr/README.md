@@ -26,6 +26,7 @@ audience: humans_and_agents
 | [ADR-004](ADR-004-forum-hierarchy-model.md) | Иерархическая модель форума sections→topics→posts | `accepted` | FT-005 |
 | [ADR-005](ADR-005-image-storage.md) | Хранение изображений: файловая система + Docker volume | `accepted` | FT-009 |
 | [ADR-006](ADR-006-article-status-machine.md) | Статусная машина статьи: draft/in_review/published enum | `proposed` | FT-008 |
+| [ADR-007](ADR-007-wysiwyg-editor-html-storage.md) | WYSIWYG-редактор (TipTap) + HTML-хранение тела статьи | `proposed` | FT-023 |
 
 ## Naming
 
