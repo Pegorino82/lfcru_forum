@@ -22,6 +22,7 @@ audience: humans_and_agents
 | Колонка | List ID |
 |---|---|
 | `TODO` | `69e90873209865622904314f` |
+| `PLANNING` | `69f06f1b601a68bf46282cdf` |
 | `IN PROGRESS` | `69e908732098656229043150` |
 | `DONE` | `69e908732098656229043151` |
 

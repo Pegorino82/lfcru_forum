@@ -72,8 +72,10 @@ flowchart LR
 
 ### Bootstrap Feature Package
 
+- [ ] если задача зафиксирована в task tracker → карточка переведена в статус "обсуждается" (PLANNING) до любых файловых операций
 - [ ] определён номер фичи (следующий FT-XXX из `memory-bank/features/`)
 - [ ] создан git worktree: `git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug`
+- [ ] если задача зафиксирована в task tracker → карточка переведена в IN PROGRESS сразу после создания worktree
 - [ ] создан draft PR до первого коммита; все последующие commits/push/CI привязаны к нему
 - [ ] вся дальнейшая работа ведётся **исключительно** внутри worktree-папки `../lfcru_forum-FT-XXX`; прямая работа в `main` запрещена
 - [ ] `README.md` создан по шаблону `templates/feature/README.md` (внутри worktree)
@@ -112,7 +114,7 @@ flowchart LR
 - [ ] `implementation-plan.md` → `status: active`
 - [ ] `implementation-plan.md` фиксирует test strategy: automated coverage surfaces, required local suites (и CI suites, когда CI настроен)
 - [ ] каждый manual-only gap имеет причину, ручную процедуру и `AG-*` с approval ref (approver — человек, ответственный за приёмку фичи: автор задачи или team lead)
-- [ ] если задача зафиксирована в task tracker → обновить статус до in progress
+- [ ] task tracker синхронизирован на Bootstrap (IN PROGRESS выставлен при создании worktree)
 
 ### Execution → Done
 

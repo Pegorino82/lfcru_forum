@@ -1,5 +1,10 @@
 Изучи карточку в [trello](https://trello.com/c/Oa76ZjDv) через Trello API.
 
+⛔ НЕМЕДЛЕННО — до чтения файлов и до любого обсуждения — переведи карточку TODO → PLANNING:
+```
+PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELLO_TOKEN}&idList=69f06f1b601a68bf46282cdf
+```
+
 Перед началом прочитай:
 - `memory-bank/flows/trello.md` — lifecycle и правила синхронизации
 - `memory-bank/flows/feature-flow.md` — gate-чеклисты
@@ -34,18 +39,19 @@
 
 ⛔ HARD STOP — ПЕРЕД СОЗДАНИЕМ ЛЮБЫХ ФАЙЛОВ. Выполни в точном порядке **без запроса подтверждения** — все шаги ниже являются автопилотом по `autonomy-boundaries.md`:
 
-**Шаг 1 — Trello (ПЕРВЫМ, до всего остального):**
-```
-PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELLO_TOKEN}&idList=69e908732098656229043150
-```
-
-**Шаг 2 — Ветка и worktree (из корня основного репозитория):**
+**Шаг 1 — Ветка и worktree (из корня основного репозитория):**
 ```bash
 git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug
 ```
 
+**Шаг 2 — Trello: PLANNING → IN PROGRESS (сразу после создания worktree):**
+```
+PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELLO_TOKEN}&idList=69e908732098656229043150
+```
+
 **Шаг 3 — Draft PR (сразу после worktree, до первого коммита):**
 ```bash
+gh repo view  # убедиться что контекст — Pegorino82/lfcru_forum
 gh pr create --repo Pegorino82/lfcru_forum --draft \
   --title "[WIP][FT-XXX] Краткое описание" \
   --body "Closes #issue — feat/FT-XXX-slug"
@@ -61,7 +67,14 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 3. Доведи feature.md до Design Ready (status: active, ≥1 REQ-*, NS-*, SC-*, CHK-*, EVID-*)
 4. Создай `memory-bank/features/FT-XXX/implementation-plan.md` → Plan Ready
 
-После завершения разработки:
-- Обнови `feature.md` → `delivery_status: done`
+После завершения разработки (Execution → Done gate):
+- Запусти unit-тесты локально командой из `memory-bank/ops/development.md` § «Go-тесты» — должны быть зелёными
+- Убедись что CI зелёный: `rtk gh pr checks` — все jobs (Lint, Go Tests, E2E) должны пройти
 - Переведи PR из draft в ready for review
+- Дождись merge (⛔ HARD STOP — не закрывать артефакты до merge)
+
+После merge PR:
+- `feature.md` → `delivery_status: done`
+- `implementation-plan.md` → `status: archived`
+- Удали worktree: `git worktree remove ../lfcru_forum-FT-XXX && git branch -d feat/FT-XXX-slug`
 - Запроси подтверждение перед перемещением карточки в DONE
