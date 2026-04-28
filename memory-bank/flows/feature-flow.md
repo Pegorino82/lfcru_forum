@@ -23,6 +23,8 @@ audience: humans_and_agents
 ---
 # Feature Flow
 
+> **Scope:** этот flow применяется только к workflow «Средняя или большая фича» (и малым фичам, использующим `short.md`). Для bug-fix используется облегчённый пакет без `feature.md` и `implementation-plan.md` — см. `workflows.md` § «Баг-фикс».
+
 Этот документ задает порядок появления feature-артефактов. Агент должен вести feature package по стадиям и не создавать downstream-артефакты раньше, чем созрел их upstream-owner.
 
 ## Package Rules

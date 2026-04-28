@@ -29,23 +29,10 @@ audience: humans_and_agents
 
 - **Framework:** `go test` (stdlib)
 - **Data:** тестовая БД `lfcru_test` (postgres); изолирована от `lfcru` — dev-данные не затрагиваются
-- **Запуск unit-тестов** (без БД):
-  ```bash
-  docker run --rm -v "$(pwd)":/app -w /app golang:1.23-alpine go test ./...
-  ```
-- **Запуск integration-тестов** (нужна запущенная БД из `docker-compose.dev.yml`):
-  ```bash
-  docker run --rm \
-    -v "$(pwd)":/app -w /app \
-    --network lfcru_forum_default \
-    -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru_test?sslmode=disable" \
-    golang:1.23-alpine \
-    go test -tags integration -p 1 ./internal/...
-  ```
-- **Флаг `-p 1` обязателен** для integration-тестов: каждый пакет вызывает `goose.Up()` независимо, параллельный запуск вызывает race condition
+- **Актуальные команды запуска** (единственный источник) — [`ops/development.md`](../ops/development.md) § «Go-тесты». Использовать дословно.
+- **Флаг `-p 1` обязателен** для integration-тестов: каждый пакет вызывает `goose.Up()` независимо, параллельный запуск вызывает race condition.
 
-⛔ **Не изобретать docker run вручную.** Использовать только команды выше дословно.
-Причина: без `--network lfcru_forum_default` hostname `postgres` не резолвится — тесты падают с `no such host`, хотя контейнер healthy.
+⛔ **Не изобретать `docker run` вручную.** Причина: без `--network lfcru_forum_default` hostname `postgres` не резолвится — тесты падают с `no such host`, хотя контейнер healthy. Без `-v lfcru_gomod` модули скачиваются заново при каждом запуске.
 - Тестовая БД создаётся автоматически скриптом `scripts/init-test-db.sql` при первом старте postgres-контейнера
 
 ### E2E-тесты (Playwright)
