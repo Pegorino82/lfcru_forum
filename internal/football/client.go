@@ -185,7 +185,8 @@ type apiResponse struct {
 }
 
 func (c *Client) fetch(ctx context.Context) (*MatchInfo, error) {
-	url := fmt.Sprintf("%s/teams/%d/matches?status=SCHEDULED&limit=1", c.baseURL, liverpoolTeamID)
+	today := time.Now().UTC().Format("2006-01-02")
+	url := fmt.Sprintf("%s/teams/%d/matches?status=SCHEDULED&dateFrom=%s&limit=1", c.baseURL, liverpoolTeamID, today)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -243,7 +244,10 @@ func (c *Client) fetch(ctx context.Context) (*MatchInfo, error) {
 }
 
 func (c *Client) fetchLast(ctx context.Context) (*LastMatchInfo, error) {
-	url := fmt.Sprintf("%s/teams/%d/matches?status=FINISHED&limit=1", c.baseURL, liverpoolTeamID)
+	now := time.Now().UTC()
+	dateFrom := now.AddDate(0, -2, 0).Format("2006-01-02")
+	dateTo := now.Format("2006-01-02")
+	url := fmt.Sprintf("%s/teams/%d/matches?status=FINISHED&dateFrom=%s&dateTo=%s", c.baseURL, liverpoolTeamID, dateFrom, dateTo)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -270,7 +274,7 @@ func (c *Client) fetchLast(ctx context.Context) (*LastMatchInfo, error) {
 		return nil, nil
 	}
 
-	m := data.Matches[0]
+	m := data.Matches[len(data.Matches)-1]
 
 	matchDate, err := time.Parse(time.RFC3339, m.UTCDate)
 	if err != nil {
