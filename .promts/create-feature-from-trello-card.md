@@ -1,6 +1,6 @@
-Изучи карточку в [trello](https://trello.com/c/Oa76ZjDv) через Trello API.
+Изучи карточку в [trello](https://trello.com/c/Oa76ZjDv) через Trello API — автопилот, подтверждение не требуется.
 
-⛔ НЕМЕДЛЕННО — до чтения файлов и до любого обсуждения — переведи карточку TODO → PLANNING:
+⛔ НЕМЕДЛЕННО — до чтения файлов и до любого обсуждения — переведи карточку TODO → PLANNING — без запроса подтверждения (автопилот по `autonomy-boundaries.md`):
 ```
 PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELLO_TOKEN}&idList=69f06f1b601a68bf46282cdf
 ```
@@ -60,6 +60,7 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 **Шаг 4 — Вся дальнейшая работа исключительно внутри `../lfcru_forum-FT-XXX`.**
 Прямая работа в основной директории ЗАПРЕЩЕНА.
 Все создание файлов, коммиты и push — только из worktree-папки.
+Чтение любых файлов из `../lfcru_forum-FT-XXX` не требует подтверждения — автопилот по `autonomy-boundaries.md`.
 
 **Routing по label карточки:**
 
@@ -81,9 +82,11 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 9. После подтверждения: `implementation-plan.md` → `status: active` (Plan Ready)
 
 После завершения разработки (Execution → Done gate):
+- Зафикси все изменения: `git add . && git commit -m "feat(FT-XXX): <краткое описание>"`
+- Запуш ветку: `git push`
 - Запусти unit-тесты локально командой из `memory-bank/ops/development.md` § «Go-тесты» — должны быть зелёными
-- Убедись что CI зелёный: `rtk gh pr checks` — все jobs (Lint, Go Tests, E2E) должны пройти
-- Переведи PR из draft в ready for review
+- Убедись что CI зелёный: `rtk gh pr checks` — все jobs (Lint, Go Tests, E2E) должны пройти. ⛔ Запускай ТОЛЬКО после `git push` — иначе CI проверяет устаревший код
+- Только если ALL jobs green — переведи PR из draft в ready for review: `gh pr ready`
 - Дождись merge (⛔ HARD STOP — не закрывать артефакты до merge)
 
 После merge PR:

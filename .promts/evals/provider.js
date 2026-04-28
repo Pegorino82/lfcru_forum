@@ -17,7 +17,8 @@ class FixtureProvider {
   async callApi(prompt, context) {
     const cardContext = context.vars?.card_context || '';
     const isThinCard = /Description:\s*""/.test(cardContext);
-    const suffix = isThinCard ? '-thin' : '';
+    const baseFixtures = ['broken', 'fixed'];
+    const suffix = (baseFixtures.includes(this.fixtureType) && isThinCard) ? '-thin' : '';
     const fixtureFile = path.join(__dirname, 'fixtures', `${this.fixtureType}${suffix}.md`);
     let content = fs.readFileSync(fixtureFile, 'utf-8');
 
