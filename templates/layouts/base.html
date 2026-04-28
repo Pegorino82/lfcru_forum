@@ -12,25 +12,66 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222;
                display: flex; flex-direction: column; min-height: 100vh; }
-        nav { background: #c8102e; color: #fff; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-        nav a { color: #fff; text-decoration: none; font-weight: 600; }
-        nav a:hover { text-decoration: underline; }
-        .nav-links { display: flex; gap: 1rem; align-items: center; }
-        .main-nav { display: flex; gap: 1rem; }
+
+        /* Header */
+        header { background: #c8102e; color: #fff; }
+        .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0.75rem 1.5rem;
+                     display: flex; align-items: center; gap: 1rem; }
+        .hamburger { background: none; border: none; color: #fff; cursor: pointer;
+                     font-size: 1.25rem; line-height: 1; padding: 0.25rem; flex-shrink: 0; }
+        .main-nav { display: flex; gap: 1.5rem; }
+        .main-nav a { color: #fff; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
+        .main-nav a:hover { text-decoration: underline; }
+        .nav-logo { flex: 1; display: flex; justify-content: center; }
+        .nav-logo img { height: 42px; width: auto; }
+        .nav-auth { display: flex; gap: 0.5rem; align-items: center; margin-left: auto; }
+        .btn-auth { padding: 0.35rem 0.9rem; border: 1.5px solid rgba(255,255,255,0.6);
+                    border-radius: 4px; color: #fff; text-decoration: none; font-size: 0.85rem;
+                    font-weight: 600; background: transparent; cursor: pointer;
+                    transition: background 0.15s; font-family: inherit; }
+        .btn-auth:hover { background: rgba(255,255,255,0.15); }
+        .btn-auth.primary { background: rgba(255,255,255,0.2); border-color: #fff; }
         .nav-username { max-width: 120px; overflow: hidden; text-overflow: ellipsis;
-                        white-space: nowrap; display: inline-block; }
+                        white-space: nowrap; display: inline-block; color: #fff; font-weight: 600; }
+
+        /* Container */
         .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; flex: 1; }
-        .flash { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
+
+        /* Flash */
+        .flash { background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                 border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; }
         .flash.error { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-        footer { background: #333; color: #ccc; padding: 1rem 1.5rem;
-                 text-align: center; font-size: 0.875rem; }
-        footer a { color: #fff; }
+
+        /* Footer */
+        footer { background: #1a1a2e; color: #aaa; }
+        .footer-inner { max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem 1.5rem;
+                        display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5rem; }
+        .footer-col h4 { color: #fff; font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; }
+        .footer-col p { font-size: 0.85rem; line-height: 1.6; }
+        .footer-col ul { list-style: none; }
+        .footer-col ul li { margin-bottom: 0.5rem; }
+        .footer-col a { color: #aaa; text-decoration: none; font-size: 0.85rem; }
+        .footer-col a:hover { color: #fff; }
+        .social-icons { display: flex; gap: 0.75rem; margin-top: 0.25rem; }
+        .social-icon { width: 36px; height: 36px; border-radius: 50%;
+                       border: 1.5px solid #444; display: flex; align-items: center;
+                       justify-content: center; color: #aaa; text-decoration: none;
+                       transition: border-color 0.15s, color 0.15s; }
+        .social-icon:hover { border-color: #fff; color: #fff; }
+        .social-icon svg { width: 16px; height: 16px; fill: currentColor; }
+        .footer-copy { text-align: center; padding: 1.5rem; border-top: 1px solid #2d2d45;
+                       font-size: 0.8rem; color: #555; }
+
+        /* Skip link */
         .skip-link { position: absolute; top: -40px; left: 0; background: #c8102e;
                      color: #fff; padding: 0.5rem 1rem; z-index: 100; transition: top 0.1s; }
         .skip-link:focus { top: 0; }
+
         [x-cloak] { display: none !important; }
+
         @media (max-width: 768px) {
-          .main-nav { display: none; }
+            .main-nav { display: none; }
+            .footer-inner { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -38,13 +79,16 @@
   <a href="#content" class="skip-link">Перейти к содержимому</a>
 
   <header>
-    <nav aria-label="Основная навигация">
-      <a href="/" class="logo">LFC.ru</a>
+    <nav class="nav-inner" aria-label="Основная навигация">
+      <button class="hamburger" aria-label="Меню">&#9776;</button>
       <div class="main-nav">
-        <a href="/forum" class="nav-link">Форум</a>
-        <a href="/news" class="nav-link">Новости</a>
+        <a href="/news">Новости</a>
+        <a href="/forum">Форум</a>
       </div>
-      <div class="nav-links">
+      <div class="nav-logo">
+        <a href="/"><img src="/static/img/lfc_crest.svg" alt="LFC.ru" height="42"></a>
+      </div>
+      <div class="nav-auth">
         {{template "nav" .}}
       </div>
     </nav>
@@ -56,8 +100,42 @@
   </main>
 
   <footer>
-    <p>© 2026 LFC.ru — фан-сайт болельщиков ФК «Ливерпуль»</p>
-    <p>Не является официальным сайтом Liverpool FC</p>
+    <div class="footer-inner">
+      <div class="footer-col">
+        <h4>О сообществе</h4>
+        <p>Крупнейшее русскоязычное сообщество болельщиков Liverpool FC. Новости, обсуждения, анализ матчей и многое другое.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Разделы</h4>
+        <ul>
+          <li><a href="/news">Новости</a></li>
+          <li><a href="/forum">Форум</a></li>
+          <li><a href="#">Расписание матчей</a></li>
+          <li><a href="#">Турнирная таблица</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Мы в соцсетях</h4>
+        <div class="social-icons">
+          <a href="#" class="social-icon" aria-label="Facebook">
+            <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+          </a>
+          <a href="#" class="social-icon" aria-label="Twitter">
+            <svg viewBox="0 0 24 24"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+          </a>
+          <a href="#" class="social-icon" aria-label="Instagram">
+            <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" style="fill:#1a1a2e"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" style="stroke:#1a1a2e;stroke-width:2"/></svg>
+          </a>
+          <a href="#" class="social-icon" aria-label="YouTube">
+            <svg viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" style="fill:#1a1a2e"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copy">
+      © 2026 LFC.ru — фан-сайт болельщиков ФК «Ливерпуль»<br>
+      Не является официальным сайтом Liverpool FC
+    </div>
   </footer>
 
 <script>
@@ -96,11 +174,11 @@ document.addEventListener('htmx:beforeSwap', function(evt) {
     <span class="nav-username" title="{{.User.Username}}">{{truncate .User.Username 20}}</span>
     <form method="POST" action="/logout" style="display:inline">
         <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
-        <button type="submit" style="background:none;border:none;color:#fff;cursor:pointer;font-weight:600;">Выйти</button>
+        <button type="submit" class="btn-auth">Выйти</button>
     </form>
 {{else}}
-    <a href="/login">Войти</a>
-    <a href="/register">Регистрация</a>
+    <a href="/login" class="btn-auth">Войти</a>
+    <a href="/register" class="btn-auth primary">Регистрация</a>
 {{end}}
 {{end}}
 

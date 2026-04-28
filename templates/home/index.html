@@ -4,185 +4,295 @@
 
 {{define "content"}}
 <style>
-.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1rem 0; }
-.home-news        { grid-column: 1 / 2; grid-row: 1 / 2; }
-.home-forum       { grid-column: 1 / 2; grid-row: 2 / 3; }
-.home-last-match  { grid-column: 2 / 3; grid-row: 1 / 2; }
-.home-match       { grid-column: 2 / 3; grid-row: 2 / 3; }
-.home-standings   { grid-column: 2 / 3; grid-row: 3 / 4; }
-.news-list, .forum-list { list-style: none; padding: 0; margin: 0; }
-.news-list li, .forum-list li { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
-.news-list time, .forum-meta { color: #666; font-size: 0.875rem; }
-.match-card { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 1rem; text-align: center; }
-.match-opponent { font-size: 1.25rem; font-weight: bold; }
-.match-type { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; }
+/* Layout */
+.home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 1rem 0;
+  align-items: start;
+}
+.home-left  { min-width: 0; }
+.home-right { min-width: 0; display: flex; flex-direction: column; gap: 1rem; }
+
+/* Section headings */
+.widget-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #222;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #c8102e;
+  margin-bottom: 0.75rem;
+}
+
+/* News feed */
+.news-feed { display: flex; flex-direction: column; gap: 1.25rem; }
+.news-item  { background: #fff; border-radius: 6px; overflow: hidden;
+              border: 1px solid #eee; }
+.news-hero  { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+.news-placeholder {
+  width: 100%; aspect-ratio: 16/9;
+  background: linear-gradient(135deg, #c8102e 0%, #8a0a1f 100%);
+  display: flex; align-items: center; justify-content: center;
+}
+.news-placeholder span { color: rgba(255,255,255,0.4); font-size: 2rem; }
+.news-body  { padding: 0.85rem 1rem 1rem; }
+.news-body h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+.news-body h3 a { color: #1a1a2e; text-decoration: none; }
+.news-body h3 a:hover { text-decoration: underline; }
+.news-excerpt { font-size: 0.875rem; color: #555; line-height: 1.5;
+                margin-bottom: 0.6rem; }
+.news-meta  { display: flex; align-items: center; justify-content: space-between;
+              font-size: 0.8rem; color: #888; }
+.news-meta time { display: flex; align-items: center; gap: 0.3rem; }
+.news-meta .comments { display: flex; align-items: center; gap: 0.3rem; }
+.news-item-plain .news-body { padding-top: 0.75rem; }
+
+/* Match widgets */
+.match-widget { background: #fff; border: 1px solid #eee; border-radius: 6px; padding: 0.85rem 1rem; }
+.match-widget-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 0.6rem;
+}
+.match-widget-header .league { font-size: 0.75rem; color: #888; }
+.match-teams { display: flex; align-items: center; justify-content: space-between;
+               gap: 0.5rem; margin-bottom: 0.4rem; }
+.match-team-lfc { color: #c8102e; font-weight: 700; font-size: 1rem; }
+.match-team-opp { font-weight: 600; font-size: 1rem; color: #222; }
+.match-score-big { font-size: 1.75rem; font-weight: 800; color: #1a1a2e;
+                   letter-spacing: 0.05em; }
+.match-info-row { display: flex; align-items: center; gap: 0.4rem;
+                  font-size: 0.8rem; color: #666; margin-top: 0.3rem; }
+.match-vs { font-size: 0.9rem; font-weight: 700; color: #888; }
+.match-type { display: inline-block; font-size: 0.75rem; font-weight: 600;
+              padding: 0.2rem 0.5rem; border-radius: 4px; margin-bottom: 0.4rem; }
 .match-type-home { background: #e8f5e9; color: #2e7d32; }
 .match-type-away { background: #fff3e0; color: #e65100; }
-.match-venue { color: #555; font-size: 0.875rem; }
-.match-tournament { color: #666; font-size: 0.875rem; }
-.match-score { font-size: 2rem; font-weight: bold; margin: 0.5rem 0; }
-.match-forum-link { display: inline-block; margin-top: 0.5rem; font-size: 0.875rem; color: #0066cc; text-decoration: none; }
-.empty-state { color: #999; font-style: italic; }
-section h2 { font-size: 1.25rem; margin-bottom: 0.75rem; border-bottom: 2px solid #c8102e; padding-bottom: 0.5rem; }
-/* Standings table */
-.standings-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-.standings-table th { text-align: center; padding: 0.3rem 0.4rem; color: #555; font-weight: 600; border-bottom: 1px solid #ddd; }
+.match-forum-link { display: inline-block; margin-top: 0.5rem; font-size: 0.875rem;
+                    color: #0066cc; text-decoration: none; }
+
+/* Standings widget */
+.standings-widget { background: #fff; border: 1px solid #eee; border-radius: 6px;
+                    padding: 0.85rem 1rem; cursor: pointer; }
+.standings-widget:hover .widget-title { color: #c8102e; }
+.standings-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.standings-table th { text-align: center; padding: 0.25rem 0.3rem; color: #888;
+                      font-weight: 600; border-bottom: 1px solid #ddd; font-size: 0.75rem; }
 .standings-table th:nth-child(2) { text-align: left; }
-.standings-table td { text-align: center; padding: 0.3rem 0.4rem; border-bottom: 1px solid #f0f0f0; }
+.standings-table td { text-align: center; padding: 0.3rem 0.3rem;
+                      border-bottom: 1px solid #f5f5f5; }
 .standings-table td:nth-child(2) { text-align: left; }
-.standings-team { display: flex; align-items: center; gap: 0.4rem; }
-.standings-team img { width: 18px; height: 18px; object-fit: contain; }
-.standings-row-champions { background: #e3f2fd; }
-.standings-row-europa    { background: #ede7f6; }
-.standings-row-relegation { background: #ffebee; }
+.standings-team { display: flex; align-items: center; gap: 0.35rem; }
+.standings-team img { width: 16px; height: 16px; object-fit: contain; }
+.standings-row-lfc td { font-weight: 700; color: #c8102e; }
+.standings-expand-hint { text-align: center; font-size: 0.75rem; color: #aaa;
+                          margin-top: 0.5rem; }
+
+/* Forum activity */
+.forum-widget { background: #fff; border: 1px solid #eee; border-radius: 6px; padding: 0.85rem 1rem; }
+.forum-item { padding: 0.6rem 0; border-bottom: 1px solid #f5f5f5; }
+.forum-item:last-child { border-bottom: none; }
+.forum-item-top { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.3rem; }
+.forum-tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 3px;
+             font-size: 0.7rem; font-weight: 700; background: #e8f0fe; color: #1a56db;
+             white-space: nowrap; flex-shrink: 0; }
+.forum-item-title { font-size: 0.85rem; font-weight: 600; color: #1a1a2e;
+                    text-decoration: none; line-height: 1.3; }
+.forum-item-title:hover { color: #c8102e; }
+.forum-item-meta { display: flex; align-items: center; gap: 0.75rem;
+                   font-size: 0.75rem; color: #888; }
+
+.empty-state { color: #999; font-style: italic; font-size: 0.875rem; }
+
 @media (max-width: 768px) {
   .home-grid { grid-template-columns: 1fr; }
-  .home-news, .home-forum, .home-last-match, .home-match, .home-standings { grid-column: 1 / -1; grid-row: auto; }
 }
 </style>
 
 <div class="home-grid">
 
-  <section class="home-news" aria-labelledby="news-heading">
-    <h2 id="news-heading">Последние новости</h2>
+  <!-- Left column: news -->
+  <div class="home-left">
+    <h2 class="widget-title">Последние новости</h2>
     {{if .News}}
-      <ul class="news-list">
+      <div class="news-feed">
         {{range .News}}
-        <li>
-          <a href="/news/{{.ID}}">{{.Title}}</a>
-          {{if .PublishedAt}}
-          <time datetime="{{.PublishedAt.Format "2006-01-02"}}">
-            {{.PublishedAt.Format "02.01.2006"}}
-          </time>
+        <article class="news-item">
+          {{if .CoverImageURL}}
+            <img class="news-hero" src="/storage/news/{{.CoverImageURL}}" alt="{{.Title}}" loading="lazy">
+          {{else}}
+            <div class="news-placeholder"><span>⚽</span></div>
           {{end}}
-        </li>
+          <div class="news-body">
+            <h3><a href="/news/{{.ID}}">{{.Title}}</a></h3>
+            {{with .ExcerptText}}
+              <p class="news-excerpt">{{.}}</p>
+            {{end}}
+            <div class="news-meta">
+              {{if .PublishedAt}}
+              <time datetime="{{.PublishedAt.Format "2006-01-02"}}">
+                🕐 {{.PublishedAt.Format "02 января 2006"}}
+              </time>
+              {{end}}
+              <span class="comments">💬 {{.CommentCount}} комментариев</span>
+            </div>
+          </div>
+        </article>
         {{end}}
-      </ul>
+      </div>
     {{else}}
       <p class="empty-state">На сайте еще не добавлены новости</p>
     {{end}}
-  </section>
+  </div>
 
-  <section class="home-forum" aria-labelledby="forum-heading">
-    <h2 id="forum-heading">Последнее на форуме</h2>
-    {{if .Topics}}
-      <ul class="forum-list">
-        {{range .Topics}}
-        <li>
-          <a href="/forum/topics/{{.ID}}">{{.Title}}</a>
-          <span class="forum-meta">
-            {{.LastPostByName}} —
-            <time datetime="{{.LastPostAt.Format "2006-01-02T15:04:05Z07:00"}}">
-              {{.LastPostAt.Format "02.01.2006 15:04"}}
-            </time>
-          </span>
-        </li>
-        {{end}}
-      </ul>
-      <p style="margin-top: 1rem; text-align: center;">
-        <a href="/forum" style="color: #0066cc; text-decoration: none; font-weight: 600;">Все разделы →</a>
-      </p>
-    {{else}}
-      <p class="empty-state">В форуме пока нет активных обсуждений</p>
-    {{end}}
-  </section>
+  <!-- Right column: widgets -->
+  <div class="home-right">
 
-  <section class="home-last-match" aria-labelledby="last-match-heading">
-    <h2 id="last-match-heading">Последний матч</h2>
-    {{if .LastFootballMatch}}
-      <div class="match-card">
+    <!-- Last match -->
+    <div class="match-widget" id="last-match-heading">
+      <div class="match-widget-header">
+        <span class="widget-title" style="border-bottom:none;margin-bottom:0;">Последний матч</span>
+        {{if .LastFootballMatch}}<span class="league">{{.LastFootballMatch.Tournament}}</span>{{end}}
+      </div>
+      {{if .LastFootballMatch}}
         {{if .LastFootballMatch.IsHome}}
           <span class="match-type match-type-home">Домашний</span>
         {{else}}
           <span class="match-type match-type-away">Выездной</span>
         {{end}}
-        <p class="match-opponent">Liverpool FC — {{.LastFootballMatch.Opponent}}</p>
-        <p class="match-date">
-          <time datetime="{{.LastFootballMatch.MatchDate.Format "2006-01-02T15:04:05Z07:00"}}">
-            {{.LastFootballMatch.MatchDate.Format "02.01.2006 15:04"}} UTC
-          </time>
-        </p>
-        {{if .LastFootballMatch.IsHome}}
-          <p class="match-score">{{.LastFootballMatch.HomeScore}}:{{.LastFootballMatch.AwayScore}}</p>
-        {{else}}
-          <p class="match-score">{{.LastFootballMatch.AwayScore}}:{{.LastFootballMatch.HomeScore}}</p>
-        {{end}}
+        <div class="match-teams">
+          {{if .LastFootballMatch.IsHome}}
+            <span class="match-team-lfc">Liverpool</span>
+            <span class="match-score-big">{{.LastFootballMatch.HomeScore}}:{{.LastFootballMatch.AwayScore}}</span>
+            <span class="match-team-opp">{{.LastFootballMatch.Opponent}}</span>
+          {{else}}
+            <span class="match-team-opp">{{.LastFootballMatch.Opponent}}</span>
+            <span class="match-score-big">{{.LastFootballMatch.AwayScore}}:{{.LastFootballMatch.HomeScore}}</span>
+            <span class="match-team-lfc">Liverpool</span>
+          {{end}}
+        </div>
+        <div class="match-info-row">
+          🗓 <time>{{.LastFootballMatch.MatchDate.Format "02 января 2006"}}</time>
+        </div>
         {{if .LastFootballMatch.Stadium}}
-          <p class="match-venue">
-            {{.LastFootballMatch.Stadium}}{{if .LastFootballMatch.City}}, {{.LastFootballMatch.City}}{{end}}{{if .LastFootballMatch.Country}}, {{.LastFootballMatch.Country}}{{end}}
-          </p>
+        <div class="match-info-row">
+          📍 {{.LastFootballMatch.Stadium}}{{if .LastFootballMatch.City}}, {{.LastFootballMatch.City}}{{end}}{{if .LastFootballMatch.Country}}, {{.LastFootballMatch.Country}}{{end}}
+        </div>
         {{end}}
-        <p class="match-tournament">{{.LastFootballMatch.Tournament}}</p>
+        {{if .LastFootballMatch.ForumURL}}
         <a href="{{.LastFootballMatch.ForumURL}}" class="match-forum-link">Тема на форуме</a>
-      </div>
-    {{else}}
-      <p class="empty-state">Данные о последнем матче недоступны</p>
-    {{end}}
-  </section>
+        {{end}}
+      {{else}}
+        <p class="empty-state">Данные о последнем матче недоступны</p>
+      {{end}}
+    </div>
 
-  <section class="home-match" aria-labelledby="match-heading">
-    <h2 id="match-heading">Ближайший матч</h2>
-    {{if .NextFootballMatch}}
-      <div class="match-card">
+    <!-- Next match -->
+    <div class="match-widget" id="match-heading">
+      <div class="match-widget-header">
+        <span class="widget-title" style="border-bottom:none;margin-bottom:0;">Следующий матч</span>
+        {{if .NextFootballMatch}}<span class="league">{{.NextFootballMatch.Tournament}}</span>{{end}}
+      </div>
+      {{if .NextFootballMatch}}
         {{if .NextFootballMatch.IsHome}}
           <span class="match-type match-type-home">Домашний</span>
         {{else}}
           <span class="match-type match-type-away">Выездной</span>
         {{end}}
-        <p class="match-opponent">Liverpool FC — {{.NextFootballMatch.Opponent}}</p>
-        <p class="match-date">
-          <time datetime="{{.NextFootballMatch.MatchDate.Format "2006-01-02T15:04:05Z07:00"}}">
-            {{.NextFootballMatch.MatchDate.Format "02.01.2006 15:04"}} UTC
+        <div class="match-teams">
+          {{if .NextFootballMatch.IsHome}}
+            <span class="match-team-lfc">Liverpool</span>
+            <span class="match-vs">VS</span>
+            <span class="match-team-opp">{{.NextFootballMatch.Opponent}}</span>
+          {{else}}
+            <span class="match-team-opp">{{.NextFootballMatch.Opponent}}</span>
+            <span class="match-vs">VS</span>
+            <span class="match-team-lfc">Liverpool</span>
+          {{end}}
+        </div>
+        <div class="match-info-row">
+          🗓 <time datetime="{{.NextFootballMatch.MatchDate.Format "2006-01-02T15:04:05Z07:00"}}">
+            {{.NextFootballMatch.MatchDate.Format "02 января 2006 - 15:04"}} МСК
           </time>
-        </p>
+        </div>
         {{if .NextFootballMatch.Stadium}}
-          <p class="match-venue">
-            {{.NextFootballMatch.Stadium}}{{if .NextFootballMatch.City}}, {{.NextFootballMatch.City}}{{end}}{{if .NextFootballMatch.Country}}, {{.NextFootballMatch.Country}}{{end}}
-          </p>
+        <div class="match-info-row">
+          📍 {{.NextFootballMatch.Stadium}}{{if .NextFootballMatch.City}}, {{.NextFootballMatch.City}}{{end}}{{if .NextFootballMatch.Country}}, {{.NextFootballMatch.Country}}{{end}}
+        </div>
         {{end}}
-        <p class="match-tournament">{{.NextFootballMatch.Tournament}}</p>
-      </div>
-    {{else}}
-      <p class="empty-state">Ближайших матчей нет</p>
+      {{else}}
+        <p class="empty-state">Ближайших матчей нет</p>
+      {{end}}
+    </div>
+
+    <!-- Standings -->
+    {{if .Standings}}
+    <div class="standings-widget" x-data="{ expanded: false }" @click="expanded = !expanded">
+      <div class="widget-title">Турнирная таблица АПЛ</div>
+      <table class="standings-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Команда</th>
+            <th>И</th>
+            <th>ГЗ</th>
+            <th>ГП</th>
+            <th>РМ</th>
+            <th>О</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range $i, $row := .Standings}}
+          <tr x-show="expanded || ({{$i}} >= {{$.CompactStandingsStart}} && {{$i}} < {{$.CompactStandingsEnd}})"
+              class="{{if contains $row.TeamName "Liverpool"}}standings-row-lfc{{end}}">
+            <td>{{$row.Position}}</td>
+            <td>
+              <span class="standings-team">
+                {{if $row.TeamCrest}}<img src="{{$row.TeamCrest}}" alt="{{$row.TeamName}}" loading="lazy">{{end}}
+                {{$row.TeamName}}
+              </span>
+            </td>
+            <td>{{$row.PlayedGames}}</td>
+            <td>{{$row.GoalsFor}}</td>
+            <td>{{$row.GoalsAgainst}}</td>
+            <td>{{if ge $row.GoalDifference 0}}+{{end}}{{$row.GoalDifference}}</td>
+            <td><strong>{{$row.Points}}</strong></td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+      <p class="standings-expand-hint" x-text="expanded ? '▲ Свернуть' : '▼ Показать всю таблицу'"></p>
+    </div>
     {{end}}
-  </section>
 
-  {{if .Standings}}
-  <section class="home-standings" aria-labelledby="standings-heading">
-    <h2 id="standings-heading">Таблица АПЛ</h2>
-    <table class="standings-table">
-      <thead>
-        <tr>
-          <th>№</th>
-          <th>Команда</th>
-          <th>И</th>
-          <th>ЗМ</th>
-          <th>ПМ</th>
-          <th>РМ</th>
-          <th>О</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Standings}}
-        <tr class="{{if le .Position 5}}standings-row-champions{{else if eq .Position 6}}standings-row-europa{{else if ge .Position 18}}standings-row-relegation{{end}}">
-          <td>{{.Position}}</td>
-          <td>
-            <span class="standings-team">
-              {{if .TeamCrest}}<img src="{{.TeamCrest}}" alt="{{.TeamName}}" loading="lazy">{{end}}
-              {{.TeamName}}
-            </span>
-          </td>
-          <td>{{.PlayedGames}}</td>
-          <td>{{.GoalsFor}}</td>
-          <td>{{.GoalsAgainst}}</td>
-          <td>{{if ge .GoalDifference 0}}+{{end}}{{.GoalDifference}}</td>
-          <td><strong>{{.Points}}</strong></td>
-        </tr>
+    <!-- Forum activity -->
+    <div class="forum-widget">
+      <div class="widget-title">Активность на форуме</div>
+      {{if .Topics}}
+        {{range .Topics}}
+        <div class="forum-item">
+          <div class="forum-item-top">
+            {{if .SectionName}}<span class="forum-tag">{{.SectionName}}</span>{{end}}
+            <a href="/forum/topics/{{.ID}}" class="forum-item-title">{{.Title}}</a>
+          </div>
+          <div class="forum-item-meta">
+            <span>{{.LastPostByName}}</span>
+            {{if gt .PostCount 0}}<span>💬 {{.PostCount}}</span>{{end}}
+            <time datetime="{{.LastPostAt.Format "2006-01-02T15:04:05Z07:00"}}">
+              🕐 {{.LastPostAt.Format "02.01.2006 15:04"}}
+            </time>
+          </div>
+        </div>
         {{end}}
-      </tbody>
-    </table>
-  </section>
-  {{end}}
+        <p style="margin-top:0.75rem;text-align:center;">
+          <a href="/forum" style="color:#0066cc;text-decoration:none;font-size:0.85rem;font-weight:600;">Все разделы →</a>
+        </p>
+      {{else}}
+        <p class="empty-state">В форуме пока нет активных обсуждений</p>
+      {{end}}
+    </div>
 
-</div>
+  </div><!-- home-right -->
+
+</div><!-- home-grid -->
 {{end}}
