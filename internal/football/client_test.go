@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 )
@@ -348,24 +347,6 @@ func TestClient_LastMatch_ReturnsLastNotFirst(t *testing.T) {
 	}
 }
 
-func TestClient_NextMatch_UsesDateFrom(t *testing.T) {
-	var capturedURL string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		capturedURL = r.URL.RawQuery
-		resp := map[string]any{"matches": []any{}}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
-	}))
-	defer srv.Close()
-
-	c := newTestClient("test-key", time.Hour, srv.URL)
-	if _, err := c.NextMatch(context.Background()); err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !strings.Contains(capturedURL, "dateFrom=") {
-		t.Errorf("expected dateFrom param in query, got %q", capturedURL)
-	}
-}
 
 // newTestClient creates a Client pointing to a test HTTP server instead of the real API.
 func newTestClient(apiKey string, ttl time.Duration, serverURL string) *Client {

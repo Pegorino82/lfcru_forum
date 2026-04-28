@@ -185,8 +185,7 @@ type apiResponse struct {
 }
 
 func (c *Client) fetch(ctx context.Context) (*MatchInfo, error) {
-	today := time.Now().UTC().Format("2006-01-02")
-	url := fmt.Sprintf("%s/teams/%d/matches?status=SCHEDULED&dateFrom=%s&limit=1", c.baseURL, liverpoolTeamID, today)
+	url := fmt.Sprintf("%s/teams/%d/matches?status=SCHEDULED&limit=1", c.baseURL, liverpoolTeamID)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
