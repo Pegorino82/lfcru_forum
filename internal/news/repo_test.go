@@ -389,3 +389,178 @@ func TestLatestPublished_SortedDesc(t *testing.T) {
 		t.Errorf("first item should be newest, got %q", result[0].Title)
 	}
 }
+
+// ─── LatestPublishedForHome ────────────────────────────────────────────────────
+
+func TestLatestPublishedForHome_WithoutImage(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	_, err := pool.Exec(ctx,
+		`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, now())`,
+		"Без картинки", authorID,
+	)
+	if err != nil {
+		t.Fatalf("insert news: %v", err)
+	}
+
+	repo := news.NewRepo(pool)
+	result, err := repo.LatestPublishedForHome(ctx, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	if result[0].CoverImageURL != "" {
+		t.Errorf("expected empty CoverImageURL, got %q", result[0].CoverImageURL)
+	}
+}
+
+func TestLatestPublishedForHome_WithImage(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	var newsID int64
+	err := pool.QueryRow(ctx,
+		`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, now()) RETURNING id`,
+		"С картинкой", authorID,
+	).Scan(&newsID)
+	if err != nil {
+		t.Fatalf("insert news: %v", err)
+	}
+
+	_, err = pool.Exec(ctx,
+		`INSERT INTO article_images (article_id, filename, original_filename) VALUES ($1, $2, $3)`,
+		newsID, "cover.jpg", "cover.jpg",
+	)
+	if err != nil {
+		t.Fatalf("insert image: %v", err)
+	}
+
+	repo := news.NewRepo(pool)
+	result, err := repo.LatestPublishedForHome(ctx, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	if result[0].CoverImageURL != "cover.jpg" {
+		t.Errorf("expected CoverImageURL=cover.jpg, got %q", result[0].CoverImageURL)
+	}
+}
+
+func TestLatestPublishedForHome_OnlyFirstImage(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	var newsID int64
+	err := pool.QueryRow(ctx,
+		`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, now()) RETURNING id`,
+		"Несколько картинок", authorID,
+	).Scan(&newsID)
+	if err != nil {
+		t.Fatalf("insert news: %v", err)
+	}
+
+	// Вставляем два изображения с разным временем создания
+	base := time.Now()
+	for i, filename := range []string{"first.jpg", "second.jpg"} {
+		_, err = pool.Exec(ctx,
+			`INSERT INTO article_images (article_id, filename, original_filename, created_at) VALUES ($1, $2, $3, $4)`,
+			newsID, filename, filename, base.Add(time.Duration(i)*time.Second),
+		)
+		if err != nil {
+			t.Fatalf("insert image %s: %v", filename, err)
+		}
+	}
+
+	repo := news.NewRepo(pool)
+	result, err := repo.LatestPublishedForHome(ctx, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item (no duplicates), got %d", len(result))
+	}
+	if result[0].CoverImageURL != "first.jpg" {
+		t.Errorf("expected first image as cover, got %q", result[0].CoverImageURL)
+	}
+}
+
+func TestLatestPublishedForHome_CommentCount(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	var newsID int64
+	err := pool.QueryRow(ctx,
+		`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, now()) RETURNING id`,
+		"Статья с комментариями", authorID,
+	).Scan(&newsID)
+	if err != nil {
+		t.Fatalf("insert news: %v", err)
+	}
+
+	for i := 0; i < 3; i++ {
+		_, err = pool.Exec(ctx,
+			`INSERT INTO news_comments (news_id, author_id, content) VALUES ($1, $2, $3)`,
+			newsID, authorID, "комментарий",
+		)
+		if err != nil {
+			t.Fatalf("insert comment %d: %v", i, err)
+		}
+	}
+
+	repo := news.NewRepo(pool)
+	result, err := repo.LatestPublishedForHome(ctx, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 item, got %d", len(result))
+	}
+	if result[0].CommentCount != 3 {
+		t.Errorf("expected CommentCount=3, got %d", result[0].CommentCount)
+	}
+}
+
+func TestLatestPublishedForHome_Limit(t *testing.T) {
+	pool := setupPool(t)
+	authorID := insertUser(t, pool)
+	cleanNews(t, pool)
+	defer cleanNews(t, pool)
+
+	ctx := context.Background()
+	now := time.Now()
+	for i := 0; i < 7; i++ {
+		_, err := pool.Exec(ctx,
+			`INSERT INTO news (title, status, author_id, published_at) VALUES ($1, 'published', $2, $3)`,
+			"home-limit-news", authorID, now.Add(time.Duration(-i)*time.Hour),
+		)
+		if err != nil {
+			t.Fatalf("insert news: %v", err)
+		}
+	}
+
+	repo := news.NewRepo(pool)
+	result, err := repo.LatestPublishedForHome(ctx, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 5 {
+		t.Errorf("expected 5 items, got %d", len(result))
+	}
+}
