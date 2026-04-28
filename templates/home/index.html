@@ -172,7 +172,7 @@
           {{end}}
         </div>
         <div class="match-info-row">
-          🗓 <time>{{.LastFootballMatch.MatchDate.Format "02 января 2006"}}</time>
+          🗓 <time>{{ruDate .LastFootballMatch.MatchDate}}</time>
         </div>
         {{if .LastFootballMatch.Stadium}}
         <div class="match-info-row">
@@ -212,7 +212,7 @@
         </div>
         <div class="match-info-row">
           🗓 <time datetime="{{.NextFootballMatch.MatchDate.Format "2006-01-02T15:04:05Z07:00"}}">
-            {{.NextFootballMatch.MatchDate.Format "02 января 2006 - 15:04"}} МСК
+            {{ruDate .NextFootballMatch.MatchDate}} - {{.NextFootballMatch.MatchDate.Format "15:04"}} GMT
           </time>
         </div>
         {{if .NextFootballMatch.Stadium}}

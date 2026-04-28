@@ -7,11 +7,22 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
+var ruMonths = [12]string{
+	"января", "февраля", "марта", "апреля", "мая", "июня",
+	"июля", "августа", "сентября", "октября", "ноября", "декабря",
+}
+
 var funcMap = template.FuncMap{
+	// ruDate formats a time.Time as "02 апреля 2006" with Russian month name.
+	// Use instead of .Format "02 января 2006" — month in Go format strings is a literal.
+	"ruDate": func(t time.Time) string {
+		return fmt.Sprintf("%02d %s %d", t.Day(), ruMonths[t.Month()-1], t.Year())
+	},
 	"truncate": func(s string, n int) string {
 		r := []rune(s)
 		if len(r) <= n {

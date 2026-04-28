@@ -22,7 +22,7 @@ audience: humans_and_agents
 - Читать логи и файлы конфигурации
 - Создавать и обновлять документацию и `memory-bank`
 - Workflow-действия по feature-flow: создание worktree, draft PR, папки фичи, SQL-файла миграции
-- Trello workflow-действия, предписанные flow: перевод карточки TODO→IN PROGRESS, обновление ссылок в карточке
+- Trello workflow-действия, предписанные flow: `TODO→PLANNING` (начало обсуждения), `PLANNING→IN PROGRESS` (Bootstrap — worktree создан), обновление ссылок в карточке; откат при удалении worktree по правилам `trello.md`
 - UI-верификация через Playwright (см. раздел ниже)
 
 ## Супервизия — делай, но покажи до выполнения

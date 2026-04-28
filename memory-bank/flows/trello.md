@@ -73,32 +73,44 @@ PUT https://api.trello.com/1/cards/{shortLink}
 
 | Trello колонка | Flow событие | Подтверждение |
 |---|---|---|
-| `TODO` | карточка не взята в работу | — |
-| `IN PROGRESS` | gate Plan Ready → Execution — перед первым коммитом с кодом (worktree и draft PR уже существуют с Bootstrap) | не требуется — пользователь уже дал go-ahead |
+| `TODO` | карточка не взята в обсуждение | — |
+| `PLANNING` | агент получил задачу — немедленно, до чтения файлов и до обсуждения | не требуется — автопилот |
+| `IN PROGRESS` | Bootstrap — worktree создан (до draft PR) | не требуется — автопилот |
 | `DONE` | PR merged (gate Execution → Done пройден) | ✅ требуется |
 
-> **HARD STOP — IN PROGRESS:** карточка обязана быть переведена в IN PROGRESS **до первого коммита с кодом** (gate Plan Ready → Execution). Worktree и draft PR к этому моменту уже существуют (Bootstrap). Пропускать нельзя.
+> **HARD STOP — PLANNING:** карточка переводится в PLANNING **немедленно при получении задачи** — до чтения файлов, до любых вопросов и до обсуждения. Это сигнал на доске: задачей занимаются.
+
+> **HARD STOP — IN PROGRESS:** карточка переводится в IN PROGRESS **сразу после создания worktree** (Bootstrap), до draft PR и до первого коммита с кодом.
 
 Перемещение в DONE выполняется только после явного подтверждения пользователя.
+
+## Правила отката
+
+Если worktree удаляется до завершения задачи:
+
+| Причина удаления | Целевой статус карточки |
+|---|---|
+| Задача временно приостановлена, вернёмся позже | `IN PROGRESS → PLANNING` |
+| Задача отложена или деприоритизирована | любой → `TODO` |
 
 ## Lifecycle
 
 ```
 1. Пользователь передаёт URL карточки
 2. Агент читает карточку через API
-3. [если нужно] Агент задаёт уточняющие вопросы
-4. *** Bootstrap *** (до создания feature-файлов):
+3. *** HARD STOP *** Переместить карточку TODO → PLANNING (Trello API) — автопилот — немедленно, до чтения файлов
+4. Агент читает memory-bank (trello.md, feature-flow.md, git-workflow.md, trello-board.md)
+5. [если нужно] Агент задаёт уточняющие вопросы
+6. *** Bootstrap *** (до создания feature-файлов):
    a. Создать git worktree: git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug
-   b. Создать draft PR (до первого коммита с кодом)
-   c. Вся дальнейшая работа — внутри worktree
-5. Агент создаёт README.md + feature.md draft (внутри worktree)
-6. Пользователь ревьюит Draft
-7. Агент доводит до Design Ready (feature.md: status active)
-8. Агент создаёт implementation-plan.md → Plan Ready
-9. *** HARD STOP *** Перед первым коммитом с кодом:
-   a. Переместить карточку TODO → IN PROGRESS (Trello API)
-   b. Убедиться, что worktree и draft PR уже созданы (Bootstrap, шаг 4)
-10. После merge PR: агент запрашивает подтверждение → перемещает IN PROGRESS → DONE
+   b. Переместить карточку PLANNING → IN PROGRESS (Trello API) — автопилот
+   c. Создать draft PR (до первого коммита с кодом)
+   d. Вся дальнейшая работа — внутри worktree
+7. Агент создаёт README.md + feature.md draft (внутри worktree)
+8. Пользователь ревьюит Draft
+9. Агент доводит до Design Ready (feature.md: status active)
+10. Агент создаёт implementation-plan.md → Plan Ready
+11. После merge PR: агент запрашивает подтверждение → перемещает IN PROGRESS → DONE
 ```
 
 Trello-интеграция не меняет сам feature flow — только добавляет источник задач и две точки синхронизации статуса.

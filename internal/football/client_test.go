@@ -302,6 +302,52 @@ func TestClient_LastMatch_EmptyAPIKey(t *testing.T) {
 	}
 }
 
+func TestClient_LastMatch_ReturnsLastNotFirst(t *testing.T) {
+	// API returns two matches in ascending order; we expect the last (most recent).
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := map[string]any{
+			"matches": []map[string]any{
+				{
+					"utcDate":     "2026-01-25T15:00:00Z",
+					"competition": map[string]any{"name": "Premier League"},
+					"homeTeam":    map[string]any{"id": 64, "name": "Liverpool FC"},
+					"awayTeam":    map[string]any{"id": 57, "name": "Arsenal FC"},
+					"score":       map[string]any{"fullTime": map[string]any{"home": 1, "away": 0}},
+				},
+				{
+					"utcDate":     "2026-04-19T14:00:00Z",
+					"competition": map[string]any{"name": "Premier League"},
+					"homeTeam":    map[string]any{"id": 66, "name": "Manchester United FC"},
+					"awayTeam":    map[string]any{"id": 64, "name": "Liverpool FC"},
+					"score":       map[string]any{"fullTime": map[string]any{"home": 0, "away": 2}},
+				},
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	info, err := c.LastMatch(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected LastMatchInfo, got nil")
+	}
+	// Must return the most recent match (April 19), not the oldest (January 25).
+	want := "2026-04-19T14:00:00Z"
+	got := info.MatchDate.UTC().Format(time.RFC3339)
+	if got != want {
+		t.Errorf("MatchDate: got %q, want %q (returned oldest instead of most recent)", got, want)
+	}
+	if info.Opponent != "Manchester United FC" {
+		t.Errorf("opponent: got %q, want %q", info.Opponent, "Manchester United FC")
+	}
+}
+
+
 // newTestClient creates a Client pointing to a test HTTP server instead of the real API.
 func newTestClient(apiKey string, ttl time.Duration, serverURL string) *Client {
 	return &Client{
