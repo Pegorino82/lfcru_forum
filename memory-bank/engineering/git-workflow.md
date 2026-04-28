@@ -21,7 +21,7 @@ audience: humans_and_agents
 
 ## Pull Requests
 
-- Перед PR: unit-тесты зелёные, integration-тесты затронутых пакетов зелёные
+- Перед PR: unit-тесты зелёные локально; integration-тесты проверяются в CI (branch protection на `main`)
 - PR title: короткий (до 70 символов), детали — в body
 
 ## Branches

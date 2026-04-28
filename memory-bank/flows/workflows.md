@@ -127,7 +127,7 @@ Flow:
 
 Применяется ко всем типам workflow:
 
-1. Запусти тесты (unit + integration для затронутых пакетов), убедись, что зелёные.
+1. Запусти unit-тесты (Docker-командой из [testing-policy.md](../engineering/testing-policy.md)), убедись, что зелёные. Integration-тесты запускаются только в CI.
 2. Simplify review — нет ли premature abstractions, dead code, дублирования логики.
 3. Сделай коммит согласно [git-workflow.md](../engineering/git-workflow.md).
 4. Получи хеш коммита (`git log --oneline -1`) и впиши его в документацию: `HANDOFF.md` и FT-пакет README (если есть). Сделай отдельный `docs:`-коммит.

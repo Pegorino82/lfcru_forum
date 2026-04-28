@@ -92,7 +92,7 @@ flowchart LR
 
 ### Design Ready → Plan Ready
 
-> Eval: для `large.md` — запусти evaluator через **Agent tool** с промптом из [eval.md#evaluator-agent-protocol](eval.md). Если `revise` — исправь и перезапусти (max 2 итерации, после — escalate к человеку). Для `short.md` — self-check достаточен.
+> Eval: для `large.md` — запусти evaluator через **Agent tool** с промптом из [eval.md#evaluator-agent-protocol](eval.md). Если `revise` — исправь и перезапусти (max 2 итерации, после — escalate к человеку). Для `large.md` с планом ≤ 3 STEP-* — self-check допустим (см. eval.md). Для `short.md` — self-check достаточен.
 
 - [ ] агент выполнил grounding: прошёлся по текущему состоянию системы (relevant paths, existing patterns, dependencies) и зафиксировал результат в discovery context секции `implementation-plan.md`
 - [ ] `implementation-plan.md` создан по шаблону `templates/feature/implementation-plan.md`

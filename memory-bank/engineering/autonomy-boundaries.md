@@ -18,7 +18,7 @@ audience: humans_and_agents
 ## Автопилот — делай без подтверждения
 
 - Редактировать код в рамках задачи
-- Запускать тесты и линтеры (unit + integration для затронутых пакетов)
+- Запускать unit-тесты и линтеры (integration-тесты — только CI; см. [testing-policy.md](testing-policy.md))
 - Читать логи и файлы конфигурации
 - Создавать и обновлять документацию и `memory-bank`
 - Workflow-действия по feature-flow: создание worktree, draft PR, папки фичи, SQL-файла миграции

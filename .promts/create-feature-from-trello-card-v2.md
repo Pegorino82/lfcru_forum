@@ -1,4 +1,4 @@
-Изучи карточку в [trello](https://trello.com/c/v5zs9C1z) через Trello API.
+Изучи карточку в [trello](https://trello.com/c/Oa76ZjDv) через Trello API.
 
 Перед началом прочитай:
 - `memory-bank/flows/trello.md` — lifecycle и правила синхронизации
