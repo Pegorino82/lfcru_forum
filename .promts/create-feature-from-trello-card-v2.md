@@ -61,11 +61,20 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 Прямая работа в основной директории ЗАПРЕЩЕНА.
 Все создание файлов, коммиты и push — только из worktree-папки.
 
+**Routing по label карточки:**
+
+- Label `bug fix` → **облегчённый FT-пакет**: только `README.md` (без feature.md и implementation-plan.md). README содержит: описание бага, условия воспроизведения, корневую причину, ссылку на коммит, regression-тест. Дальнейшие шаги Bootstrap Feature Package не выполняются.
+- Label `feature` (или отсутствует) → **полный feature package**: выполняй шаги ниже.
+
 Создай Bootstrap Feature Package (внутри worktree):
 1. Создай `memory-bank/features/FT-XXX/README.md`
-2. Создай `memory-bank/features/FT-XXX/feature.md` в статусе draft
-3. Доведи feature.md до Design Ready (status: active, ≥1 REQ-*, NS-*, SC-*, CHK-*, EVID-*)
-4. Создай `memory-bank/features/FT-XXX/implementation-plan.md` → Plan Ready
+2. Выбери шаблон feature.md по критериям из `memory-bank/flows/feature-flow.md` § «Выбор шаблона»: `short.md` если фичу можно описать минимальным набором (1 SC-*, 1 CHK-*, 1 EVID-*, без ASM-*/DEC-*/CTR-*/FM-*, без контрактных изменений); иначе `large.md`. Зафикси выбор явно.
+3. Создай `memory-bank/features/FT-XXX/feature.md` по выбранному шаблону в статусе draft
+4. Доведи feature.md до Design Ready (status: active, ≥1 REQ-*, NS-*, SC-*, CHK-*, EVID-*; каждый REQ-* прослеживается к SC-*)
+5. Создай `memory-bank/features/FT-XXX/implementation-plan.md` → Plan Ready:
+   - выполни grounding: пройдись по relevant paths, existing patterns, dependencies
+   - зафикси discovery context: relevant paths, local reference patterns, unresolved questions (OQ-*), test surfaces, execution environment
+   - план содержит ≥1 PRE-*, ≥1 STEP-*, ≥1 CHK-*, ≥1 EVID-*
 
 После завершения разработки (Execution → Done gate):
 - Запусти unit-тесты локально командой из `memory-bank/ops/development.md` § «Go-тесты» — должны быть зелёными

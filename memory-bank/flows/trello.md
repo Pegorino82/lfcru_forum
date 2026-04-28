@@ -75,12 +75,12 @@ PUT https://api.trello.com/1/cards/{shortLink}
 |---|---|---|
 | `TODO` | карточка не взята в обсуждение | — |
 | `PLANNING` | агент получил задачу — немедленно, до чтения файлов и до обсуждения | не требуется — автопилот |
-| `IN PROGRESS` | Bootstrap завершён — worktree и draft PR созданы | не требуется — автопилот |
+| `IN PROGRESS` | Bootstrap — worktree создан (до draft PR) | не требуется — автопилот |
 | `DONE` | PR merged (gate Execution → Done пройден) | ✅ требуется |
 
 > **HARD STOP — PLANNING:** карточка переводится в PLANNING **немедленно при получении задачи** — до чтения файлов, до любых вопросов и до обсуждения. Это сигнал на доске: задачей занимаются.
 
-> **HARD STOP — IN PROGRESS:** карточка переводится в IN PROGRESS **сразу после создания worktree и draft PR** (Bootstrap). До первого коммита с кодом.
+> **HARD STOP — IN PROGRESS:** карточка переводится в IN PROGRESS **сразу после создания worktree** (Bootstrap), до draft PR и до первого коммита с кодом.
 
 Перемещение в DONE выполняется только после явного подтверждения пользователя.
 
