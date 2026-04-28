@@ -1,5 +1,27 @@
 # HANDOFF.md
 
+## FT-022 — fix: некорректное отображение даты матча на главной ✅
+
+**Commits:** b5fad19 → 64d52c4 → 5fe7a20
+
+### Что сделано
+
+1. **`internal/tmpl/renderer.go`** — добавлена template-функция `ruDate` с массивом русских названий месяцев. В Go `"02 января 2006"` — «января» литерал, не спецификатор.
+2. **`templates/home/index.html`** — в блоках «Последний матч» и «Следующий матч» `.Format "02 января 2006"` → `ruDate`. Подпись «МСК» → «GMT».
+3. **`internal/football/client.go`** — `fetchLast` запрашивает матчи за последние 60 дней и берёт последний элемент ответа.
+4. **`internal/football/client_test.go`** — regression-тест `TestClient_LastMatch_ReturnsLastNotFirst`.
+
+### Проблемы и решения
+
+- `dateFrom` без `dateTo` → API возвращает ошибку → откатил изменение в `fetch`.
+
+### Что сделать следующим
+
+- Перевести PR из draft в ready for review.
+- После merge: переместить Trello-карточку в DONE.
+
+---
+
 ## FT-015 — UX редактора статей (превью + фидбек сохранения) ✅
 
 **Commit:** fix(FT-015) @ 94f21a2
