@@ -1,6 +1,6 @@
 # HANDOFF.md
 
-## FT-023 — WYSIWYG-редактор статей (TipTap + bluemonday)
+## FT-023 — WYSIWYG-редактор статей (TipTap + bluemonday) ✅
 
 **Commits:** 5531c9a → d3cad94 → 14bb34d → 7f421b0 → 4b3a8ab → b4dba1a → cb9a54b
 
@@ -19,9 +19,6 @@
 
 ### Что сделать следующим
 
-- Запустить CI (integration-тесты + E2E) — unit-тесты компилируются и собираются чисто, но не запускались локально (integration-only).
-- Перевести PR из draft в ready for review после зелёного CI.
-- После merge: перевести `feature.md → delivery_status: done`, `implementation-plan.md → status: archived`.
 - После перевода ADR-007 в `accepted` — обновить `memory-bank/domain/architecture.md` (OQ-05).
 
 ### Проблемы и решения

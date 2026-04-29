@@ -8,7 +8,7 @@ derived_from:
   - ../../adr/ADR-007-wysiwyg-editor-html-storage.md
   - ../../use-cases/UC-001-article-publishing.md
 status: active
-delivery_status: in_progress
+delivery_status: done
 audience: humans_and_agents
 must_not_define:
   - implementation_sequence
