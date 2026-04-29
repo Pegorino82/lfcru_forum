@@ -105,3 +105,22 @@ status: active
 - **`escalate`** → если есть upstream-конфликт (противоречие требований, неясный scope, нарушение authority chain) — остановиться, описать проблему, передать человеку
 
 **Запрещено:** переписывать `feature.md`, создавать код или план, принимать upstream-решения самостоятельно.
+
+---
+
+## Шаг 4 — Сохрани результат
+
+После вынесения решения запиши полный результат ревью в файл:
+
+```
+.review-results/{{FT_ID}}/review-feature-md-NN.md
+```
+
+`NN` — следующий порядковый номер: проверь существующие файлы `review-feature-md-*.md` в папке `.review-results/{{FT_ID}}/` и возьми `max + 1` (начиная с `01`).
+
+Файл должен содержать:
+- **Gate:** Design Ready → Plan Ready
+- **Artifact:** feature.md
+- **Date:** {{DATE}}
+- **Outcome:** accept / revise / escalate
+- **Details:** полный вывод — все замечания с цитатами и нормами (при `revise`), или acceptance record (при `accept`), или описание upstream-проблемы (при `escalate`)
