@@ -101,7 +101,10 @@ fileInput.addEventListener('change', async () => {
     if (!img) { alert('Не удалось получить URL изображения'); return }
 
     const caption = window.prompt('Подпись к изображению (необязательно):') || ''
-    editor.chain().focus().setImage({ src: img.src, alt: caption, title: caption }).run()
+    const figureHTML = caption
+      ? `<figure><img src="${img.src}" alt="${caption}"><figcaption>${caption}</figcaption></figure>`
+      : `<figure><img src="${img.src}" alt=""></figure>`
+    editor.chain().focus().insertContent(figureHTML).run()
 
     // Append uploaded image item to images list (keep HTMX section in sync)
     const imagesList = document.getElementById('images-list')
