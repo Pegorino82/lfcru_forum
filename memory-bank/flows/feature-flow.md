@@ -86,6 +86,15 @@ flowchart LR
 ### Draft → Design Ready
 
 > Eval: self-check по [eval.md#draft--design-ready](eval.md) перед переводом статуса.
+>
+> **Feature.md review (для `large.md`):** перед показом человеку запусти evaluator agent через **Agent tool**:
+> 1. Инстанциируй шаблон `memory-bank/flows/templates/prompts/review-feature-md.md` — замени `{{FT_ID}}`, `{{FEATURE_PATH}}`, `{{DATE}}`
+> 2. Сохрани результат в `memory-bank/features/FT-XXX/prompts/review-feature-md.md`
+> 3. Запусти субагент через **Agent tool** с содержимым этого файла
+> 4. Если `revise` — исправь `feature.md` и перезапусти (max 2 итерации, после — escalate к человеку)
+> 5. Если `accept` — evaluator записывает EVID-* в `feature.md`, показывай документ человеку
+>
+> Для `short.md` — self-check достаточен.
 
 - [ ] `feature.md` → `status: active`
 - [ ] секция `What` содержит ≥ 1 `REQ-*` и ≥ 1 `NS-*`
@@ -97,15 +106,6 @@ flowchart LR
 
 ### Design Ready → Plan Ready
 
-> **Feature.md review (для `large.md`):** до создания плана запусти evaluator agent через **Agent tool**:
-> 1. Инстанциируй шаблон `memory-bank/flows/templates/prompts/review-feature-md.md` — замени `{{FT_ID}}`, `{{FEATURE_PATH}}`, `{{DATE}}`
-> 2. Сохрани результат в `memory-bank/features/FT-XXX/prompts/review-feature-md.md`
-> 3. Запусти субагент через **Agent tool** с содержимым этого файла
-> 4. Если `revise` — исправь `feature.md` и перезапусти (max 2 итерации, после — escalate к человеку)
-> 5. Если `accept` — evaluator записывает EVID-* в `feature.md`, продолжай создание плана
->
-> Для `short.md` — self-check достаточен.
->
 > **Plan eval (для `large.md`):** после создания плана запусти evaluator agent через **Agent tool**:
 > 1. Инстанциируй шаблон `memory-bank/flows/templates/prompts/review-implementation-plan.md` — замени `{{FT_ID}}`, `{{FEATURE_PATH}}`, `{{DATE}}`
 > 2. Сохрани результат в `memory-bank/features/FT-XXX/prompts/review-implementation-plan.md`
