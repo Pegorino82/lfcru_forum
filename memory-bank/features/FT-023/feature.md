@@ -34,7 +34,7 @@ must_not_define:
 - `REQ-01` WYSIWYG-редактор с тулбаром: bold, italic, strikethrough, заголовки h1/h2/h3, ссылки, выравнивание текста (left/center/right).
 - `REQ-02` Вставка изображения в произвольную позицию в тексте: кнопка в тулбаре открывает file picker → файл загружается на сервер → URL вставляется как inline-изображение в позицию курсора.
 - `REQ-03` Изображение может иметь подпись (alt/caption), редактируемую inline.
-- `REQ-04` Тело статьи сохраняется в БД как HTML-строка; бэкенд санитизирует HTML через allowlist-политику (bluemonday) при сохранении и при рендеринге.
+- `REQ-04` Тело статьи сохраняется в БД как HTML-строка; бэкенд санитизирует HTML через allowlist-политику (bluemonday) при сохранении. Повторная санитизация при рендеринге не требуется: sanitize-at-write гарантирует, что данные в БД already safe; `template.HTML(content)` применяется к заведомо санитизированным данным.
 
 ### Non-Scope
 
@@ -57,7 +57,7 @@ must_not_define:
 
 ### Solution
 
-Заменяем `<textarea>` в форме редактирования статьи на TipTap-редактор (vanilla JS, headless). TipTap генерирует HTML, который отправляется в существующий POST/PUT endpoint. Бэкенд (Go) пропускает `body` через bluemonday перед записью в PostgreSQL. Рендеринг статьи — `{{ .Body | safeHTML }}` вместо Markdown-рендерера. Изображения загружаются через существующий upload-endpoint (ADR-005), URL вставляется как TipTap Image node.
+Заменяем `<textarea>` в форме редактирования статьи на TipTap-редактор (vanilla JS, headless). TipTap генерирует HTML, который отправляется в существующий POST/PUT endpoint. Бэкенд (Go) пропускает `content` через bluemonday перед записью в PostgreSQL. Рендеринг статьи — `template.HTML(article.Content)` в handler вместо Markdown-рендерера (шаблон `templates/news/article.html` изменений не требует). Изображения загружаются через существующий upload-endpoint (ADR-005), URL вставляется как TipTap Image node.
 
 ### Change Surface
 
@@ -67,7 +67,6 @@ must_not_define:
 | `static/js/editor.js` (new) | code | Инициализация TipTap, тулбар, upload-интеграция |
 | `internal/admin/articles_handler.go` | code | Добавить bluemonday-санитизацию поля content при save (Create/Update) |
 | `internal/news/handler.go` | code | Заменить RenderMarkdown на template.HTML в ShowArticle |
-| `templates/news/article.html` | code | Рендеринг body через `safeHTML` вместо Markdown-рендерера |
 | `go.mod` / `go.sum` | config | Добавить зависимость bluemonday |
 | `templates/admin/articles/edit.html` (инлайн-стили) | code | Стили для TipTap-контента и тулбара — инлайн внутри шаблона редактора |
 | `memory-bank/use-cases/UC-001-article-publishing.md` | docs | Добавить FT-023 в `Implemented by` — до closure gate |
@@ -128,7 +127,7 @@ must_not_define:
 
 | Check ID | Covers | How to check | Expected result | Evidence path |
 | --- | --- | --- | --- | --- |
-| `CHK-01` | `EC-01`, `SC-01` | Playwright E2E: открыть `/articles/{id}/edit`, применить bold/italic/strikethrough/h2/link/align-center, сохранить, открыть просмотр — проверить наличие `<strong>`, `<em>`, `<s>`, `<h2>`, `<a>`, `style="text-align:center"` в DOM; дополнительно: визуальная проверка отсутствия JS-ошибок в консоли | Все элементы присутствуют в DOM; нет JS-ошибок | `artifacts/ft-023/verify/chk-01/` |
+| `CHK-01` | `EC-01`, `SC-01` | Playwright E2E: открыть `/admin/articles/{id}/edit`, применить bold/italic/strikethrough/h2/link/align-center, сохранить, открыть просмотр — проверить наличие `<strong>`, `<em>`, `<s>`, `<h2>`, `<a>`, `style="text-align:center"` в DOM; дополнительно: визуальная проверка отсутствия JS-ошибок в консоли | Все элементы присутствуют в DOM; нет JS-ошибок | `artifacts/ft-023/verify/chk-01/` |
 | `CHK-02` | `EC-02`, `SC-02` | Playwright E2E: вставить изображение через тулбар в середину параграфа, ввести подпись, сохранить, открыть просмотр — проверить наличие `<figure>`, `<img>`, `<figcaption>` в нужном месте DOM; дополнительно: визуальная проверка корректного отображения | `<figure><img><figcaption>` в нужном месте DOM; нет JS-ошибок | `artifacts/ft-023/verify/chk-02/` |
 | `CHK-03` | `EC-03`, `SC-03`, `NEG-01` | Авто: HTTP POST article с body содержащим XSS payload → GET → проверить отсутствие `<script>` и `<iframe>` в ответе | Payload stripped; статус 200 | `artifacts/ft-023/verify/chk-03/` |
 
