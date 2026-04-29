@@ -5,7 +5,7 @@ doc_function: derived
 purpose: "Execution-план реализации FT-023. Фиксирует discovery context, шаги, риски и test strategy без переопределения canonical feature-фактов."
 derived_from:
   - feature.md
-status: draft
+status: active
 audience: humans_and_agents
 must_not_define:
   - ft_023_scope
@@ -48,7 +48,7 @@ must_not_define:
 | --- | --- | --- | --- | --- | --- | --- |
 | `articles_handler.go` — sanitize в `Create`/`Update` | `REQ-04`, `CHK-03`, `SC-03`, `NEG-01` | POST/update покрыты в `articles_handler_test.go` | Добавить тест: POST с XSS payload в `content` → GET → проверить отсутствие `<script>` и `<iframe>` в body ответа | Unit (`go test ./...`) | Go Tests CI (integration) | — |
 | `static/js/editor.js` + `edit.html` — TipTap инициализация | `REQ-01`, `REQ-02`, `REQ-03`, `CHK-01`, `CHK-02` | Нет | Playwright E2E: открыть `/admin/articles/{id}/edit`, кликнуть по кнопкам тулбара, проверить DOM-элементы в редакторе и в view — автопилот по `autonomy-boundaries.md` § UI-верификация | — | E2E CI (Playwright) | — |
-| `news/handler.go` — рендеринг HTML | `REQ-04`, `CTR-01` | `handler_test.go` покрывает роутинг | Добавить тест: статья с HTML body → GET `/news/{id}` → `ContentHTML` содержит ожидаемый HTML | Unit (`go test ./...`) | Go Tests CI (integration) | — |
+| `news/handler.go` — рендеринг HTML | `REQ-04`, `CTR-01` | `handler_test.go` покрывает роутинг | Добавить тест: статья с HTML body → GET `/news/{id}` → тело HTTP-ответа содержит ожидаемые HTML-теги (например `<strong>`, `<h2>`) | — | Go Tests CI (integration, `//go:build integration`) | — |
 
 ---
 
@@ -59,10 +59,10 @@ must_not_define:
 | `OQ-01` | `feature.md` называет `articles.body`; реально — таблица `news`, колонка `content`, Go-поле `News.Content` | Терминологическое расхождение выявлено при grounding. Намеренная разница: feature.md использует продуктовый термин (`body` — семантика поля), план использует технический (`Content` — имя в коде). Оба корректны в своём контексте. | Именование в коде и тестах | Использовать `Content` / `news.content` во всём плане; feature.md не менять — продуктовый термин `body` остаётся canonical |
 | `OQ-02` | Пустой TipTap отдаёт `<p></p>` — `ChangeStatus` проверка `article.Content == ""` не срабатывает | Выявлено при grounding; не является блокером | STEP-02 | Known behavior; пустая статья с `<p></p>` технически публикуется. Не менять проверку без явного запроса |
 | `OQ-03` | E2E global-setup создаёт только `user`-роль; редактор доступен только `admin` | Выявлено при grounding | STEP-07, STEP-08 | Добавить `e2e_admin` в `global-setup.ts` в рамках STEP-07 |
-| `OQ-04` | TipTap ESM CDN доступность: приложение работает в Docker; CDN-скрипты загружаются браузером (не сервером) — конфликта нет | Гипотетическая проблема; CDN = client-side | — | ESM CDN загружается браузером из сети; Docker-контейнер не блокирует. Проверить на STEP-05 при первом запуске |
+| `OQ-04` | TipTap ESM CDN доступность: приложение работает в Docker; CDN-скрипты загружаются браузером (не сервером) — конфликта нет | Гипотетическая проблема; CDN = client-side | — | ESM CDN загружается браузером из сети; Docker-контейнер не блокирует. Escalation pathway зафиксирован в ER-01 / STOP-01. **Закрыт.** |
 | `OQ-05` | `architecture.md` не обновлён: `news.content` хранит HTML вместо Markdown — ожидает перевода ADR-007 в `accepted` | ADR-007 ещё `proposed` | — | Обновить `architecture.md` после перевода ADR-007 в `accepted`; оформить как follow-up в PR |
 | `OQ-06` | Sanitize в Handler — намеренное отклонение от layer stack (`architecture.md`: domain-логика → Service) | `internal/admin` не имеет Service-слоя; articles_handler.go вызывает repo напрямую; введение Service-слоя вне scope FT-023 | STEP-02 | Принято как обоснованное отклонение: sanitize в handler, пока Service-слой не введён; зафиксировано здесь для трассируемости |
-| `OQ-07` | `feature.md` описывает рендеринг как `{{ .Body | safeHTML }}` (шаблонная функция), план реализует через `ContentHTML: template.HTML(article.Content)` в Go-хендлере; `feature.md` Change Surface включает `templates/news/article.html` как code-изменение — данный план от него отклоняется: шаблон уже использует `{{.ContentHTML}}` и не требует изменений | Существующий паттерн кодовой базы использует `ContentHTML template.HTML` в struct — добавление `safeHTML` template func потребует изменения engine и всех шаблонов. `coding-style.md` § Templates: "`template.HTML()` без явной проверки" — не нарушено: sanitize на STEP-02 при записи делает content already safe до передачи в `template.HTML()` | STEP-03 | Реализовать через `template.HTML(article.Content)` в handler; `templates/news/article.html` не менять; feature.md не менять — реализационная деталь, не scope |
+| `OQ-07` | `feature.md` § Flow описывал рендеринг как `{{ .Body | safeHTML }}` (шаблонная функция); план реализует через `ContentHTML: template.HTML(article.Content)` в Go-хендлере | Существующий паттерн кодовой базы использует `ContentHTML template.HTML` в struct — добавление `safeHTML` template func потребует изменения engine и всех шаблонов. `coding-style.md` § Templates: "`template.HTML()` без явной проверки" — не нарушено: sanitize на STEP-02 при записи делает content already safe до передачи в `template.HTML()`. Шаблон `templates/news/article.html` уже использует `{{.ContentHTML}}` и изменений не требует; `templates/news/article.html` в Change Surface `feature.md` отсутствует | STEP-03 | Реализовать через `template.HTML(article.Content)` в handler; `templates/news/article.html` не менять. `feature.md` § Flow строка 6 обновлена — приведена в соответствие с фактической реализацией (реализационная деталь, не scope-изменение; feature-flow § Boundary Rules 6) |
 
 ---
 
@@ -92,7 +92,7 @@ must_not_define:
 | Workstream | Implements | Result | Dependencies |
 | --- | --- | --- | --- |
 | `WS-1` Backend | `REQ-04`, `CTR-01`, `CTR-02` | bluemonday в handler, рендеринг через `template.HTML` | PRE-01 |
-| `WS-2` Frontend | `REQ-01`, `REQ-02`, `REQ-03` | TipTap в edit.html, editor.js | WS-1 (hidden input pattern) |
+| `WS-2` Frontend | `REQ-01`, `REQ-02`, `REQ-03` | TipTap в edit.html, editor.js | WS-1 |
 | `WS-3` Tests | `CHK-01`, `CHK-02`, `CHK-03` | Unit + E2E тесты зелёные | WS-1, WS-2 |
 | `WS-4` Closure | Simplify Review, UC-001 update | Simplify review + UC-001 обновлён | WS-3 |
 
@@ -100,18 +100,21 @@ must_not_define:
 
 ## Порядок работ
 
+> Колонка `Implements` включает оба класса canonical ID из `feature.md`: `REQ-*` (scope requirements) и `SC-*/NEG-*` (acceptance scenarios / negative test cases). Детальное разграничение — в Traceability matrix `feature.md`.
+
 | Step ID | Implements | Goal | Touchpoints | Blocked by | Escalate if |
 | --- | --- | --- | --- | --- | --- |
-| `STEP-00` | `feature-flow.md` Plan Ready→Execution | ⛔ HARD STOP до первого коммита с кодом: перевести `feature.md` → `delivery_status: in_progress` | `memory-bank/features/FT-023/feature.md` | — | — |
+| `STEP-00` | `feature-flow.md` Execution start | ⛔ HARD STOP до первого коммита с кодом: (1) перевести `implementation-plan.md` → `status: active` — подтверждение перехода (если не выставлено при Plan Ready); (2) перевести `feature.md` → `delivery_status: in_progress` | `memory-bank/features/FT-023/implementation-plan.md`, `memory-bank/features/FT-023/feature.md` | — | — |
 | `STEP-01` | `PRE-01` | Добавить bluemonday в go.mod: `docker run ... go get github.com/microcosm-cc/bluemonday` | `go.mod`, `go.sum` | — | go get падает → проверить сеть, использовать GOPROXY |
-| `STEP-02` | `REQ-04`, `CTR-02` | В `articles_handler.go` создать `sanitizeArticleBody(s string) string` с bluemonday allowlist (p, h1-h3, strong, em, s, a href, img src alt, figure, figcaption, div style text-align, br); применить в `Create()` и `Update()` после `c.FormValue("content")` | `internal/admin/articles_handler.go` | STEP-01 | bluemonday strippt нужные теги → пересмотреть allowlist |
+| `STEP-02` | `REQ-04`, `CTR-02` | В `articles_handler.go` создать `sanitizeArticleBody(s string) string` с bluemonday allowlist (p, p[style], h1-h3, strong, em, s, a[href], img[src|alt], figure, figcaption, div[style text-align], br); `p[style]` обязателен — TipTap TextAlign применяет `style` к `<p>`-ноду (CTR-02); применить в `Create()` и `Update()` после `c.FormValue("content")` | `internal/admin/articles_handler.go` | STEP-01 | bluemonday strippt нужные теги → пересмотреть allowlist |
 | `STEP-03` | `REQ-04`, `CTR-01` | В `news/handler.go` `ShowArticle`: заменить `ContentHTML: RenderMarkdown(article.Content)` на `ContentHTML: template.HTML(article.Content)` | `internal/news/handler.go` | STEP-02 | Рендеринг ломается → sanitization не применена на сохранении (STEP-02 не выполнен) |
-| `STEP-04` | `REQ-04` | В `admin/articles_handler.go` `Preview`: аналогичная замена `news.RenderMarkdown` → `template.HTML` | `internal/admin/articles_handler.go` | STEP-02 | — |
-| `STEP-05` | `REQ-01`, `REQ-02`, `REQ-03` | Заменить `<textarea>` в `edit.html` на: TipTap-контейнер `<div id="editor">`, `<input type="hidden" name="content" id="content-input">`, тулбар с кнопками (bold, italic, strike, h1/h2/h3, link, align-left/center/right, image-upload); добавить тег `<script type="module" src="/static/js/editor.js">` (сам файл создаётся в STEP-06) | `templates/admin/articles/edit.html` | STEP-02 | TipTap не инициализируется → проверить ESM CDN URL и консоль браузера |
-| `STEP-06` | `REQ-01`, `REQ-02`, `REQ-03` | Создать `static/js/editor.js`: импорт TipTap extensions через ESM CDN (jsDelivr), инициализация Editor с extensions (StarterKit, TextAlign, Link, Image), sync `editor.getHTML()` → `#content-input` перед submit формы, обработчик кнопок тулбара, обработчик image-upload (FormData POST на HTMX endpoint → URL → `editor.commands.setImage`) | `static/js/editor.js` (new) | STEP-05 | HTMX upload и TipTap insert не согласованы → проверить порядок событий (ASM-01) |
-| `STEP-07` | `CHK-03`, `SC-03`, `NEG-01` | Добавить `TestArticlesHandler_XSSSanitization` в `articles_handler_test.go`: create article → update с `<script>alert(1)</script><iframe>` в content → GET admin view → assert отсутствие `<script>` и `<iframe>` в ответе. Добавить `e2e_admin` (role=admin) в `e2e/global-setup.ts` | `internal/admin/articles_handler_test.go`, `e2e/global-setup.ts` | STEP-02 | Тест красный → sanitization не работает, проверить allowlist |
-| `STEP-08` | `CHK-01`, `SC-01`, `MET-01` | Написать Playwright E2E тест: войти как admin, открыть `/admin/articles/{id}/edit`, кликнуть bold/italic/strike/h2/link/align-center → сохранить → открыть `/news/{id}` → assert `<strong>`, `<em>`, `<s>`, `<h2>`, `<a>`, `style="text-align:center"` в DOM | `e2e/` (new spec file) | STEP-05, STEP-06, STEP-07 | Playwright не может взаимодействовать с TipTap → проверить селекторы ProseMirror `.ProseMirror` |
-| `STEP-09` | `CHK-02`, `SC-02` | Написать Playwright E2E тест: войти как admin, открыть редактор → кликнуть image-upload → загрузить тестовый файл → ввести caption → сохранить → открыть view → assert `<figure>`, `<img>`, `<figcaption>` в DOM | `e2e/` (продолжение spec файла) | STEP-08 | Upload не вставляет image в TipTap → проверить STEP-06 upload handler |
+| `STEP-04` | `REQ-04` | В `admin/articles_handler.go` `Preview`: аналогичная замена `news.RenderMarkdown` → `template.HTML` (следствие из feature.md § Solution: "Рендеринг статьи — `template.HTML(article.Content)` в handler вместо Markdown-рендерера") | `internal/admin/articles_handler.go` | STEP-02 | — |
+| `STEP-05` | `REQ-01`, `REQ-02`, `REQ-03` | Заменить `<textarea>` в `edit.html` на: TipTap-контейнер `<div id="editor">`, `<input type="hidden" name="content" id="content-input">`, тулбар с кнопками (bold, italic, strike, h1/h2/h3, link, align-left/center/right, image-upload); добавить тег `<script type="module" src="/static/js/editor.js">` | `templates/admin/articles/edit.html` | STEP-02 | TipTap не инициализируется → проверить ESM CDN URL и консоль браузера |
+| `STEP-06` | `REQ-01`, `REQ-02`, `REQ-03` | Создать `static/js/editor.js`: импорт TipTap extensions через ESM CDN (jsDelivr), инициализация Editor с extensions (StarterKit, TextAlign, Link, Image), sync `editor.getHTML()` → `#content-input` перед submit формы, обработчик кнопок тулбара, обработчик image-upload (FormData POST на HTMX endpoint → парсить `src` из HTML-ответа `<img>`-тега → `editor.commands.setImage`) | `static/js/editor.js` (new) | STEP-05 | HTMX upload и TipTap insert не согласованы → проверить порядок событий (ASM-01) |
+| `STEP-07` | `CHK-03`, `SC-03`, `NEG-01`, `REQ-04`, `CTR-01` | Добавить `TestArticlesHandler_XSSSanitization` в `articles_handler_test.go` (`//go:build integration`): create article → update с `<script>alert(1)</script><iframe>` в content → GET admin view → assert отсутствие `<script>` и `<iframe>` в теле ответа. Добавить `TestShowArticle_HTMLBody` в `internal/news/handler_test.go` (`//go:build integration`): GET `/news/{id}` для статьи с HTML body → assert тело HTTP-ответа содержит ожидаемые теги (например `<strong>`, `<h2>`) | `internal/admin/articles_handler_test.go`, `internal/news/handler_test.go` | STEP-02, STEP-03 | Тест красный → sanitization или rendering не работает, проверить allowlist и template.HTML |
+| `STEP-07b` | `OQ-03`, `testing-policy.md § E2E` | Добавить `e2e_admin` в `e2e/global-setup.ts`, зеркалируя полностью паттерн `e2e_user` (те же поля, роль `admin`; credentials: `e2e_admin` / `e2e_admin_password` по аналогии с `e2e_user`). Создать тестовую статью с фиксированным ID через `INSERT ... OVERRIDING SYSTEM VALUE` в global-setup; teardown удаляет её по тому же ID в global-teardown. Все E2E тесты открывают `/admin/articles/{fixed_id}/edit` по этому ID | `e2e/global-setup.ts` | STEP-02 | e2e_admin не создаётся → вход в admin невозможен; тестовая статья не найдена → Playwright не может открыть `/admin/articles/{id}/edit` |
+| `STEP-08` | `CHK-01`, `SC-01`, `MET-01` | Написать Playwright E2E тест: войти как e2e_admin, открыть `/admin/articles/{fixed_id}/edit` (из STEP-07b), кликнуть bold/italic/strike/h2/link/align-center → сохранить → открыть `/news/{fixed_id}` → assert `<strong>`, `<em>`, `<s>`, `<h2>`, `<a>`, `style="text-align:center"` в DOM | `e2e/` (new spec file) | STEP-05, STEP-06, STEP-07, STEP-07b | Playwright не может взаимодействовать с TipTap → проверить селекторы ProseMirror `.ProseMirror` |
+| `STEP-09` | `CHK-02`, `SC-02` | Написать Playwright E2E тест: войти как e2e_admin, открыть редактор → кликнуть image-upload → загрузить тестовый файл → ввести caption → сохранить → открыть view → assert `<figure>`, `<img>`, `<figcaption>` в DOM | `e2e/` (продолжение spec файла) | STEP-08 | Upload не вставляет image в TipTap → проверить STEP-06 upload handler |
 | `STEP-10` | `testing-policy.md` § Simplify Review, `feature-flow.md` Execution→Done | Выполнить Simplify Review: проверить что STEP-01–09 не вводят избыточной сложности; `sanitizeArticleBody` и `editor.js` минимально просты или complexity обоснована | `internal/admin/articles_handler.go`, `static/js/editor.js` | STEP-09 | Обнаружена дублирующаяся логика → упростить до коммита closure |
 | `STEP-11` | `feature-flow.md` Package Rule 11, `feature.md` Change Surface, `OQ-05` | Обновить `memory-bank/use-cases/UC-001-article-publishing.md`: добавить FT-023 в раздел `Implemented by`. Зафиксировать в PR description follow-up: "После перевода ADR-007 в `accepted` обновить `memory-bank/domain/architecture.md` — `news.content` хранит HTML (OQ-05)". | `memory-bank/use-cases/UC-001-article-publishing.md` | STEP-10 | UC-001 не найден → эскалировать; closure gate требует обновления |
 
@@ -144,7 +147,7 @@ must_not_define:
 | `ER-01` | TipTap ESM CDN недоступен в браузере (CSP или сеть) | TipTap не инициализируется | Проверить консоль на STEP-05; fallback — скачать bundle локально в `static/js/tiptap/` |
 | `ER-02` | bluemonday allowlist обрезает нужные теги | Форматирование теряется при сохранении | Проверить allowlist на тестовой статье на STEP-07; расширять только явно |
 | `ER-03` | TipTap selectors в Playwright (`contenteditable`, `.ProseMirror`) нестандартны | E2E тест не может вводить текст | Использовать `page.locator('.ProseMirror').click()` + `page.keyboard.type()` |
-| `ER-04` | HTMX image upload response возвращает HTML-фрагмент (`image_item.html`), а не JSON с URL | TipTap не может получить URL из ответа | На STEP-06: парсить URL из возвращённого img-тега или добавить `data-url` атрибут в `image_item.html` |
+| `ER-04` | HTMX image upload response возвращает HTML-фрагмент (`image_item.html`), а не JSON с URL | TipTap не может получить URL из ответа | На STEP-06: парсить `src` из возвращённого `<img>`-тега — изменение `image_item.html` не допускается (ASM-01: upload-endpoint без изменений) |
 
 ---
 
@@ -154,12 +157,13 @@ must_not_define:
 | --- | --- | --- |
 | `STOP-01` | `ER-01` не устранён за 2 итерации | Скачать TipTap bundle локально; эскалировать если нет npm |
 | `STOP-02` | E2E тест CHK-01 или CHK-02 красный после 3 итераций | Остановить, зафиксировать блокер, эскалировать к human |
+| `STOP-03` | `ER-02` (allowlist обрезает нужные теги), `ER-03` (Playwright не может взаимодействовать с TipTap) или `ER-04` (HTMX response parsing) не устранён за 2 итерации | Остановить итерации, зафиксировать конкретный ER-ID как блокер, эскалировать к human |
 
 ---
 
 ## Готово для приёмки
 
-- STEP-00 выполнен: `feature.md` → `delivery_status: in_progress` (до первого коммита с кодом)
+- STEP-00 выполнен: `implementation-plan.md` → `status: active`; `feature.md` → `delivery_status: in_progress` (до первого коммита с кодом)
 - CP-01: backend компилируется, bluemonday применяется
 - CP-02: Playwright подтверждает инициализацию TipTap (автопилот)
 - CP-03: unit-тесты зелёные локально; integration CHK-03 — в CI

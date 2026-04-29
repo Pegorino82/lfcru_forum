@@ -8,7 +8,7 @@ derived_from:
   - ../../adr/ADR-007-wysiwyg-editor-html-storage.md
   - ../../use-cases/UC-001-article-publishing.md
 status: active
-delivery_status: planned
+delivery_status: in_progress
 audience: humans_and_agents
 must_not_define:
   - implementation_sequence
@@ -78,14 +78,14 @@ must_not_define:
 3. Для вставки изображения: кнопка → file picker → файл POST-ится на upload-endpoint → получен URL → TipTap вставляет Image node с caption в позицию курсора.
 4. Автор нажимает «Сохранить» → TipTap.getHTML() сериализуется → отправляется в существующий PATCH/PUT endpoint.
 5. Бэкенд пропускает body через bluemonday (allowlist) → записывает в PostgreSQL.
-6. При просмотре статьи: `{{ .Body | safeHTML }}` — браузер рендерит HTML напрямую.
+6. При просмотре статьи: handler применяет `template.HTML(article.Content)` к заведомо санитизированным данным (sanitize-at-write из шага 5); шаблон рендерит `{{.ContentHTML}}` — браузер отображает HTML напрямую. Отдельный `safeHTML` template func не требуется.
 
 ### Contracts
 
 | Contract ID | Input / Output | Producer / Consumer | Notes |
 | --- | --- | --- | --- |
 | `CTR-01` | `articles.body` — HTML-строка | Go handler (producer) / шаблон view (consumer) | Ранее поле могло содержать Markdown; после FT-023 ожидается только sanitized HTML. Исторические статьи рендерятся as-is согласно ASM-03. |
-| `CTR-02` | Bluemonday allowlist | handler save (producer) / БД (consumer) | Allowlist: `<p>`, `<h1>`-`<h3>`, `<strong>`, `<em>`, `<s>`, `<a href>`, `<img src alt>`, `<figure>`, `<figcaption>`, `<div style="text-align:*">`, `<br>`. Расширяется только через явное изменение allowlist. |
+| `CTR-02` | Bluemonday allowlist | handler save (producer) / БД (consumer) | Allowlist: `<p>`, `<p style="text-align:*">`, `<h1>`-`<h3>`, `<strong>`, `<em>`, `<s>`, `<a href>`, `<img src alt>`, `<figure>`, `<figcaption>`, `<div style="text-align:*">`, `<br>`. TipTap TextAlign применяет `style` к `<p>`-ноду — оба варианта (`<p>` и `<div>`) должны быть разрешены. Расширяется только через явное изменение allowlist. |
 
 ### Failure Modes
 
