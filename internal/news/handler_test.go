@@ -455,6 +455,34 @@ func TestShowArticle_HTMXPartial(t *testing.T) {
 	}
 }
 
+// CHK-03 / REQ-04 / CTR-01: статья с HTML body рендерится как HTML, а не как escaped-текст.
+func TestShowArticle_HTMLBody(t *testing.T) {
+	pool := testDB(t)
+	cleanArticleData(t, pool)
+	defer cleanArticleData(t, pool)
+
+	authorID, _ := createUser(t, pool, "newstest-htmlbody@test.com", "newstest-htmlbody")
+	var id int64
+	pool.QueryRow(context.Background(),
+		`INSERT INTO news (title, content, status, author_id, published_at)
+		 VALUES ($1, $2, 'published', $3, now()) RETURNING id`,
+		"test-html-body", "<p><strong>жирный</strong> текст</p>", authorID,
+	).Scan(&id)
+
+	e := newTestServer(t, pool)
+	rec := doGet(t, e, fmt.Sprintf("/news/%d", id), "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "<strong>жирный</strong>") {
+		t.Error("HTML body must be rendered as HTML, not escaped")
+	}
+	if strings.Contains(body, "&lt;strong&gt;") {
+		t.Error("HTML tags must not be escaped in rendered article body")
+	}
+}
+
 func TestCreateComment_GuestRedirectsToLogin(t *testing.T) {
 	pool := testDB(t)
 	cleanArticleData(t, pool)
