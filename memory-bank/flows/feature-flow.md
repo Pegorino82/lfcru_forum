@@ -106,7 +106,14 @@ flowchart LR
 >
 > Для `short.md` — self-check достаточен.
 >
-> **Plan eval:** для `large.md` — после создания плана запусти evaluator через **Agent tool** с промптом из [eval.md#evaluator-agent-protocol](eval.md). Для `large.md` с планом ≤ 3 STEP-* — self-check допустим.
+> **Plan eval (для `large.md`):** после создания плана запусти evaluator agent через **Agent tool**:
+> 1. Инстанциируй шаблон `memory-bank/flows/templates/prompts/review-implementation-plan.md` — замени `{{FT_ID}}`, `{{FEATURE_PATH}}`, `{{DATE}}`
+> 2. Сохрани результат в `memory-bank/features/FT-XXX/prompts/review-implementation-plan.md`
+> 3. Запусти субагент через **Agent tool** с содержимым этого файла
+> 4. Если `revise` — исправь `implementation-plan.md` и перезапусти (max 2 итерации, после — escalate к человеку)
+> 5. Если `accept` — evaluator записывает EVID-* в `feature.md`, показывай план человеку
+>
+> Для `large.md` с планом ≤ 3 STEP-* — self-check допустим. Для `short.md` — self-check достаточен.
 
 - [ ] агент выполнил grounding: прошёлся по текущему состоянию системы (relevant paths, existing patterns, dependencies) и зафиксировал результат в discovery context секции `implementation-plan.md`
 - [ ] `implementation-plan.md` создан по шаблону `templates/feature/implementation-plan.md`
