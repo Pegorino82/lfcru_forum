@@ -87,8 +87,6 @@ flowchart LR
 
 ### Draft → Design Ready
 
-> Eval: self-check по [eval.md#draft--design-ready](eval.md) перед переводом статуса.
->
 > **Feature.md review (для `large.md`):** перед показом человеку запусти evaluator agent через **Agent tool**:
 > 1. Инстанциируй шаблон `memory-bank/flows/templates/prompts/review-feature-md.md` — замени `{{FT_ID}}`, `{{FEATURE_PATH}}`, `{{DATE}}`
 > 2. Сохрани результат в `memory-bank/features/FT-XXX/prompts/review-feature-md.md`
