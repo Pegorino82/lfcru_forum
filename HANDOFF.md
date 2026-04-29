@@ -1,5 +1,36 @@
 # HANDOFF.md
 
+## FT-023 — WYSIWYG-редактор статей (TipTap + bluemonday)
+
+**Commits:** 5531c9a → d3cad94 → 14bb34d → 7f421b0 → 4b3a8ab → b4dba1a → cb9a54b
+
+### Что сделано
+
+1. **`go.mod` / `go.sum`** — добавлен `github.com/microcosm-cc/bluemonday v1.0.27`.
+2. **`internal/admin/articles_handler.go`** — функция `sanitizeArticleBody` с bluemonday allowlist (CTR-02); применяется в `Create()` и `Update()` после `c.FormValue("content")`. Preview переключён на `template.HTML`.
+3. **`internal/news/handler.go`** — `ShowArticle` переключён с `RenderMarkdown` на `template.HTML(article.Content)`.
+4. **`templates/admin/articles/edit.html`** — `<textarea>` заменена на TipTap-контейнер + тулбар + hidden input; подключён `/static/js/editor.js`.
+5. **`static/js/editor.js`** (новый) — TipTap через ESM CDN (esm.sh), тулбар, upload через fetch + DOMParser (ER-04).
+6. **`internal/admin/articles_handler_test.go`** — `TestArticlesHandler_XSSSanitization` (CHK-03).
+7. **`internal/news/handler_test.go`** — `TestShowArticle_HTMLBody` (REQ-04/CTR-01).
+8. **`e2e/global-setup.ts` / `global-teardown.ts`** — e2e_admin (ID=9998) + тестовая статья (ID=9998) с seeding/teardown.
+9. **`e2e/articles/editor.spec.ts`** (новый) — CHK-01 (форматирование) + CHK-02 (image upload).
+10. **`memory-bank/use-cases/UC-001-article-publishing.md`** — добавлены FT-023 и ADR-007 в Traceability.
+
+### Что сделать следующим
+
+- Запустить CI (integration-тесты + E2E) — unit-тесты компилируются и собираются чисто, но не запускались локально (integration-only).
+- Перевести PR из draft в ready for review после зелёного CI.
+- После merge: перевести `feature.md → delivery_status: done`, `implementation-plan.md → status: archived`.
+- После перевода ADR-007 в `accepted` — обновить `memory-bank/domain/architecture.md` (OQ-05).
+
+### Проблемы и решения
+
+- `bluemonday.StyleValue` не существует → использован `AllowStyles("text-align").MatchingEnum(...).OnElements(...)` (документация через context7).
+- `<p style>` не был в исходном allowlist CTR-02 → добавлен (H-02 из ревью-4): TipTap TextAlign применяет style к `<p>`, не к `<div>`.
+
+---
+
 ## FT-022 — fix: некорректное отображение даты матча на главной ✅
 
 **Commits:** b5fad19 → 64d52c4 → 5fe7a20
