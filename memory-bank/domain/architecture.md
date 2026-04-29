@@ -62,6 +62,15 @@ DI и инициализация в `cmd/forum/main.go`: config → pool → goo
 - Handler не дублирует логирование ошибок, если Echo `Recover` middleware уже обрабатывает панику.
 - Ошибки конфигурации и `goose.Up()` — `log.Fatal` на старте; recovery не предусмотрен, это ожидаемое поведение.
 
+## Article Body Storage (ADR-007)
+
+Тело статьи (`news.content`) хранится как **HTML-строка**.
+
+- Редактор — **TipTap** (vanilla JS, ESM CDN), генерирует HTML напрямую.
+- При сохранении (Create/Update): HTML санитизируется через **bluemonday** с allowlist-политикой (разрешены `p`, `h1`-`h3`, `strong`, `em`, `s`, `a[href]`, `img[src,alt]`, `figure`, `figcaption`, `br`, `p[style="text-align:*"]`, `div[style="text-align:*"]`).
+- При рендеринге: `template.HTML(article.Content)` — без повторной санитизации (sanitize-at-write).
+- Формат Markdown больше не используется для новых статей; существующие Markdown-статьи деградируют без отдельной миграции (ADR-007 / ASM-03).
+
 ## Configuration Ownership
 
 1. **Canonical schema**: `internal/config/config.go` — единственный owner всех env-переменных проекта.

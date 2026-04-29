@@ -5,8 +5,8 @@ doc_function: canonical
 purpose: "Фиксирует выбор подхода к хранению тела статьи (HTML vs Markdown vs JSON) и WYSIWYG-библиотеки для редактора статей."
 derived_from:
   - ADR-005-image-storage.md
-status: draft
-decision_status: proposed
+status: active
+decision_status: accepted
 date: 2026-04-28
 audience: humans_and_agents
 must_not_define:
