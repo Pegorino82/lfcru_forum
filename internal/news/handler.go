@@ -139,7 +139,7 @@ func (h *Handler) ShowArticle(c echo.Context) error {
 		User:        auth.UserFromContext(c),
 		CSRFToken:   appMiddleware.CSRFToken(c),
 		Article:     article,
-		ContentHTML: RenderMarkdown(article.Content),
+		ContentHTML: template.HTML(article.Content),
 		Comments:    comments,
 		Images:      images,
 		NewsID:      id,
