@@ -47,7 +47,7 @@ must_not_define:
 | Test surface | Canonical refs | Existing coverage | Planned automated coverage | Required local suites | Required CI | Manual-only gap |
 | --- | --- | --- | --- | --- | --- | --- |
 | `articles_handler.go` — sanitize в `Create`/`Update` | `REQ-04`, `CHK-03`, `SC-03`, `NEG-01` | POST/update покрыты в `articles_handler_test.go` | Добавить тест: POST с XSS payload в `content` → GET → проверить отсутствие `<script>` и `<iframe>` в body ответа | Unit (`go test ./...`) | Go Tests CI (integration) | — |
-| `static/js/editor.js` + `edit.html` — TipTap инициализация | `REQ-01`, `REQ-02`, `REQ-03`, `CHK-01`, `CHK-02` | Нет | Playwright E2E: открыть `/admin/articles/{id}/edit`, кликнуть по кнопкам тулбара, проверить DOM-элементы в редакторе и в view | — | E2E CI (Playwright) | AG-01: ручная проверка TipTap в браузере (localhost:8081) перед первым пушем |
+| `static/js/editor.js` + `edit.html` — TipTap инициализация | `REQ-01`, `REQ-02`, `REQ-03`, `CHK-01`, `CHK-02` | Нет | Playwright E2E: открыть `/admin/articles/{id}/edit`, кликнуть по кнопкам тулбара, проверить DOM-элементы в редакторе и в view | — | E2E CI (Playwright) | — (автопилот по autonomy-boundaries.md § UI-верификация) |
 | `news/handler.go` — рендеринг HTML | `REQ-04`, `CTR-01` | `handler_test.go` покрывает роутинг | Добавить тест: статья с HTML body → GET `/news/{id}` → `ContentHTML` содержит ожидаемый HTML | Unit (`go test ./...`) | Go Tests CI (integration) | — |
 
 ---
@@ -62,7 +62,7 @@ must_not_define:
 | `OQ-04` | TipTap ESM CDN доступность: приложение работает в Docker; CDN-скрипты загружаются браузером (не сервером) — конфликта нет | Гипотетическая проблема; CDN = client-side | — | ESM CDN загружается браузером из сети; Docker-контейнер не блокирует. Проверить на STEP-05 при первом запуске |
 | `OQ-05` | `architecture.md` не обновлён: `news.content` хранит HTML вместо Markdown — ожидает перевода ADR-007 в `accepted` | ADR-007 ещё `proposed` | — | Обновить `architecture.md` после перевода ADR-007 в `accepted`; оформить как follow-up в PR |
 | `OQ-06` | Sanitize в Handler — намеренное отклонение от layer stack (`architecture.md`: domain-логика → Service) | `internal/admin` не имеет Service-слоя; articles_handler.go вызывает repo напрямую; введение Service-слоя вне scope FT-023 | STEP-02 | Принято как обоснованное отклонение: sanitize в handler, пока Service-слой не введён; зафиксировано здесь для трассируемости |
-| `OQ-07` | `feature.md` описывает рендеринг как `{{ .Body | safeHTML }}` (шаблонная функция), план реализует через `ContentHTML: template.HTML(article.Content)` в Go-хендлере | Существующий паттерн кодовой базы использует `ContentHTML template.HTML` в struct — добавление `safeHTML` template func потребует изменения engine и всех шаблонов | STEP-03 | Реализовать через `template.HTML(article.Content)` в handler (соответствует текущему паттерну); feature.md не менять — это реализационная деталь, не scope |
+| `OQ-07` | `feature.md` описывает рендеринг как `{{ .Body | safeHTML }}` (шаблонная функция), план реализует через `ContentHTML: template.HTML(article.Content)` в Go-хендлере; `feature.md` Change Surface включает `templates/news/article.html` как code-изменение — данный план от него отклоняется: шаблон уже использует `{{.ContentHTML}}` и не требует изменений | Существующий паттерн кодовой базы использует `ContentHTML template.HTML` в struct — добавление `safeHTML` template func потребует изменения engine и всех шаблонов. `coding-style.md` § Templates: "`template.HTML()` без явной проверки" — не нарушено: sanitize на STEP-02 при записи делает content already safe до передачи в `template.HTML()` | STEP-03 | Реализовать через `template.HTML(article.Content)` в handler; `templates/news/article.html` не менять; feature.md не менять — реализационная деталь, не scope |
 
 ---
 
@@ -70,10 +70,10 @@ must_not_define:
 
 | Area | Contract | Used by | Failure symptom |
 | --- | --- | --- | --- |
-| Go build | `docker run --rm -v $(pwd):/app -w /app -v lfcru_gomod:/root/go/pkg/mod golang:1.23-alpine go build ./...` | Все STEP с Go | Go не установлен на хосте |
-| Go deps | `docker run ... golang:1.23-alpine go mod download` после изменения go.mod | PRE-01 | Ошибки импорта bluemonday |
-| Integration tests | `docker run --rm -v "$(pwd)":/app -w /app -v lfcru_gomod:/root/go/pkg/mod --network lfcru_forum_default -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru_test?sslmode=disable" golang:1.23-alpine go test -tags integration -p 1 ./internal/...` (требует `docker compose -f docker-compose.dev.yml up -d`) | CHK-03 (только CI) | `no such host: postgres` — контейнер без `--network` |
-| E2E | `docker compose -f docker-compose.e2e.yml up -d` + `npx playwright test` | CHK-01, CHK-02 | App недоступен на localhost:8081 |
+| Go build | `docker run --rm -v "$(pwd)":/app -w /app -v lfcru_gomod:/root/go/pkg/mod golang:1.23-alpine go build ./...` | Все STEP с Go | Go не установлен на хосте |
+| Go deps | `docker run --rm -v "$(pwd)":/app -w /app -v lfcru_gomod:/root/go/pkg/mod golang:1.23-alpine go mod download` после изменения go.mod | PRE-01 | Ошибки импорта bluemonday |
+| Integration tests | ⚠️ Агент **не запускает локально** — только CI. Команда для справки: `docker run --rm -v "$(pwd)":/app -w /app -v lfcru_gomod:/root/go/pkg/mod --network lfcru_forum_default -e DATABASE_URL="postgres://postgres:postgres@postgres:5432/lfcru_test?sslmode=disable" golang:1.23-alpine go test -tags integration -p 1 ./internal/...` | CHK-03 (только CI) | `no such host: postgres` — контейнер без `--network` |
+| E2E | `docker compose -f docker-compose.dev.yml up -d` (шаг 1) + `docker compose -f docker-compose.e2e.yml up -d` (шаг 2) + `npx playwright test` | CHK-01, CHK-02 | App недоступен на localhost:8081; dev-stack не поднят |
 | Static assets | `static/js/editor.js` раздаётся по `/static/js/editor.js` через Echo static middleware | STEP-05 | 404 на скрипт редактора |
 
 ---
@@ -93,7 +93,8 @@ must_not_define:
 | --- | --- | --- | --- |
 | `WS-1` Backend | `REQ-04`, `CTR-01`, `CTR-02` | bluemonday в handler, рендеринг через `template.HTML` | PRE-01 |
 | `WS-2` Frontend | `REQ-01`, `REQ-02`, `REQ-03` | TipTap в edit.html, editor.js | WS-1 (hidden input pattern) |
-| `WS-3` Tests | `CHK-01`, `CHK-02`, `CHK-03` | Integration + E2E тесты зелёные | WS-1, WS-2 |
+| `WS-3` Tests | `CHK-01`, `CHK-02`, `CHK-03` | Unit + E2E тесты зелёные | WS-1, WS-2 |
+| `WS-4` Closure | Simplify Review, UC-001 update | Simplify review + UC-001 обновлён | WS-3 |
 
 ---
 
@@ -101,6 +102,7 @@ must_not_define:
 
 | Step ID | Implements | Goal | Touchpoints | Blocked by | Escalate if |
 | --- | --- | --- | --- | --- | --- |
+| `STEP-00` | `feature-flow.md` Plan Ready→Execution | ⛔ HARD STOP до первого коммита с кодом: перевести `feature.md` → `delivery_status: in_progress` | `memory-bank/features/FT-023/feature.md` | — | — |
 | `STEP-01` | `PRE-01` | Добавить bluemonday в go.mod: `docker run ... go get github.com/microcosm-cc/bluemonday` | `go.mod`, `go.sum` | — | go get падает → проверить сеть, использовать GOPROXY |
 | `STEP-02` | `REQ-04`, `CTR-02` | В `articles_handler.go` создать `sanitizeArticleBody(s string) string` с bluemonday allowlist (p, h1-h3, strong, em, s, a href, img src alt, figure, figcaption, div style text-align, br); применить в `Create()` и `Update()` после `c.FormValue("content")` | `internal/admin/articles_handler.go` | STEP-01 | bluemonday strippt нужные теги → пересмотреть allowlist |
 | `STEP-03` | `REQ-04`, `CTR-01` | В `news/handler.go` `ShowArticle`: заменить `ContentHTML: RenderMarkdown(article.Content)` на `ContentHTML: template.HTML(article.Content)` | `internal/news/handler.go` | STEP-02 | Рендеринг ломается → sanitization не применена на сохранении (STEP-02 не выполнен) |
@@ -110,6 +112,8 @@ must_not_define:
 | `STEP-07` | `CHK-03`, `SC-03`, `NEG-01` | Добавить `TestArticlesHandler_XSSSanitization` в `articles_handler_test.go`: create article → update с `<script>alert(1)</script><iframe>` в content → GET admin view → assert отсутствие `<script>` и `<iframe>` в ответе. Добавить `e2e_admin` (role=admin) в `e2e/global-setup.ts` | `internal/admin/articles_handler_test.go`, `e2e/global-setup.ts` | STEP-02 | Тест красный → sanitization не работает, проверить allowlist |
 | `STEP-08` | `CHK-01`, `SC-01`, `MET-01` | Написать Playwright E2E тест: войти как admin, открыть `/admin/articles/{id}/edit`, кликнуть bold/italic/strike/h2/link/align-center → сохранить → открыть `/news/{id}` → assert `<strong>`, `<em>`, `<s>`, `<h2>`, `<a>`, `style="text-align:center"` в DOM | `e2e/` (new spec file) | STEP-05, STEP-06, STEP-07 | Playwright не может взаимодействовать с TipTap → проверить селекторы ProseMirror `.ProseMirror` |
 | `STEP-09` | `CHK-02`, `SC-02` | Написать Playwright E2E тест: войти как admin, открыть редактор → кликнуть image-upload → загрузить тестовый файл → ввести caption → сохранить → открыть view → assert `<figure>`, `<img>`, `<figcaption>` в DOM | `e2e/` (продолжение spec файла) | STEP-08 | Upload не вставляет image в TipTap → проверить STEP-06 upload handler |
+| `STEP-10` | `testing-policy.md` § Simplify Review, `feature-flow.md` Execution→Done | Выполнить Simplify Review: проверить что STEP-01–09 не вводят избыточной сложности; `sanitizeArticleBody` и `editor.js` минимально просты или complexity обоснована | `internal/admin/articles_handler.go`, `static/js/editor.js` | STEP-09 | Обнаружена дублирующаяся логика → упростить до коммита closure |
+| `STEP-11` | `feature-flow.md` Package Rule 11, `feature.md` Change Surface | Обновить `memory-bank/use-cases/UC-001-article-publishing.md`: добавить FT-023 в раздел `Implemented by` | `memory-bank/use-cases/UC-001-article-publishing.md` | STEP-10 | UC-001 не найден → эскалировать; closure gate требует обновления |
 
 ---
 
@@ -121,22 +125,15 @@ must_not_define:
 
 ---
 
-## Approval Gates
-
-| AG ID | Trigger | Why approval required | Approver / procedure |
-| --- | --- | --- | --- |
-| `AG-01` | STEP-06 завершён (editor.js создан, шаблон обновлён) | TipTap-взаимодействия (contenteditable, тулбар, upload) не покрываются автоматически до выхода E2E — нужно убедиться, что редактор инициализируется и тулбар кликабелен | Human: открыть `localhost:8081/admin/articles/{id}/edit`, кликнуть bold/italic/image, убедиться в отсутствии JS-ошибок в консоли; дать "ок" перед STEP-08 |
-
----
-
 ## Checkpoints
 
 | CP ID | Refs | Condition | Evidence |
 | --- | --- | --- | --- |
-| `CP-01` | STEP-01–04 | `docker run ... go build ./...` — зелёный; bluemonday применяется, рендеринг через `template.HTML` | `EVID-03` (build log) |
-| `CP-02` | STEP-05–06, AG-01 | TipTap инициализируется в браузере, тулбар работает, submit формы отправляет HTML в `content`; AG-01 подтверждён человеком | AG-01 approval ref |
-| `CP-03` | STEP-07 | Integration тест CHK-03 зелёный: XSS payload удалён | `EVID-03` |
+| `CP-01` | STEP-01–04 | `docker run --rm -v "$(pwd)":/app -w /app -v lfcru_gomod:/root/go/pkg/mod golang:1.23-alpine go build ./...` — зелёный; bluemonday применяется, рендеринг через `template.HTML` | `EVID-03` (build log) |
+| `CP-02` | STEP-05–06 | Playwright: открыть `/admin/articles/{id}/edit` → assert `.ProseMirror` присутствует, нет JS-ошибок в консоли, кнопки тулбара кликабельны (автопилот по `autonomy-boundaries.md` § UI-верификация) | Playwright output + скриншот |
+| `CP-03` | STEP-07 | Unit-тесты зелёные (`go test ./...`); CHK-03 покрыт в integration suite (CI) | `EVID-03` |
 | `CP-04` | STEP-08–09 | E2E тесты CHK-01/CHK-02 зелёные; артефакты в `artifacts/ft-023/verify/` | `EVID-01`, `EVID-02` |
+| `CP-05` | STEP-10–11 | Simplify review выполнен; UC-001 обновлён | — |
 
 ---
 
@@ -162,8 +159,9 @@ must_not_define:
 
 ## Готово для приёмки
 
+- STEP-00 выполнен: `feature.md` → `delivery_status: in_progress` (до первого коммита с кодом)
 - CP-01: backend компилируется, bluemonday применяется
-- CP-02: TipTap работает в браузере
-- CP-03: integration тест CHK-03 зелёный
+- CP-02: Playwright подтверждает инициализацию TipTap (автопилот)
+- CP-03: unit-тесты зелёные локально; integration CHK-03 — в CI
 - CP-04: E2E тесты CHK-01/CHK-02 зелёные, artifacts зафиксированы
-- `feature.md` → `delivery_status: in_progress` (перед началом execution)
+- CP-05: Simplify review выполнен, UC-001 обновлён
