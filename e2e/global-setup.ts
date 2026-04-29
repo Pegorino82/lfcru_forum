@@ -5,8 +5,13 @@ const E2E_USER_ID = 9999;
 const E2E_SECTION_ID = 9999;
 const E2E_TOPIC_ID = 9999;
 
+export const E2E_ADMIN_ID = 9998;
+export const E2E_ARTICLE_ID = 9998;
+
 export const E2E_USER_EMAIL = 'e2e@test.local';
 export const E2E_USER_PASSWORD = 'e2e_pass123';
+export const E2E_ADMIN_EMAIL = 'e2e_admin@test.local';
+export const E2E_ADMIN_PASSWORD = 'e2e_admin_password';
 
 export default async function globalSetup() {
   const client = new Client({
@@ -48,6 +53,27 @@ export default async function globalSetup() {
        VALUES ($1, $2, 'E2E Test Topic', $3)
        ON CONFLICT DO NOTHING`,
       [E2E_TOPIC_ID, E2E_SECTION_ID, E2E_USER_ID],
+    );
+
+    // Администратор для E2E-тестов редактора
+    const adminPassHash = await bcrypt.hash(E2E_ADMIN_PASSWORD, 4);
+    const adminPassHashBuf = Buffer.from(adminPassHash);
+
+    await client.query(
+      `INSERT INTO users (id, username, email, pass_hash, role, is_active)
+       OVERRIDING SYSTEM VALUE
+       VALUES ($1, 'e2e_admin', $2, $3, 'admin', true)
+       ON CONFLICT DO NOTHING`,
+      [E2E_ADMIN_ID, E2E_ADMIN_EMAIL, adminPassHashBuf],
+    );
+
+    // Тестовая статья для E2E-тестов редактора (черновик, автор — e2e_admin)
+    await client.query(
+      `INSERT INTO news (id, title, content, status, author_id)
+       OVERRIDING SYSTEM VALUE
+       VALUES ($1, 'E2E Test Article', '<p>E2E test article body</p>', 'draft', $2)
+       ON CONFLICT DO NOTHING`,
+      [E2E_ARTICLE_ID, E2E_ADMIN_ID],
     );
   } finally {
     await client.end();
