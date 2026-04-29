@@ -34,7 +34,8 @@ audience: humans_and_agents
 3. `feature.md` — canonical owner intent, delivery-scoped target outcome/KPI, design и verify для delivery-единицы.
 4. `README.md` создается вместе с `feature.md` и остается routing-слоем на всем lifecycle.
 5. `implementation-plan.md` — derived execution-документ. Он не должен существовать, пока sibling `feature.md` не стал design-ready.
-6. Для canonical `feature.md`, feature-level `README.md` и `implementation-plan.md` используй wrapper-шаблоны из `memory-bank/flows/templates/feature/`: сам template-файл имеет `doc_function: template`, а frontmatter/body инстанцируемого документа живут внутри embedded template contract.
+6. Для canonical `feature.md`, feature-level `README.md`, `implementation-plan.md` и eval-артефактов (`evals/`) используй wrapper-шаблоны из `memory-bank/flows/templates/feature/`: сам template-файл имеет `doc_function: template`, а frontmatter/body инстанцируемого документа живут внутри embedded template contract.
+6а. `evals/` — папка eval-артефактов фичи. Создаётся при Bootstrap вместе с `README.md` и `feature.md`. Содержит `strategy.md` (eval-стратегия, заполняется при Bootstrap), gate-eval файлы (`DR-eval.md`, `PR-eval.md`, `Done-eval.md` — создаются evaluator agent при соответствующем gate) и `summary.md` (обновляется при каждом gate, финализируется при Done). Шаблоны — в `templates/feature/evals/`.
 7. Смысл стабильных идентификаторов (`REQ-*`, `NS-*`, `CHK-*`, `STEP-*` и т.д.) задается в секции «Stable Identifiers» ниже.
 8. Acceptance scenarios (`SC-*`) покрывают vertical slice end-to-end: от входного события до наблюдаемого результата через все затронутые слои. Тестирование отдельного слоя в изоляции допустимо как implementation detail плана, но не заменяет end-to-end acceptance.
 9. **Связь с task tracker.** При создании feature package агент обязан добавить в исходную задачу или ticket ссылки на `feature.md` и, после появления, на `implementation-plan.md`. Это обеспечивает навигацию из task tracker к спецификации без ручного поиска по репозиторию.
@@ -81,6 +82,7 @@ flowchart LR
 - [ ] `README.md` создан по шаблону `templates/feature/README.md` (внутри worktree)
 - [ ] выбран template-тип `feature.md` по критериям из секции «Выбор шаблона `feature.md`» (`short.md` или `large.md`)
 - [ ] `feature.md` создан по выбранному шаблону (внутри worktree)
+- [ ] создана папка `evals/` с `strategy.md` и `summary.md` по шаблонам из `templates/feature/evals/` (внутри worktree); `strategy.md` заполнен формами для каждого gate согласно типу фичи
 - [ ] `implementation-plan.md` отсутствует
 
 ### Draft → Design Ready
@@ -92,9 +94,9 @@ flowchart LR
 > 2. Сохрани результат в `memory-bank/features/FT-XXX/prompts/review-feature-md.md`
 > 3. Запусти субагент через **Agent tool** с содержимым этого файла
 > 4. Если `revise` — исправь `feature.md` и перезапусти (max 2 итерации, после — escalate к человеку)
-> 5. Если `accept` — evaluator записывает EVID-* в `feature.md`, показывай документ человеку
+> 5. Если `accept` — evaluator записывает EVID-* в `feature.md`, создаёт `evals/DR-eval.md` по шаблону `templates/feature/evals/gate-eval.md` и обновляет `evals/summary.md`; показывай документ человеку
 >
-> Для `short.md` — self-check достаточен.
+> Для `short.md` — self-check достаточен; результат фиксируется в `evals/DR-eval.md` самим агентом.
 
 - [ ] `feature.md` → `status: active`
 - [ ] секция `What` содержит ≥ 1 `REQ-*` и ≥ 1 `NS-*`
@@ -111,9 +113,9 @@ flowchart LR
 > 2. Сохрани результат в `memory-bank/features/FT-XXX/prompts/review-implementation-plan.md`
 > 3. Запусти субагент через **Agent tool** с содержимым этого файла
 > 4. Если `revise` — исправь `implementation-plan.md` и перезапусти (max 2 итерации, после — escalate к человеку)
-> 5. Если `accept` — evaluator записывает EVID-* в `feature.md`, показывай план человеку
+> 5. Если `accept` — evaluator записывает EVID-* в `feature.md`, создаёт `evals/PR-eval.md` по шаблону `templates/feature/evals/gate-eval.md` и обновляет `evals/summary.md`; показывай план человеку
 >
-> Для `large.md` с планом ≤ 3 STEP-* — self-check допустим. Для `short.md` — self-check достаточен.
+> Для `large.md` с планом ≤ 3 STEP-* — self-check допустим. Для `short.md` — self-check достаточен. В обоих случаях результат фиксируется в `evals/PR-eval.md`.
 
 - [ ] агент выполнил grounding: прошёлся по текущему состоянию системы (relevant paths, existing patterns, dependencies) и зафиксировал результат в discovery context секции `implementation-plan.md`
 - [ ] `implementation-plan.md` создан по шаблону `templates/feature/implementation-plan.md`
@@ -136,7 +138,7 @@ flowchart LR
 
 ### Execution → Done
 
-> Eval: для `large.md` — запусти evaluator через **Agent tool** с промптом из [eval.md#evaluator-agent-protocol](eval.md). Если `revise` — исправь и перезапусти (max 2 итерации, после — escalate к человеку). Для `short.md` — self-check достаточен.
+> Eval: для `large.md` — запусти evaluator через **Agent tool** с промптом из [eval.md#evaluator-agent-protocol](eval.md). Если `revise` — исправь и перезапусти (max 2 итерации, после — escalate к человеку). Для `short.md` — self-check достаточен. В обоих случаях evaluator создаёт `evals/Done-eval.md` по шаблону `templates/feature/evals/gate-eval.md` и финализирует `evals/summary.md` (`status: final`).
 
 - [ ] все `CHK-*` из `feature.md` имеют результат pass/fail в evidence
 - [ ] все `EVID-*` из `feature.md` заполнены конкретными carriers (путь к файлу, CI run, screenshot)

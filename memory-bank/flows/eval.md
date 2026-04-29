@@ -72,7 +72,8 @@ Evaluator agent — агент, читающий артефакт в новом 
 1. Читает артефакт и соответствующий чеклист из этого документа.
 2. Проходит по каждому пункту чеклиста.
 3. Возвращает: `accept` / `revise` (с пронумерованными замечаниями) / `escalate`.
-4. Если `accept` — фиксирует EVID-* в документе (см. «Evidence для eval»).
+4. Если `accept` — фиксирует EVID-* в `feature.md` (canonical carrier, см. «Evidence для eval»).
+5. Создаёт `evals/[gate]-eval.md` по шаблону `templates/feature/evals/gate-eval.md` с чеклистом, итерациями и финальным решением; обновляет `evals/summary.md`.
 
 **Что НЕ делает:**
 
@@ -101,13 +102,15 @@ Evaluator agent — агент, читающий артефакт в новом 
 
 ## Evidence для eval
 
-При `accept`-решении evaluator добавляет строку в секцию Evidence артефакта:
+При `accept`-решении evaluator добавляет строку в секцию Evidence `feature.md`:
 
 ```
 EVID-XX: Eval [gate-name] — accept. YYYY-MM-DD. [форма: self-check / evaluator / CI]
 ```
 
 Это обычный `EVID-*` с семантикой eval-evidence. Новый тип идентификатора не нужен.
+
+`EVID-*` в `feature.md` — canonical carrier. Детальный журнал итераций (чеклист, revise-замечания, финальное решение) хранится в `evals/[gate]-eval.md`. Итоговая сводка по всем gates — в `evals/summary.md`. Шаблоны для этих файлов — в `memory-bank/flows/templates/feature/evals/`.
 
 ## Gate Чеклисты
 
