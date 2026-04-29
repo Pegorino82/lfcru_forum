@@ -1,8 +1,25 @@
-import { Editor } from 'https://esm.sh/@tiptap/core@2'
+import { Editor, Node } from 'https://esm.sh/@tiptap/core@2'
 import StarterKit from 'https://esm.sh/@tiptap/starter-kit@2'
 import TextAlign from 'https://esm.sh/@tiptap/extension-text-align@2'
 import Link from 'https://esm.sh/@tiptap/extension-link@2'
 import Image from 'https://esm.sh/@tiptap/extension-image@2'
+
+// Кастомные расширения для figure/figcaption (REQ-02/REQ-03, CTR-02)
+const Figure = Node.create({
+  name: 'figure',
+  group: 'block',
+  content: 'image figcaption?',
+  parseHTML() { return [{ tag: 'figure' }] },
+  renderHTML() { return ['figure', 0] },
+})
+
+const Figcaption = Node.create({
+  name: 'figcaption',
+  group: 'block',
+  content: 'inline*',
+  parseHTML() { return [{ tag: 'figcaption' }] },
+  renderHTML() { return ['figcaption', 0] },
+})
 
 const initialContent = document.getElementById('editor-initial-content').value
 const contentInput = document.getElementById('content-input')
@@ -16,6 +33,8 @@ const editor = new Editor({
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
     Link.configure({ openOnClick: false }),
     Image,
+    Figure,
+    Figcaption,
   ],
   content: initialContent || '',
   onUpdate() {
@@ -23,7 +42,10 @@ const editor = new Editor({
   },
 })
 
-// Sync content on form submit in case onUpdate hasn't fired yet
+// Expose для E2E-тестов (CHK-01: setContent без keyboard interactions)
+window._tiptapEditor = editor
+
+// Sync content on submit (на случай если onUpdate не успел)
 document.querySelector('form.article-form').addEventListener('submit', () => {
   contentInput.value = editor.getHTML()
 })
