@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"errors"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"github.com/Pegorino82/lfcru_forum/internal/news"
 	"github.com/Pegorino82/lfcru_forum/internal/user"
 	"github.com/labstack/echo/v4"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 // ArticlesRepo is the subset of news.Repo the admin articles handler needs.
@@ -33,6 +35,18 @@ type ArticlesHandler struct {
 // NewArticlesHandler creates a new ArticlesHandler.
 func NewArticlesHandler(repo ArticlesRepo, imagesRepo *ImagesRepo) *ArticlesHandler {
 	return &ArticlesHandler{repo: repo, imagesRepo: imagesRepo}
+}
+
+// sanitizeArticleBody strips HTML to the allowlist defined in CTR-02 (feature.md).
+// Must be called before writing content to the database (sanitize-at-write).
+func sanitizeArticleBody(s string) string {
+	p := bluemonday.NewPolicy()
+	p.AllowElements("p", "h1", "h2", "h3", "strong", "em", "s", "figure", "figcaption", "br")
+	p.AllowAttrs("href").OnElements("a")
+	p.AllowAttrs("src", "alt").OnElements("img")
+	p.AllowAttrs("style").OnElements("p", "div")
+	p.AllowStyles("text-align").MatchingEnum("left", "center", "right").OnElements("p", "div")
+	return p.Sanitize(s)
 }
 
 // validTransitions defines the allowed status transitions.
@@ -107,7 +121,7 @@ func (h *ArticlesHandler) Create(c echo.Context) error {
 		})
 	}
 
-	n := &news.News{Title: title, Content: content, AuthorID: cu.ID}
+	n := &news.News{Title: title, Content: sanitizeArticleBody(content), AuthorID: cu.ID}
 	if err := h.repo.CreateDraft(c.Request().Context(), n); err != nil {
 		slog.Error("admin: create article", "error", err)
 		return c.String(http.StatusInternalServerError, "Внутренняя ошибка сервера")
@@ -170,7 +184,7 @@ func (h *ArticlesHandler) Update(c echo.Context) error {
 		})
 	}
 
-	n := &news.News{ID: id, Title: title, Content: content}
+	n := &news.News{ID: id, Title: title, Content: sanitizeArticleBody(content)}
 	if err := h.repo.UpdateArticle(ctx, n); err != nil {
 		slog.Error("admin: update article", "error", err)
 		return c.String(http.StatusInternalServerError, "Внутренняя ошибка сервера")
@@ -205,7 +219,7 @@ func (h *ArticlesHandler) Preview(c echo.Context) error {
 		User:        auth.UserFromContext(c),
 		CSRFToken:   appMiddleware.CSRFToken(c),
 		Article:     article,
-		ContentHTML: news.RenderMarkdown(article.Content),
+		ContentHTML: template.HTML(article.Content),
 		Images:      images,
 		NewsID:      id,
 		IsPreview:   true,

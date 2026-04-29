@@ -20,7 +20,7 @@ audience: humans_and_agents
 - Редактировать код в рамках задачи
 - Запускать unit-тесты и линтеры (integration-тесты — только CI; см. [testing-policy.md](testing-policy.md))
 - Читать логи и файлы конфигурации
-- Создавать и обновлять документацию и `memory-bank`
+- Создавать и обновлять документацию и `memory-bank` (кроме канонических документов — см. Супервизия)
 - Workflow-действия по feature-flow: создание worktree, draft PR, папки фичи, SQL-файла миграции
 - Trello workflow-действия, предписанные flow: `TODO→PLANNING` (начало обсуждения), `PLANNING→IN PROGRESS` (Bootstrap — worktree создан), обновление ссылок в карточке; откат при удалении worktree по правилам `trello.md`
 - UI-верификация через Playwright (см. раздел ниже)
@@ -32,6 +32,8 @@ audience: humans_and_agents
 - Удаление кода или файлов → покажи что и почему
 - Изменение маршрутизации, middleware, deployment config (nginx, docker-compose) → покажи изменения
 - Security-критичный код (auth, session, CSRF, пароли) → выполни, но явно пометь как security-затронутое в PR-описании и покажи diff перед push
+- Изменение канонических документов `memory-bank` (`domain/`, `engineering/`, `flows/`, `adr/`) → покажи изменение человеку до сохранения файла и выполняй только после явного "ок"
+- `feature.md` (бриф) готов к Design Ready, `implementation-plan.md` (спека) готов к Plan Ready → покажи документ человеку и жди подтверждения перед переводом статуса
 
 ## Эскалация — остановись и спроси
 

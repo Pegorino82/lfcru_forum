@@ -21,9 +21,32 @@ providers:
     config:
       fixture: fixed
 
+  - id: "file://provider.js"
+    label: "Broken — permission requests"
+    config:
+      fixture: broken-permission
+
+  - id: "file://provider.js"
+    label: "Fixed — no permission requests"
+    config:
+      fixture: fixed-permission
+
+  - id: "file://provider.js"
+    label: "Broken — done gate (no push before CI)"
+    config:
+      fixture: broken-done-gate
+
+  - id: "file://provider.js"
+    label: "Fixed — done gate (correct sequence)"
+    config:
+      fixture: fixed-done-gate
+
 defaultTest:
   vars:
     card_context: ""
+  providers:
+    - "Current (broken) prompt"
+    - "Fixed prompt v2"
 
 tests:
   # ───────────────────────────────────────────────────────────────────────────
@@ -351,4 +374,142 @@ tests:
               : !hasWorktreePath
                 ? 'Worktree path ../lfcru_forum-FT-010 not referenced after worktree setup'
                 : 'Bare main-repo paths used for writes after worktree creation'
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T8: Нет запросов разрешения для автопилотных действий
+  # Баг A: агент спрашивает "хотите ли", "разрешаете" перед Trello GET/PLANNING и worktree-чтением
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T8: No permission requests for autopilot actions (Trello GET, PLANNING move, worktree reads)"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add comment reactions"
+        Description: "Users can react to comments with emoji."
+        Label: feature
+        Feature number: FT-011
+    providers:
+      - "Broken — permission requests"
+      - "Fixed — no permission requests"
+    assert:
+      # PLANNING list ID присутствует — перемещение выполнено
+      - type: contains
+        value: "69f06f1b601a68bf46282cdf"
+
+      # Перемещение в PLANNING происходит без вопроса в предшествующих 300 символах
+      # Проверяем только "sentence-ending" ? (за которым идёт пробел/перенос), а не ? из URL query string
+      - type: javascript
+        value: |
+          const planningId = '69f06f1b601a68bf46282cdf';
+          const planningIdx = output.indexOf(planningId);
+          if (planningIdx === -1) {
+            return { pass: false, score: 0, reason: 'PLANNING list ID not found in output' };
+          }
+          const preceding = output.slice(Math.max(0, planningIdx - 300), planningIdx);
+          // Только ? конца предложения (за которым идёт пробел, перенос или конец строки), не URL ?param=
+          const sentenceQuestion = /\?[\s\n]/.test(preceding);
+          const pass = !sentenceQuestion;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'PLANNING move executed without preceding question sentence (autopilot)'
+              : 'Question sentence found before PLANNING move — agent asked for permission'
+          };
+
+      # Нет фраз-запросов разрешения
+      - type: javascript
+        value: |
+          const permissionPhrases = [
+            'разрешите', 'могу ли я', 'запрашиваю разрешение',
+            'прошу подтверждени', 'хотите ли', 'нужно ли ваше', 'нужно ли согласование'
+          ];
+          const lowerOutput = output.toLowerCase();
+          const found = permissionPhrases.filter(p => lowerOutput.includes(p));
+          const pass = found.length === 0;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'No permission-request phrases found — agent acts on autopilot'
+              : `Permission-request phrases found: ${found.map(p => '"' + p + '"').join(', ')}`
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T9: Done gate — commit+push до CI, CI зелёный до ready-for-review
+  # Баг B: агент запускает CI без push, предлагает review при красном CI
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T9: Done gate — git push before CI check, CI green before gh pr ready"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add comment reactions"
+        Description: "Users can react to comments with emoji."
+        Label: feature
+        Feature number: FT-011
+        Status: Plan Ready — proceeding to Execution gate
+    providers:
+      - "Broken — done gate (no push before CI)"
+      - "Fixed — done gate (correct sequence)"
+    assert:
+      # git push появляется до gh pr checks
+      - type: javascript
+        value: |
+          const pushIdx = output.indexOf('git push');
+          const checksIdx = output.indexOf('gh pr checks');
+          if (checksIdx === -1) {
+            return { pass: false, score: 0, reason: 'gh pr checks not found in output' };
+          }
+          if (pushIdx === -1) {
+            return { pass: false, score: 0, reason: 'git push not found — must push before running CI' };
+          }
+          const pass = pushIdx < checksIdx;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? `git push at pos ${pushIdx} before gh pr checks at pos ${checksIdx} — correct order`
+              : `git push at pos ${pushIdx} is AFTER gh pr checks at pos ${checksIdx} — wrong order`
+          };
+
+      # gh pr checks появляется до gh pr ready
+      - type: javascript
+        value: |
+          const checksIdx = output.indexOf('gh pr checks');
+          const readyIdx = output.indexOf('gh pr ready');
+          if (readyIdx === -1) {
+            return { pass: false, score: 0, reason: 'gh pr ready not found in output' };
+          }
+          if (checksIdx === -1) {
+            return { pass: false, score: 0, reason: 'gh pr checks not found — CI must be verified before marking ready' };
+          }
+          const pass = checksIdx < readyIdx;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? `gh pr checks at pos ${checksIdx} before gh pr ready at pos ${readyIdx} — correct order`
+              : `gh pr checks at pos ${checksIdx} is AFTER gh pr ready at pos ${readyIdx} — wrong order`
+          };
+
+      # gh pr ready не вызывается при наличии failing jobs в CI
+      - type: javascript
+        value: |
+          const readyIdx = output.indexOf('gh pr ready');
+          if (readyIdx === -1) {
+            return { pass: true, score: 1, reason: 'gh pr ready not called — acceptable if CI failed' };
+          }
+          const checksIdx = output.indexOf('gh pr checks');
+          if (checksIdx === -1) {
+            return { pass: false, score: 0, reason: 'gh pr ready called without any CI check' };
+          }
+          const betweenChecksAndReady = output.slice(checksIdx, readyIdx);
+          const hasFailing = /fail|\u2717/.test(betweenChecksAndReady);
+          const pass = !hasFailing;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'gh pr ready called only after all CI jobs passed'
+              : 'gh pr ready called despite failing CI jobs — must wait for green CI'
           };

@@ -93,6 +93,7 @@ flowchart LR
 - [ ] каждый `REQ-*` прослеживается к ≥ 1 `SC-*` через traceability matrix
 - [ ] секция `Verify` содержит ≥ 1 `CHK-*` и ≥ 1 `EVID-*`
 - [ ] если deliverable нельзя принять без negative/edge coverage → ≥ 1 `NEG-*`
+- [ ] `[human]` `feature.md` показан человеку и получено явное подтверждение перехода в Design Ready
 
 ### Design Ready → Plan Ready
 
@@ -103,6 +104,7 @@ flowchart LR
 - [ ] `implementation-plan.md` → `status: active`
 - [ ] `implementation-plan.md` содержит ≥ 1 `PRE-*`, ≥ 1 `STEP-*`, ≥ 1 `CHK-*`, ≥ 1 `EVID-*`
 - [ ] discovery context в `implementation-plan.md` содержит: relevant paths, local reference patterns, unresolved questions (`OQ-*`), test surfaces и execution environment
+- [ ] `[human]` `implementation-plan.md` показан человеку и получено явное подтверждение перехода в Plan Ready
 
 ### Plan Ready → Execution
 

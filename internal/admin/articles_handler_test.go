@@ -323,6 +323,44 @@ func TestAdminArticles_InvalidStatusTransition(t *testing.T) {
 	}
 }
 
+// CHK-03 / SC-03 / NEG-01: XSS payload в content стрипается bluemonday при сохранении.
+func TestArticlesHandler_XSSSanitization(t *testing.T) {
+	pool := testDB(t)
+	cleanArticlesTestData(t, pool)
+	defer cleanArticlesTestData(t, pool)
+
+	authorID, sessID := createUserWithRole(t, pool, "art-admintest-xss@test.com", "art_admintest_xss", "admin")
+	e := newArticlesServer(t, pool)
+
+	var articleID int64
+	pool.QueryRow(context.Background(),
+		`INSERT INTO news (title, content, status, author_id) VALUES ($1, $2, 'draft', $3) RETURNING id`,
+		"art-admintest xss article", "<p>safe</p>", authorID,
+	).Scan(&articleID)
+
+	csrfToken := getArticlesCsrf(t, e, sessID)
+	form := url.Values{
+		"title":   {"art-admintest xss article"},
+		"content": {`<p>ok</p><script>alert(1)</script><iframe src="evil.com"></iframe>`},
+	}
+	rec := doArticlesPost(t, e, fmt.Sprintf("/admin/articles/%d", articleID), form, sessID, csrfToken)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("update: want 303, got %d\n%s", rec.Code, rec.Body.String())
+	}
+
+	var content string
+	pool.QueryRow(context.Background(), `SELECT content FROM news WHERE id = $1`, articleID).Scan(&content)
+	if strings.Contains(content, "<script") {
+		t.Errorf("content must not contain <script>, got: %s", content)
+	}
+	if strings.Contains(content, "<iframe") {
+		t.Errorf("content must not contain <iframe>, got: %s", content)
+	}
+	if !strings.Contains(content, "<p>ok</p>") {
+		t.Errorf("safe <p> tag must be preserved, got: %s", content)
+	}
+}
+
 // FT-015 Regression: превью содержит баннер "Режим превью" и ссылку "Назад к редактору".
 func TestAdminArticles_Preview_HasPreviewBanner(t *testing.T) {
 	pool := testDB(t)
