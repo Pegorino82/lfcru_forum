@@ -28,6 +28,14 @@
 .image-thumb { position:relative; width:150px; }
 .image-thumb img { width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:4px; }
 .image-thumb button { position:absolute; top:4px; right:4px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:2px; padding:2px 6px; cursor:pointer; font-size:0.75rem; }
+#editor-toolbar { display:flex; flex-wrap:wrap; gap:0.25rem; padding:0.4rem 0.5rem; border:1px solid #ccc; border-bottom:none; border-radius:4px 4px 0 0; background:#f8f8f8; }
+#editor-toolbar button { padding:0.25rem 0.5rem; border:1px solid #ccc; border-radius:3px; background:#fff; cursor:pointer; font-size:0.85rem; font-weight:600; line-height:1.2; }
+#editor-toolbar button:hover { background:#e9e9e9; }
+#editor-toolbar button.is-active { background:#c8102e; color:#fff; border-color:#c8102e; }
+#editor-toolbar .toolbar-sep { width:1px; background:#ccc; margin:0 0.2rem; }
+#editor { min-height:300px; padding:0.75rem; border:1px solid #ccc; border-radius:0 0 4px 4px; font-family:inherit; font-size:1rem; outline:none; }
+#editor:focus-within { border-color:#c8102e; box-shadow:0 0 0 2px rgba(200,16,46,.15); }
+#editor .ProseMirror { min-height:270px; outline:none; }
 </style>
 
 <h1 class="admin-header">{{if .Article}}Редактировать статью{{else}}Новая статья{{end}}</h1>
@@ -49,8 +57,28 @@
   </div>
 
   <div class="form-group">
-    <label class="form-label" for="content">Текст (Markdown)</label>
-    <textarea id="content" name="content" rows="20">{{if .Article}}{{.Article.Content}}{{end}}</textarea>
+    <label class="form-label">Текст</label>
+    <div id="editor-toolbar">
+      <button type="button" data-action="bold" title="Bold">B</button>
+      <button type="button" data-action="italic" title="Italic"><em>I</em></button>
+      <button type="button" data-action="strike" title="Strikethrough"><s>S</s></button>
+      <div class="toolbar-sep"></div>
+      <button type="button" data-action="h1" title="Heading 1">H1</button>
+      <button type="button" data-action="h2" title="Heading 2">H2</button>
+      <button type="button" data-action="h3" title="Heading 3">H3</button>
+      <div class="toolbar-sep"></div>
+      <button type="button" data-action="link" title="Link">🔗</button>
+      <div class="toolbar-sep"></div>
+      <button type="button" data-action="align-left" title="Align left">⇤</button>
+      <button type="button" data-action="align-center" title="Align center">⇔</button>
+      <button type="button" data-action="align-right" title="Align right">⇥</button>
+      <div class="toolbar-sep"></div>
+      <button type="button" data-action="image-upload" title="Insert image">🖼</button>
+      <input type="file" id="image-file-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+    </div>
+    <div id="editor"></div>
+    <textarea id="editor-initial-content" style="display:none">{{if .Article}}{{.Article.Content}}{{end}}</textarea>
+    <input type="hidden" name="content" id="content-input">
   </div>
 
   <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
@@ -61,6 +89,8 @@
     <a href="/admin/articles" style="color:#666;text-decoration:none;margin-left:0.5rem;">Отмена</a>
   </div>
 </form>
+
+<script type="module" src="/static/js/editor.js"></script>
 
 {{if .Article}}
 <section style="margin-top:2rem;border-top:1px solid #eee;padding-top:1.5rem;">
