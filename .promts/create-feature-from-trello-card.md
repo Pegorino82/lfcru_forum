@@ -7,9 +7,14 @@ PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELL
 
 Перед началом прочитай:
 - `memory-bank/flows/trello.md` — lifecycle и правила синхронизации
-- `memory-bank/flows/feature-flow.md` — gate-чеклисты
+- `memory-bank/flows/feature-flow.md` — gate-чеклисты, identifier taxonomy (OQ-* только в плане)
 - `memory-bank/engineering/git-workflow.md` — worktree и PR
 - `memory-bank/ops/trello-board.md` — стабильные List ID
+- `memory-bank/domain/architecture.md` — Layer Stack (Service/Handler/Repo), канонические пути файлов
+- `memory-bank/domain/frontend.md` — структура `templates/<domain>/` и `static/`
+- `memory-bank/domain/problem.md` — системные ограничения PCON-* (CSRF, auth и др.)
+- `memory-bank/engineering/testing-policy.md` — правила CHK: UI-изменения → Playwright обязателен
+- `memory-bank/domain/glossary.md` — термины; проверь перед Design Ready, что новые термины добавлены
 
 Давай обсудим карточку. Если описание неполное — задай уточняющие вопросы **перед** созданием Draft.
 
@@ -69,6 +74,8 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 
 Создай Bootstrap Feature Package (внутри worktree):
 1. Создай `memory-bank/features/FT-XXX/README.md`
+1b. ⛔ Обнови глобальный индекс `memory-bank/features/README.md` — добавь строку FT-XXX в таблицу Packages
+    (статус `planned`, название из карточки). Этот файл обновляется из feature-ветки (worktree).
 2. Выбери шаблон feature.md по критериям из `memory-bank/flows/feature-flow.md` § «Выбор шаблона»: `short.md` если фичу можно описать минимальным набором (1 SC-*, 1 CHK-*, 1 EVID-*, без ASM-*/DEC-*/CTR-*/FM-*, без контрактных изменений); иначе `large.md`. Зафикси выбор явно.
 3. Создай `memory-bank/features/FT-XXX/feature.md` по выбранному шаблону в статусе draft
 4. Наполни feature.md до gate-ready (≥1 REQ-*, NS-*, SC-*, CHK-*, EVID-*; каждый REQ-* прослеживается к SC-*)

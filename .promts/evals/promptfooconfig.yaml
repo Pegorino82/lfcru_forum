@@ -41,6 +41,16 @@ providers:
     config:
       fixture: fixed-done-gate
 
+  - id: "file://provider.js"
+    label: "Broken — feature content (wrong paths, manual CHKs, OQ in feature, no index)"
+    config:
+      fixture: broken-feature-content
+
+  - id: "file://provider.js"
+    label: "Fixed — feature content (correct paths, Playwright CHKs, no OQ, index updated)"
+    config:
+      fixture: fixed-feature-content
+
 defaultTest:
   vars:
     card_context: ""
@@ -512,4 +522,144 @@ tests:
             reason: pass
               ? 'gh pr ready called only after all CI jobs passed'
               : 'gh pr ready called despite failing CI jobs — must wait for green CI'
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T10: Change Surface — нет web/ префикса в путях файлов
+  # Баг: агент не читает frontend.md/architecture.md → использует web/templates/
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T10: Change Surface uses correct paths — no web/ prefix"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add WYSIWYG editor for articles"
+        Description: "Replace textarea with TipTap rich text editor."
+        Label: feature
+        Feature number: FT-023
+    providers:
+      - "Broken — feature content (wrong paths, manual CHKs, OQ in feature, no index)"
+      - "Fixed — feature content (correct paths, Playwright CHKs, no OQ, index updated)"
+    assert:
+      - type: javascript
+        value: |
+          const hasBadPrefix = /web\/templates\/|web\/static\//.test(output);
+          const pass = !hasBadPrefix;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'No web/ prefix found in output — correct paths used'
+              : 'Found web/templates/ or web/static/ — agent did not read frontend.md/architecture.md'
+          };
+
+      - type: javascript
+        value: |
+          const hasCorrectPath = /templates\/[a-z]/.test(output) || /static\/js\//.test(output);
+          return {
+            pass: hasCorrectPath,
+            score: hasCorrectPath ? 1 : 0,
+            reason: hasCorrectPath
+              ? 'Correct path pattern templates/<domain>/ or static/js/ found'
+              : 'Neither templates/<domain>/ nor static/js/ found in output'
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T11: UI CHK-items используют Playwright, не manual
+  # Баг: агент не читает testing-policy.md → помечает UI-проверки как "Ручная"
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T11: UI check items reference Playwright, not manual"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add WYSIWYG editor for articles"
+        Label: feature
+        Feature number: FT-023
+    providers:
+      - "Broken — feature content (wrong paths, manual CHKs, OQ in feature, no index)"
+      - "Fixed — feature content (correct paths, Playwright CHKs, no OQ, index updated)"
+    assert:
+      - type: javascript
+        value: |
+          const chkManualPattern = /CHK-\d+[^\n]*Ручная(?! визуальная)/i;
+          const hasManualChk = chkManualPattern.test(output);
+          const pass = !hasManualChk;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'No CHK items marked as manual-only'
+              : 'Found CHK item with "Ручная" — agent did not read testing-policy.md'
+          };
+
+      - type: javascript
+        value: |
+          const hasPlaywright = /Playwright/i.test(output);
+          return {
+            pass: hasPlaywright,
+            score: hasPlaywright ? 1 : 0,
+            reason: hasPlaywright
+              ? 'Playwright referenced in output'
+              : 'Playwright not mentioned — UI checks must be automated'
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T12: features/README.md (глобальный индекс) обновляется при bootstrap
+  # Баг: промпт не требовал явно — агент пропускал этот шаг
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T12: features/README.md global index updated at bootstrap"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add WYSIWYG editor for articles"
+        Label: feature
+        Feature number: FT-023
+    providers:
+      - "Broken — feature content (wrong paths, manual CHKs, OQ in feature, no index)"
+      - "Fixed — feature content (correct paths, Playwright CHKs, no OQ, index updated)"
+    assert:
+      - type: javascript
+        value: |
+          const indexMentioned = /features\/README\.md/.test(output);
+          const indexUpdated = /обновл|добавл|append|update/i.test(
+            output.slice(
+              Math.max(0, output.indexOf('features/README.md') - 150),
+              output.indexOf('features/README.md') + 150
+            )
+          );
+          const pass = indexMentioned && indexUpdated;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'features/README.md mentioned and updated at bootstrap'
+              : !indexMentioned
+                ? 'features/README.md not mentioned — global index was not updated'
+                : 'features/README.md mentioned but no update action found nearby'
+          };
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # T13: OQ-* идентификаторы не используются в feature.md
+  # Баг: OQ-* — Plan ID, не должен появляться в feature.md
+  # ───────────────────────────────────────────────────────────────────────────
+  - description: "T13: No OQ-* identifiers in feature.md content"
+    vars:
+      card_context: |
+        Trello card:
+        Title: "Add WYSIWYG editor for articles"
+        Label: feature
+        Feature number: FT-023
+    providers:
+      - "Broken — feature content (wrong paths, manual CHKs, OQ in feature, no index)"
+      - "Fixed — feature content (correct paths, Playwright CHKs, no OQ, index updated)"
+    assert:
+      - type: javascript
+        value: |
+          const hasOQ = /OQ-\d+/.test(output);
+          const pass = !hasOQ;
+          return {
+            pass,
+            score: pass ? 1 : 0,
+            reason: pass
+              ? 'No OQ-* identifiers found in output — correct, OQ belongs only in implementation-plan.md'
+              : 'OQ-* identifier found — must not appear in feature.md (Plan ID only)'
           };
