@@ -4,7 +4,7 @@ doc_kind: feature
 doc_function: index
 purpose: "Облегчённый пакет баг-фикса. Содержит описание бага, репродукцию, root cause и ссылку на фикс."
 status: active
-delivery_status: planned
+delivery_status: done
 audience: humans_and_agents
 ---
 
