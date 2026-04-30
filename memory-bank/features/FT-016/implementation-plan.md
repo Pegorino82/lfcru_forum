@@ -5,7 +5,7 @@ doc_function: derived
 purpose: "Execution-план реализации FT-016 (SSE real-time посты форума). Фиксирует discovery context, шаги, риски и test strategy без переопределения canonical feature-фактов."
 derived_from:
   - feature.md
-status: active
+status: archived
 audience: humans_and_agents
 must_not_define:
   - ft016_scope
