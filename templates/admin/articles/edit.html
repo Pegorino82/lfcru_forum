@@ -36,6 +36,8 @@
 #editor { min-height:300px; padding:0.75rem; border:1px solid #ccc; border-radius:0 0 4px 4px; font-family:inherit; font-size:1rem; outline:none; }
 #editor:focus-within { border-color:#c8102e; box-shadow:0 0 0 2px rgba(200,16,46,.15); }
 #editor .ProseMirror { min-height:270px; outline:none; }
+.ProseMirror figure { margin:1em 0; }
+.ProseMirror figure img { max-width:100%; height:auto; }
 </style>
 
 <h1 class="admin-header">{{if .Article}}Редактировать статью{{else}}Новая статья{{end}}</h1>

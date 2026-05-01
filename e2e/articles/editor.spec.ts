@@ -108,3 +108,78 @@ test('CHK-02: вставка изображения с подписью отоб
   expect(bodyHTML).toContain('<img');
   expect(bodyHTML).toContain('<figcaption');
 });
+
+test('FT-024: image editor bug fixes', async ({ page }) => {
+  await loginAdmin(page);
+  await page.goto(EDIT_URL);
+
+  const editor = page.locator('.ProseMirror');
+  await editor.waitFor({ state: 'visible', timeout: 10000 });
+  await page.evaluate(() => (window as any)._tiptapEditor.commands.clearContent());
+
+  // 1. Проверка на дублирование (Bug #2)
+  const imagesList = page.locator('#images-list');
+  const initialImageCount = await imagesList.locator('.image-thumb').count();
+
+  page.on('dialog', async (dialog) => {
+    expect(dialog.message()).toContain('Подпись к изображению');
+    await dialog.accept('FT-024 fix test');
+  });
+
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.click('button[data-action="image-upload"]'),
+  ]);
+  await fileChooser.setFiles({
+    name: 'test-ft024.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==', 'base64'),
+  });
+
+  await expect(editor.locator('figure')).toBeVisible({ timeout: 10000 });
+
+  // Убедимся, что изображение НЕ добавилось в боковой список
+  await expect(imagesList.locator('.image-thumb')).toHaveCount(initialImageCount);
+
+  await saveAndWait(page);
+  await page.goto(VIEW_URL);
+
+  const body = page.locator('.article-body');
+  await expect(body.locator('figure')).toHaveCount(1);
+
+  // 2. Проверка удаления (Bug #1)
+  await page.goto(EDIT_URL);
+  await editor.waitFor({ state: 'visible', timeout: 10000 });
+
+  await editor.locator('figure').click();
+  await page.keyboard.press('Delete');
+
+  await expect(editor.locator('figure')).toHaveCount(0);
+  await saveAndWait(page);
+
+  await page.goto(VIEW_URL);
+  await expect(body.locator('figure')).toHaveCount(0);
+
+  // 3. Проверка стиля (Bug #3 - full width)
+  // Для этого вставим изображение еще раз
+  await page.goto(EDIT_URL);
+  await editor.waitFor({ state: 'visible', timeout: 10000 });
+  const [fileChooser2] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.click('button[data-action="image-upload"]'),
+  ]);
+  await fileChooser2.setFiles({
+    name: 'test-ft024-2.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'),
+  });
+
+  await expect(editor.locator('figure')).toBeVisible({ timeout: 10000 });
+  await saveAndWait(page);
+  await page.goto(VIEW_URL);
+
+  const image = body.locator('figure img');
+  await expect(image).toBeVisible();
+  const imageStyle = await image.evaluate(el => window.getComputedStyle(el));
+  expect(imageStyle.maxWidth).toBe('100%');
+});

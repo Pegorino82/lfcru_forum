@@ -4,22 +4,52 @@ import TextAlign from 'https://esm.sh/@tiptap/extension-text-align@2'
 import Link from 'https://esm.sh/@tiptap/extension-link@2'
 import Image from 'https://esm.sh/@tiptap/extension-image@2'
 
-// Кастомные расширения для figure/figcaption (REQ-02/REQ-03, CTR-02)
 const Figure = Node.create({
   name: 'figure',
   group: 'block',
-  content: 'image figcaption?',
-  parseHTML() { return [{ tag: 'figure' }] },
-  renderHTML() { return ['figure', 0] },
+  content: 'figcaption',
+  draggable: true,
+  isolating: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      alt: { default: null },
+    }
+  },
+
+  parseHTML() {
+    return [{
+      tag: 'figure',
+      contentElement: 'figcaption',
+      getAttrs: dom => {
+        const img = dom.querySelector('img')
+        return {
+          src: img?.getAttribute('src'),
+          alt: img?.getAttribute('alt'),
+        }
+      },
+    }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'figure',
+      ['img', { src: HTMLAttributes.src, alt: HTMLAttributes.alt, 'data-drag-handle': '' }],
+      ['figcaption', 0],
+    ]
+  },
 })
 
 const Figcaption = Node.create({
   name: 'figcaption',
-  group: 'block',
+  group: 'content',
   content: 'inline*',
   parseHTML() { return [{ tag: 'figcaption' }] },
   renderHTML() { return ['figcaption', 0] },
+  selectable: false,
 })
+
 
 const initialContent = document.getElementById('editor-initial-content').value
 const contentInput = document.getElementById('content-input')
@@ -96,7 +126,7 @@ function updateToolbarState() {
   })
 }
 
-// Image upload: POST to HTMX endpoint, parse src from HTML response (ER-04 / ASM-01)
+// Image upload: POST to endpoint, parse JSON response, insert figure node.
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files[0]
   if (!file) return
@@ -110,27 +140,27 @@ fileInput.addEventListener('change', async () => {
   formData.append('_csrf', csrf)
 
   try {
-    const res = await fetch(`/admin/articles/${articleId}/images`, {
+    const res = await fetch(`/admin/articles/${articleId}/images?from=tiptap`, {
       method: 'POST',
       headers: { 'X-CSRF-Token': csrf },
       body: formData,
     })
     if (!res.ok) { alert('Ошибка загрузки изображения'); return }
 
-    const html = await res.text()
-    const doc = new DOMParser().parseFromString(html, 'text/html')
-    const img = doc.querySelector('img')
-    if (!img) { alert('Не удалось получить URL изображения'); return }
+    const data = await res.json()
+    if (!data.url) { alert('Не удалось получить URL изображения'); return }
 
-    const caption = window.prompt('Подпись к изображению (необязательно):') || ''
-    const figureHTML = caption
-      ? `<figure><img src="${img.src}" alt="${caption}"><figcaption>${caption}</figcaption></figure>`
-      : `<figure><img src="${img.src}" alt=""></figure>`
-    editor.chain().focus().insertContent(figureHTML).run()
+    const captionText = window.prompt('Подпись к изображению (необязательно):') || ''
 
-    // Append uploaded image item to images list (keep HTMX section in sync)
-    const imagesList = document.getElementById('images-list')
-    if (imagesList) imagesList.insertAdjacentHTML('beforeend', html)
+    editor.chain().focus().insertContent({
+      type: 'figure',
+      attrs: { src: data.url, alt: captionText },
+      content: [{
+        type: 'figcaption',
+        content: captionText ? [{ type: 'text', text: captionText }] : [],
+      }],
+    }).run()
+
   } catch {
     alert('Ошибка загрузки изображения')
   } finally {

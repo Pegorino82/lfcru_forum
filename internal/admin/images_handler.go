@@ -68,6 +68,13 @@ func (h *ImagesHandler) Upload(c echo.Context) error {
 		}
 	}
 
+	// If the upload is from Tiptap, return JSON with the URL and skip DB insert.
+	if c.QueryParam("from") == "tiptap" {
+		return c.JSON(http.StatusOK, echo.Map{
+			"url": "/storage/news/" + filename,
+		})
+	}
+
 	img := &ArticleImage{
 		ArticleID:        articleID,
 		Filename:         filename,
