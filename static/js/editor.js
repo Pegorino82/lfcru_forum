@@ -10,6 +10,7 @@ const Figure = Node.create({
   content: 'figcaption',
   draggable: true,
   isolating: true,
+  atom: true,
 
   addAttributes() {
     return {
