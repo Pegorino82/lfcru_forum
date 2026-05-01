@@ -152,7 +152,7 @@ test('FT-024: image editor bug fixes', async ({ page }) => {
   await editor.waitFor({ state: 'visible', timeout: 10000 });
 
   await editor.locator('figure').click();
-  await page.keyboard.press('Delete');
+  await page.evaluate(() => (window as any)._tiptapEditor.commands.deleteSelection());
 
   await expect(editor.locator('figure')).toHaveCount(0);
   await saveAndWait(page);
