@@ -22,6 +22,10 @@ audience: humans_and_agents
   Читать, когда нужно: открыть instantiated canonical feature-документ сразу после bootstrap нового feature package.
   Отвечает на вопрос: где находятся scope, design, verify, blockers и canonical IDs для этой фичи.
 
+- [`implementation-plan.md`](implementation-plan.md)
+  Читать, когда нужно: спланировать или отследить execution steps фичи.
+  Отвечает на вопрос: какие шаги, в каком порядке, с какими тестами реализуется фича.
+
 - [`evals/strategy.md`](evals/strategy.md)
   Читать, когда нужно: узнать, какая форма eval применяется на каждом gate и какие risk areas выделены для этой фичи.
   Отвечает на вопрос: как организован eval-процесс для данной фичи.

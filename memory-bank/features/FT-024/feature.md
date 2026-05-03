@@ -192,6 +192,7 @@ must_not_define:
 - `EVID-03` Eval Draft→DR (feature.md review) — accept, итерация 3 (self-check на trivial path fix после 2 evaluator итераций). 2026-05-03. evaluator agent
 - `EVID-04` Brief loop — accept, итерация 2. 2026-05-03. improve-loop.sh / evaluator agent
 - `EVID-05` Spec loop — accept, итерация 3 (self-check после 2 evaluator итераций). 2026-05-03. improve-loop.sh / evaluator agent
+- `EVID-06` Eval DR→PR (implementation-plan.md review) — accept. 2026-05-03. evaluator agent
 
 ### Evidence contract
 

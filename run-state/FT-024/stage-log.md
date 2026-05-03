@@ -4,8 +4,8 @@
 |-------------|-------------|---------|------------|-----|
 | brief-loop  | done        | accept  | 2026-05-03 | .review-results/FT-024/review-brief-02.md |
 | spec-loop   | done        | accept  | 2026-05-03 | .review-results/FT-024/review-spec-03.md |
-| dr-approval | pending     | —       | —          | — |
-| plan        | pending     | —       | —          | — |
+| dr-approval | done        | accept  | 2026-05-03 | human confirm |
+| plan        | done        | accept  | 2026-05-03 | .review-results/FT-024/review-implementation-plan-03.md |
 | pr-approval | pending     | —       | —          | — |
 | impl        | pending     | —       | —          | — |
 | unit-tests  | pending     | —       | —          | — |

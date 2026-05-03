@@ -1,16 +1,19 @@
 # Active Context: FT-024
 
 **Updated:** 2026-05-03
-**Stage:** dr-approval
-**Status:** awaiting-human
+**Stage:** pr-approval
+**Status:** pending
 
 ## Completed
 
-<!-- Список пройденных этапов с датой и outcome -->
+- brief-loop: accept (2026-05-03)
+- spec-loop: accept (2026-05-03)
+- dr-approval: accept (2026-05-03)
+- plan (DR→PR eval): accept (2026-05-03) — EVID-06
 
 ## Current
 
-Ожидание подтверждения Design Ready от человека
+Ожидание HITL подтверждения Plan Ready
 
 ## Blocked / Pending
 
