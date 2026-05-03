@@ -17,6 +17,7 @@ type Config struct {
 	SessionGracePeriod time.Duration
 	MaxSessionsPerUser int
 	UploadsDir         string
+	AvatarsDir         string
 	FootballAPIKey     string
 }
 
@@ -32,6 +33,7 @@ func Load() *Config {
 		SessionGracePeriod: getDuration("SESSION_GRACE_PERIOD", 5*time.Minute),
 		MaxSessionsPerUser: getInt("MAX_SESSIONS_PER_USER", 10),
 		UploadsDir:         getEnv("UPLOADS_DIR", "./storage/news"),
+		AvatarsDir:         getEnv("AVATARS_DIR", "./storage/avatars"),
 		FootballAPIKey:     getEnv("FOOTBALL_DATA_API_KEY", ""),
 	}
 }
