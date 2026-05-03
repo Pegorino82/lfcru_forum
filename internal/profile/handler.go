@@ -120,7 +120,7 @@ func (h *Handler) UploadAvatar(c echo.Context) error {
 	}
 	defer src.Close()
 
-	avatarURL, err := h.svc.SaveAvatar(
+	_, err = h.svc.SaveAvatar(
 		c.Request().Context(),
 		currentUser.ID,
 		targetProfile.User.ID,
@@ -139,9 +139,18 @@ func (h *Handler) UploadAvatar(c echo.Context) error {
 		}
 	}
 
-	// HTMX: возвращаем обновлённый аватар-элемент
-	return c.Render(http.StatusOK, "templates/profile/page.html#avatar-block", map[string]any{
-		"AvatarURL": avatarURL,
-		"Username":  username,
+	// Перечитываем профиль чтобы получить свежие данные (AvatarURL обновлён)
+	freshProfile, err := h.svc.GetProfile(c.Request().Context(), username)
+	if err != nil {
+		slog.Error("profile: reload after upload", "username", username, "err", err)
+		return c.String(http.StatusInternalServerError, "Ошибка обновления профиля")
+	}
+
+	// HTMX: возвращаем обновлённый avatar-block
+	return c.Render(http.StatusOK, "templates/profile/page.html#avatar-block", PageData{
+		User:      currentUser,
+		CSRFToken: appMiddleware.CSRFToken(c),
+		Profile:   freshProfile,
+		IsOwner:   true,
 	})
 }

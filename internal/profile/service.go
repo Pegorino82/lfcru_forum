@@ -17,8 +17,10 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
-var ErrForbidden = errors.New("forbidden")
-var ErrUnsupportedFormat = errors.New("unsupported format")
+var (
+	ErrForbidden        = errors.New("forbidden")
+	ErrUnsupportedFormat = errors.New("unsupported format")
+)
 
 // ForumPostsRepo — минимальный интерфейс для получения статистики постов.
 type ForumPostsRepo interface {
