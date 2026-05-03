@@ -8,6 +8,7 @@ PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELL
 Перед началом прочитай:
 - `memory-bank/flows/trello.md` — lifecycle и правила синхронизации
 - `memory-bank/flows/feature-flow.md` — gate-чеклисты, identifier taxonomy (OQ-* только в плане)
+- `memory-bank/flows/feature-execution-loop.md` — большой цикл выполнения фичи со state-pack
 - `memory-bank/engineering/git-workflow.md` — worktree и PR
 - `memory-bank/ops/trello-board.md` — стабильные List ID
 - `memory-bank/domain/architecture.md` — Layer Stack (Service/Handler/Repo), канонические пути файлов
@@ -76,24 +77,53 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 1. Создай `memory-bank/features/FT-XXX/README.md`
 1b. ⛔ Обнови глобальный индекс `memory-bank/features/README.md` — добавь строку FT-XXX в таблицу Packages
     (статус `planned`, название из карточки). Этот файл обновляется из feature-ветки (worktree).
+1c. Инициализируй state-pack — скопируй шаблоны в worktree, заменив `FT-XXX` на реальный ID:
+    - `run-state/FT-XXX/active-context.md`
+    - `run-state/FT-XXX/stage-log.md`
 2. Выбери шаблон feature.md по критериям из `memory-bank/flows/feature-flow.md` § «Выбор шаблона»: `short.md` если фичу можно описать минимальным набором (1 SC-*, 1 CHK-*, 1 EVID-*, без ASM-*/DEC-*/CTR-*/FM-*, без контрактных изменений); иначе `large.md`. Зафикси выбор явно.
 3. Создай `memory-bank/features/FT-XXX/feature.md` по выбранному шаблону в статусе draft
 4. Наполни feature.md до gate-ready (≥1 REQ-*, NS-*, SC-*, CHK-*, EVID-*; каждый REQ-* прослеживается к SC-*)
-5. ⛔ HARD STOP — покажи `feature.md` человеку и дождись явного "ок" перед переводом в Design Ready
-6. После подтверждения: `feature.md` → `status: active` (Design Ready)
-7. Создай `memory-bank/features/FT-XXX/implementation-plan.md`:
+5. Запусти **Brief Improve Loop** (автопилот, подтверждение не требуется):
+   ```bash
+   ./scripts/improve-loop.sh \
+     memory-bank/flows/templates/prompts/brief-loop.md \
+     memory-bank/features/FT-XXX/feature.md
+   ```
+   - Итерации до `accept` (max 2, затем escalate к человеку)
+   - Обнови `run-state/FT-XXX/stage-log.md` → строка `brief-loop`: done/escalated
+6. Запусти **Spec Improve Loop** (автопилот, подтверждение не требуется):
+   ```bash
+   ./scripts/improve-loop.sh \
+     memory-bank/flows/templates/prompts/spec-loop.md \
+     memory-bank/features/FT-XXX/feature.md
+   ```
+   - Итерации до `accept` (max 2, затем escalate к человеку)
+   - Обнови `run-state/FT-XXX/stage-log.md` → строка `spec-loop`: done/escalated
+7. ⛔ HARD STOP — покажи `feature.md` человеку и дождись явного "ок" перед переводом в Design Ready
+   - Обнови `run-state/FT-XXX/active-context.md` → stage: awaiting-dr-approval
+8. После подтверждения: `feature.md` → `status: active` (Design Ready)
+   - Обнови `run-state/FT-XXX/stage-log.md` → строка `dr-approval`: done
+9. Создай `memory-bank/features/FT-XXX/implementation-plan.md`:
    - выполни grounding: пройдись по relevant paths, existing patterns, dependencies
    - зафикси discovery context: relevant paths, local reference patterns, unresolved questions (OQ-*), test surfaces, execution environment
    - план содержит ≥1 PRE-*, ≥1 STEP-*, ≥1 CHK-*, ≥1 EVID-*
-8. ⛔ HARD STOP — покажи `implementation-plan.md` человеку и дождись явного "ок" перед переводом в Plan Ready
-9. После подтверждения: `implementation-plan.md` → `status: active` (Plan Ready)
+   - Обнови `run-state/FT-XXX/stage-log.md` → строка `plan`: done
+10. ⛔ HARD STOP — покажи `implementation-plan.md` человеку и дождись явного "ок" перед переводом в Plan Ready
+    - Обнови `run-state/FT-XXX/active-context.md` → stage: awaiting-pr-approval
+11. После подтверждения: `implementation-plan.md` → `status: active` (Plan Ready)
+    - Обнови `run-state/FT-XXX/stage-log.md` → строка `pr-approval`: done
 
 После завершения разработки (Execution → Done gate):
+- Выполни STEP-* из `implementation-plan.md` по порядку
+- После каждого CP-* обновляй `run-state/FT-XXX/active-context.md` → completed steps
 - Зафикси все изменения: `git add . && git commit -m "feat(FT-XXX): <краткое описание>"`
 - Запуш ветку: `git push`
+- Обнови `run-state/FT-XXX/stage-log.md` → строка `impl`: done
 - Запусти unit-тесты локально командой из `memory-bank/ops/development.md` § «Go-тесты» — должны быть зелёными
+- Обнови `run-state/FT-XXX/stage-log.md` → строка `unit-tests`: pass/fail
 - Убедись что CI зелёный: `rtk gh pr checks` — все jobs (Lint, Go Tests, E2E) должны пройти. ⛔ Запускай ТОЛЬКО после `git push` — иначе CI проверяет устаревший код
 - Только если ALL jobs green — переведи PR из draft в ready for review: `gh pr ready`
+- Обнови `run-state/FT-XXX/stage-log.md` → строка `closure`: done
 - Дождись merge (⛔ HARD STOP — не закрывать артефакты до merge)
 
 После merge PR:
@@ -101,3 +131,11 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 - `implementation-plan.md` → `status: archived`
 - Удали worktree: `git worktree remove ../lfcru_forum-FT-XXX && git branch -d feat/FT-XXX-slug`
 - Запроси подтверждение перед перемещением карточки в DONE
+
+---
+
+**Resume Protocol** — при возобновлении прерванной работы:
+1. Прочитай `HANDOFF.md` → найди FT_ID и текущий stage
+2. Прочитай `run-state/FT-XXX/active-context.md` → восстанови контекст
+3. Прочитай `run-state/FT-XXX/stage-log.md` → определи следующий незавершённый этап
+4. Продолжи с первого `pending` этапа
