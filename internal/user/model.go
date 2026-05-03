@@ -12,4 +12,5 @@ type User struct {
 	BannedAt  *time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	AvatarURL *string
 }

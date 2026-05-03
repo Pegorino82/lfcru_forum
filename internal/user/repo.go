@@ -43,14 +43,14 @@ func (r *Repo) Create(ctx context.Context, u *User) (int64, error) {
 
 func (r *Repo) GetByEmail(ctx context.Context, email string) (*User, error) {
 	const q = `
-		SELECT id, username, email, pass_hash, role, is_active, banned_at, created_at, updated_at
+		SELECT id, username, email, pass_hash, role, is_active, banned_at, created_at, updated_at, avatar_url
 		FROM users
 		WHERE lower(email) = lower($1)`
 
 	u := &User{}
 	err := r.db.QueryRow(ctx, q, email).Scan(
 		&u.ID, &u.Username, &u.Email, &u.PassHash,
-		&u.Role, &u.IsActive, &u.BannedAt, &u.CreatedAt, &u.UpdatedAt,
+		&u.Role, &u.IsActive, &u.BannedAt, &u.CreatedAt, &u.UpdatedAt, &u.AvatarURL,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -63,14 +63,14 @@ func (r *Repo) GetByEmail(ctx context.Context, email string) (*User, error) {
 
 func (r *Repo) GetByID(ctx context.Context, id int64) (*User, error) {
 	const q = `
-		SELECT id, username, email, pass_hash, role, is_active, banned_at, created_at, updated_at
+		SELECT id, username, email, pass_hash, role, is_active, banned_at, created_at, updated_at, avatar_url
 		FROM users
 		WHERE id = $1`
 
 	u := &User{}
 	err := r.db.QueryRow(ctx, q, id).Scan(
 		&u.ID, &u.Username, &u.Email, &u.PassHash,
-		&u.Role, &u.IsActive, &u.BannedAt, &u.CreatedAt, &u.UpdatedAt,
+		&u.Role, &u.IsActive, &u.BannedAt, &u.CreatedAt, &u.UpdatedAt, &u.AvatarURL,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
@@ -79,6 +79,39 @@ func (r *Repo) GetByID(ctx context.Context, id int64) (*User, error) {
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
 	return u, nil
+}
+
+// GetByUsername возвращает пользователя по username (case-insensitive).
+func (r *Repo) GetByUsername(ctx context.Context, username string) (*User, error) {
+	const q = `
+		SELECT id, username, email, pass_hash, role, is_active, banned_at, created_at, updated_at, avatar_url
+		FROM users
+		WHERE lower(username) = lower($1)`
+
+	u := &User{}
+	err := r.db.QueryRow(ctx, q, username).Scan(
+		&u.ID, &u.Username, &u.Email, &u.PassHash,
+		&u.Role, &u.IsActive, &u.BannedAt, &u.CreatedAt, &u.UpdatedAt, &u.AvatarURL,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get user by username: %w", err)
+	}
+	return u, nil
+}
+
+// SetAvatarURL обновляет avatar_url пользователя.
+func (r *Repo) SetAvatarURL(ctx context.Context, userID int64, avatarURL string) error {
+	tag, err := r.db.Exec(ctx, `UPDATE users SET avatar_url = $1 WHERE id = $2`, avatarURL, userID)
+	if err != nil {
+		return fmt.Errorf("set avatar url: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // GetByUsernames возвращает активных пользователей по списку username (case-insensitive).
@@ -119,7 +152,7 @@ func (r *Repo) GetByUsernames(ctx context.Context, usernames []string) ([]User, 
 // ListAll returns all users ordered by created_at DESC.
 func (r *Repo) ListAll(ctx context.Context) ([]User, error) {
 	const q = `
-		SELECT id, username, email, pass_hash, role, is_active, banned_at, created_at, updated_at
+		SELECT id, username, email, pass_hash, role, is_active, banned_at, created_at, updated_at, avatar_url
 		FROM users
 		ORDER BY created_at DESC`
 
@@ -134,7 +167,7 @@ func (r *Repo) ListAll(ctx context.Context) ([]User, error) {
 		var u User
 		if err := rows.Scan(
 			&u.ID, &u.Username, &u.Email, &u.PassHash,
-			&u.Role, &u.IsActive, &u.BannedAt, &u.CreatedAt, &u.UpdatedAt,
+			&u.Role, &u.IsActive, &u.BannedAt, &u.CreatedAt, &u.UpdatedAt, &u.AvatarURL,
 		); err != nil {
 			return nil, err
 		}
