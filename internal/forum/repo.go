@@ -3,6 +3,7 @@ package forum
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -309,6 +310,33 @@ func (r *Repo) ListPostsAfter(ctx context.Context, topicID, afterID int64) ([]Po
 		result = []PostView{}
 	}
 	return result, rows.Err()
+}
+
+// CountByUserID возвращает количество постов пользователя.
+func (r *Repo) CountByUserID(ctx context.Context, userID int64) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM forum_posts WHERE author_id = $1
+	`, userID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// LastPostByUserID возвращает время последнего поста пользователя, или nil если постов нет.
+func (r *Repo) LastPostByUserID(ctx context.Context, userID int64) (*time.Time, error) {
+	var t time.Time
+	err := r.pool.QueryRow(ctx, `
+		SELECT created_at FROM forum_posts WHERE author_id = $1 ORDER BY created_at DESC LIMIT 1
+	`, userID).Scan(&t)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
 
 // UpdateSection обновляет название и описание раздела.
