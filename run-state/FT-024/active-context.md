@@ -1,8 +1,8 @@
 # Active Context: FT-024
 
 **Updated:** 2026-05-03
-**Stage:** pr-approval
-**Status:** pending
+**Stage:** impl
+**Status:** in_progress
 
 ## Completed
 
@@ -10,10 +10,11 @@
 - spec-loop: accept (2026-05-03)
 - dr-approval: accept (2026-05-03)
 - plan (DR→PR eval): accept (2026-05-03) — EVID-06
+- pr-approval: accept (2026-05-03) — human confirm
 
 ## Current
 
-Ожидание HITL подтверждения Plan Ready
+STEP-01: config AvatarsDir + миграция 013
 
 ## Blocked / Pending
 

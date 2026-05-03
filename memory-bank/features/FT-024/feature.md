@@ -7,7 +7,7 @@ derived_from:
   - ../../domain/problem.md
   - ../../adr/ADR-005-image-storage.md
 status: active
-delivery_status: planned
+delivery_status: in_progress
 audience: humans_and_agents
 must_not_define:
   - implementation_sequence

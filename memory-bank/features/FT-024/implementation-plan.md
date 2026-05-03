@@ -5,7 +5,7 @@ doc_function: derived
 purpose: "Execution-план реализации FT-024. Фиксирует discovery context, шаги, риски и test strategy без переопределения canonical feature-фактов."
 derived_from:
   - feature.md
-status: draft
+status: active
 audience: humans_and_agents
 must_not_define:
   - ft_024_scope
