@@ -32,7 +32,11 @@
         .btn-auth:hover { background: rgba(255,255,255,0.15); }
         .btn-auth.primary { background: rgba(255,255,255,0.2); border-color: #fff; }
         .nav-username { max-width: 120px; overflow: hidden; text-overflow: ellipsis;
-                        white-space: nowrap; display: inline-block; color: #fff; font-weight: 600; }
+                        white-space: nowrap; display: inline-block; color: #fff; font-weight: 600;
+                        text-decoration: none; cursor: pointer; }
+        .nav-username:hover { text-decoration: underline; }
+        .profile-link { color: inherit; text-decoration: none; cursor: pointer; }
+        .profile-link:hover { text-decoration: underline; }
 
         /* Container */
         .container { max-width: 960px; margin: 2rem auto; padding: 0 1rem; flex: 1; }
@@ -165,13 +169,19 @@ document.addEventListener('htmx:beforeSwap', function(evt) {
     }
 });
 </script>
+<div id="profile-modal-container"></div>
 </body>
 </html>
 {{end}}
 
 {{define "nav"}}
 {{if .User}}
-    <span class="nav-username" title="{{.User.Username}}">{{truncate .User.Username 20}}</span>
+    <a href="/profile/{{.User.Username}}"
+       hx-get="/profile/{{.User.Username}}/modal"
+       hx-target="#profile-modal-container"
+       hx-swap="innerHTML"
+       class="nav-username"
+       title="{{.User.Username}}">{{truncate .User.Username 20}}</a>
     <form method="POST" action="/logout" style="display:inline">
         <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
         <button type="submit" class="btn-auth">Выйти</button>

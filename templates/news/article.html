@@ -124,7 +124,11 @@
     {{end}}
 
     <div class="comment-header">
-      <strong class="comment-author">{{.AuthorUsername}}</strong>
+      <a href="/profile/{{.AuthorUsername}}"
+         hx-get="/profile/{{.AuthorUsername}}/modal"
+         hx-target="#profile-modal-container"
+         hx-swap="innerHTML"
+         class="profile-link"><strong class="comment-author">{{.AuthorUsername}}</strong></a>
       <time class="comment-time">{{.CreatedAt.Format "02.01.2006 15:04"}}</time>
     </div>
     <div class="comment-body">{{.ContentHTML}}</div>
