@@ -33,7 +33,7 @@ must_not_define:
 - `REQ-01` Quick-view модалка: открывается по клику на аватар или имя пользователя в любом месте сайта (форум, комментарии, header). Содержит: аватар, имя, дату регистрации, кол-во постов + последний пост (ссылка + превью ~40 символов + relative time), кол-во комментариев + последний комментарий (ссылка + превью + relative time). Закрывается: крестик, клик вне модалки, ESC.
 - `REQ-02` Полная страница профиля по маршруту `/profile/{username}`: содержит те же данные, что и модалка. Публичная (доступна гостям).
 - `REQ-03` Аватар пользователя: отображается в header (рядом с именем), в постах форума (слева от имени), в комментариях к новостям, в модалке и на странице профиля.
-- `REQ-04` Загрузка аватара: доступна только авторизованному владельцу профиля. Поддерживаемые форматы: JPEG, PNG, WebP. Макс. размер: 5 МБ. После выбора файла — превью. Сохранение — по явному подтверждению. Файл конвертируется в WebP и сохраняется по ADR-005.
+- `REQ-04` Загрузка аватара: доступна только авторизованному владельцу профиля. Поддерживаемые форматы: JPEG, PNG, WebP. Макс. размер: 5 МБ. После выбора файла — превью. Сохранение — по явному подтверждению.
 - `REQ-05` Fallback аватара при отсутствии загруженного: инициалы пользователя (первая буква имени) на цветном фоне. Цвет детерминирован по хешу username (не меняется от рендера к рендеру).
 - `REQ-06` Header: имя пользователя заменяется на `[аватар-кружок] + имя`, кликабельно → открывает модалку своего профиля.
 - `REQ-07` Пустые состояния: «Пользователь ещё не писал на форуме» / «Пользователь ещё не оставлял комментарии» при отсутствии активности.
@@ -56,22 +56,25 @@ must_not_define:
 - `ASM-01` Username уникален (case-insensitive UNIQUE INDEX существует в миграции 001).
 - `ASM-02` Модалка реализована через Alpine.js (`x-data`, `x-show`) + HTMX для загрузки данных профиля по клику.
 - `ASM-03` Цвет fallback-аватара детерминирован: вычисляется на сервере хешированием username → индекс в фиксированной палитре. Алгоритм не меняется после релиза.
+- `ASM-04` Существующая session middleware применяется к маршрутам `/profile/*`, требующим авторизации (`POST /profile/avatar`), и перенаправляет неавторизованных → `/login`. В handler достаточно ownership-проверки (CON-02).
 
 ## How
 
 ### Solution
 
-Добавить поле `avatar_url` в таблицу `users` (миграция), расширить `user.User` моделью, реализовать хэндлеры `GET /profile/{username}` и `POST /profile/avatar`, добавить HTMX-эндпоинт `GET /profile/{username}/modal` для quick-view, обновить шаблоны форума и комментариев (кликабельные имена), обновить header. Fallback-аватар — SVG-заглушка с инициалами и детерминированным цветом, рендерится в шаблоне через Go FuncMap.
+Добавить поле `avatar_url` в таблицу `users` (миграция), расширить `user.User` моделью, реализовать Service-слой профиля (`internal/profile/service.go`) с domain-логикой (валидация формата/размера, конвертация в WebP, ownership-проверка, запись FS, обновление `avatar_url`), Handler-слой (`internal/profile/handler.go`) для парсинга запросов и вызова Service, добавить HTMX-эндпоинт `GET /profile/{username}/modal` для quick-view, обновить шаблоны форума и комментариев (кликабельные имена), обновить header. Fallback-аватар рендерится на сервере через Go FuncMap (SVG + детерминированный цвет) — это позволяет получить одинаковый вывод в полных страницах и HTMX-фрагментах без зависимости от JS; CSS-only вариант отклонён из-за отсутствия нативного детерминированного цвета без скриптов.
 
 ### Change Surface
 
 | Surface | Type | Why it changes |
 | --- | --- | --- |
-| `migrations/0XX_add_avatar_url_to_users.sql` | data | Добавить колонку `avatar_url TEXT` в `users` |
+| `migrations/013_add_avatar_url_to_users.sql` | data | Добавить колонку `avatar_url TEXT` в `users` |
 | `internal/user/model.go` | code | Добавить `AvatarURL *string` в `User` |
 | `internal/user/repo.go` | code | Добавить `GetByUsername`, обновить `Scan` для `avatar_url` |
-| `internal/user/service.go` (new or extend) | code | Логика получения профиля: посты, комментарии, relative time |
-| `internal/profile/handler.go` (new) | code | `GET /profile/{username}`, `GET /profile/{username}/modal`, `POST /profile/avatar` |
+| `internal/user/repo.go` | code | Добавить `GetByUsername`; обновить `Scan` для `avatar_url` |
+| `internal/profile/service.go` (new) | code | Domain-логика: валидация формата/размера, конвертация в WebP, ownership-проверка (CON-02), запись FS, обновление `users.avatar_url`; агрегация профильных данных через ForumRepo и CommentRepo интерфейсы |
+| `internal/tmpl/renderer.go` | code | Добавить FuncMap-функции: `avatarColor`/`avatarInitials` (REQ-05, ASM-03) и `relativeTime` (CON-04) |
+| `internal/profile/handler.go` (new) | code | Парсит запрос, вызывает Service; маршруты `GET /profile/{username}`, `GET /profile/{username}/modal`, `POST /profile/{username}/avatar` |
 | `internal/config/config.go` | code | `UploadsDir` уже есть (ADR-005, FT-009) — проверить |
 | `templates/profile/page.html` (new) | code | Полная страница профиля |
 | `templates/profile/modal.html` (new) | code | HTMX-фрагмент модалки |
@@ -80,7 +83,7 @@ must_not_define:
 | `templates/forum/index.html` / `templates/forum/section.html` | code | Кликабельное имя автора последнего поста (если отображается) |
 | `templates/news/article.html` | code | Аватар + кликабельное имя в комментариях |
 | `cmd/forum/main.go` | code | Регистрация profile routes |
-| inline стили в шаблонах | code | Стили модалки, аватар-кружка (отдельного `static/css/` нет) |
+| inline стили и скрипты в шаблонах | code | Стили модалки, аватар-кружка; inline `<script>`: FileReader-превью аватара до submit (отдельного `static/css/` нет) |
 
 ### Flow
 
@@ -97,7 +100,7 @@ must_not_define:
 **Загрузка аватара:**
 1. Владелец на своей странице профиля/модалке видит кнопку «Изменить аватар».
 2. `<input type="file">` → JS-превью через `FileReader`.
-3. Пользователь подтверждает → `POST /profile/avatar` (multipart, с CSRF).
+3. Пользователь подтверждает → `POST /profile/{username}/avatar` (multipart, с CSRF).
 4. Сервер: валидация формата и размера, конвертация в WebP, запись в `$UPLOADS_DIR/avatars/{user_id}.webp`, обновление `users.avatar_url`.
 5. Ответ: обновлённый фрагмент аватара (HTMX OOB swap) или редирект.
 
@@ -107,7 +110,7 @@ must_not_define:
 | --- | --- | --- | --- |
 | `CTR-01` | `GET /profile/{username}` → HTML страница | handler / browser | Публичный; 404 если пользователь не найден |
 | `CTR-02` | `GET /profile/{username}/modal` → HTML фрагмент | handler / HTMX | Публичный; рендерит modal.html partial |
-| `CTR-03` | `POST /profile/avatar` multipart `avatar` field | browser / handler | Требует авторизации + CSRF; возвращает обновлённый аватар-фрагмент |
+| `CTR-03` | `POST /profile/{username}/avatar` multipart `avatar` field | browser / handler | Требует авторизации + CSRF; handler проверяет `session.UserID == target_user.ID` (CON-02) → 403 если чужой; возвращает обновлённый аватар-фрагмент |
 | `CTR-04` | `users.avatar_url TEXT NULL` | migration / repo | NULL = нет аватара; значение = относительный путь `/uploads/avatars/{user_id}.webp` |
 
 ### Failure Modes
@@ -117,7 +120,7 @@ must_not_define:
 - `FM-03` Ошибка записи на файловую систему → HTTP 500, сообщение «Не удалось сохранить аватар».
 - `FM-04` Пользователь с таким username не найден → HTTP 404 на `/profile/{username}`.
 - `FM-05` Попытка изменить аватар чужого профиля → HTTP 403.
-- `FM-06` Модалка открыта, но HTMX-запрос за данными упал → показать fallback-сообщение об ошибке внутри модалки.
+- `FM-06` Модалка открыта, но HTMX-запрос `GET /profile/{username}/modal` вернул 5xx → показать fallback-сообщение об ошибке внутри модалки (не закрывать).
 
 ### ADR Dependencies
 
@@ -141,8 +144,8 @@ must_not_define:
 
 | Requirement ID | Design refs | Acceptance refs | Checks | Evidence IDs |
 | --- | --- | --- | --- | --- |
-| `REQ-01` | `ASM-02`, `CTR-02`, `FM-06` | `EC-01`, `EC-05`, `SC-01`, `SC-05` | `CHK-01` | `EVID-01` |
-| `REQ-02` | `CTR-01`, `FM-04` | `EC-02`, `SC-02` | `CHK-01` | `EVID-01` |
+| `REQ-01` | `ASM-02`, `CTR-02`, `FM-06` | `EC-01`, `EC-05`, `SC-01`, `SC-05`, `NEG-06` | `CHK-01` | `EVID-01` |
+| `REQ-02` | `CTR-01`, `FM-04` | `EC-02`, `SC-02`, `NEG-04` | `CHK-01` | `EVID-01` |
 | `REQ-03` | `CTR-04` | `EC-03`, `SC-03` | `CHK-01` | `EVID-01` |
 | `REQ-04` | `CON-01`, `CON-02`, `CON-03`, `CTR-03`, `FM-01`, `FM-02`, `FM-03` | `EC-03`, `EC-06`, `EC-07`, `SC-03`, `SC-04`, `NEG-01`, `NEG-02`, `NEG-03` | `CHK-01`, `CHK-02` | `EVID-01`, `EVID-02` |
 | `REQ-05` | `ASM-03` | `EC-04`, `SC-06` | `CHK-01` | `EVID-01` |
@@ -166,12 +169,13 @@ must_not_define:
 - `NEG-03` `POST /profile/avatar` без авторизации → редирект на `/login`.
 - `NEG-04` `GET /profile/nonexistent` → 404 страница.
 - `NEG-05` `POST /profile/{other_username}/avatar` авторизованным пользователем → 403.
+- `NEG-06` HTMX-запрос `GET /profile/{username}/modal` возвращает 5xx → модалка показывает fallback-сообщение об ошибке.
 
 ### Checks
 
 | Check ID | Covers | How to check | Expected result | Evidence path |
 | --- | --- | --- | --- | --- |
-| `CHK-01` | `EC-01`..`EC-05`, `EC-07`, все SC-* | `rtk go test ./...` + Playwright E2E | Все тесты зелёные | CI run / локальный вывод |
+| `CHK-01` | `EC-01`..`EC-05`, `EC-07`, все SC-*, `NEG-04`, `NEG-05`, `NEG-06` | `rtk go test ./...` + Playwright E2E | Все тесты зелёные | CI run / локальный вывод |
 | `CHK-02` | `EC-06`, `NEG-01`, `NEG-02` | Playwright: загрузка невалидных файлов | Ошибки отображаются в UI | CI run / скриншоты |
 
 ### Test matrix
@@ -186,6 +190,8 @@ must_not_define:
 - `EVID-01` Зелёный CI run: Go Tests + E2E (Playwright) — все сценарии SC-01..SC-07.
 - `EVID-02` Playwright-тесты для NEG-01, NEG-02: файл превышает лимит и неверный формат → ошибка в UI.
 - `EVID-03` Eval Draft→DR (feature.md review) — accept, итерация 3 (self-check на trivial path fix после 2 evaluator итераций). 2026-05-03. evaluator agent
+- `EVID-04` Brief loop — accept, итерация 2. 2026-05-03. improve-loop.sh / evaluator agent
+- `EVID-05` Spec loop — accept, итерация 3 (self-check после 2 evaluator итераций). 2026-05-03. improve-loop.sh / evaluator agent
 
 ### Evidence contract
 
