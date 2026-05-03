@@ -13,7 +13,7 @@ audience: humans_and_agents
 
 | Gate | Форма | Outcome | Итерации | Date | EVID | Детали |
 |---|---|---|---|---|---|---|
-| Draft → Design Ready | evaluator agent | — | — | — | — | [DR-eval.md](DR-eval.md) |
+| Draft → Design Ready | evaluator agent | accept | 3 (2 eval + 1 self-check) | 2026-05-03 | EVID-03 | [DR-eval.md](DR-eval.md) |
 | Design Ready → Plan Ready | evaluator agent | — | — | — | — | [PR-eval.md](PR-eval.md) |
 | Plan Ready → Execution | human approval | — | — | — | — | — |
 | Execution → Done | CI + evaluator agent + AG-* | — | — | — | — | [Done-eval.md](Done-eval.md) |
