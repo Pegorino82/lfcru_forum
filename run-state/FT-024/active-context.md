@@ -1,8 +1,8 @@
 # Active Context: FT-024
 
-**Updated:** 2026-05-03
-**Stage:** impl
-**Status:** in_progress
+**Updated:** 2026-05-04
+**Stage:** verification
+**Status:** awaiting_review
 
 ## Completed
 
@@ -11,10 +11,13 @@
 - dr-approval: accept (2026-05-03)
 - plan (DR→PR eval): accept (2026-05-03) — EVID-06
 - pr-approval: accept (2026-05-03) — human confirm
+- impl: done (STEP-00..STEP-10), 2026-05-04
+- unit-tests: CI green (25305917589)
+- e2e-smoke: CI green 16/16 (25305917589)
 
 ## Current
 
-STEP-01: config AvatarsDir + миграция 013
+Ожидаем AG-01 — human review PR#15
 
 ## Blocked / Pending
 

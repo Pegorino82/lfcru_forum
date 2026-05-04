@@ -193,6 +193,7 @@ must_not_define:
 - `EVID-04` Brief loop — accept, итерация 2. 2026-05-03. improve-loop.sh / evaluator agent
 - `EVID-05` Spec loop — accept, итерация 3 (self-check после 2 evaluator итераций). 2026-05-03. improve-loop.sh / evaluator agent
 - `EVID-06` Eval DR→PR (implementation-plan.md review) — accept. 2026-05-03. evaluator agent
+- `EVID-07` CI run 25305917589 — Go Tests ✓, Lint ✓, E2E 16/16 ✓. 2026-05-04. GitHub Actions
 
 ### Evidence contract
 
