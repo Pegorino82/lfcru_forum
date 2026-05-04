@@ -35,6 +35,7 @@ Use case нужен для сценария, который живет на ур
 | `UC-001` | Публикация статьи | `active` | Admin, Moderator | `none` | `FT-008`, `FT-009` | 2026-04-13 |
 | `UC-002` | Управление структурой форума | `active` | Admin, Moderator | `none` | `FT-010` | 2026-04-13 |
 | `UC-003` | Управление пользователями | `active` | Admin, Moderator | `none` | `FT-011` | 2026-04-13 |
+| `UC-004` | Профиль пользователя | `active` | User, Guest | `none` | `FT-024` | 2026-05-04 |
 
 ## Naming
 

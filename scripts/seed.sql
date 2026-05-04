@@ -9,23 +9,23 @@ BEGIN;
 -- pass_hash = bcrypt("password123", cost=10)
 -- ============================================================
 INSERT INTO users (username, email, pass_hash, role) VALUES
-  ('lfcadmin',        'lfcadmin@lfc.ru',         convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'admin'),
-  ('klopp_fan',       'klopp@lfc.ru',             convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'user'),
-  ('ynwa_forever',    'ynwa@lfc.ru',              convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'user'),
-  ('redmen2024',      'redmen2024@mail.ru',        convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'user'),
-  ('kopite_proud',    'kopite@lfc.ru',             convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'user'),
-  ('liverpool_lad',   'livlad@gmail.com',          convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'user'),
-  ('anfield_rd',      'anfield@lfc.ru',            convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'moderator'),
-  ('gerrard_tribute', 'gerrard8@mail.ru',          convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'user'),
-  ('salah_king',      'salah11@lfc.ru',            convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'user'),
-  ('trent_goat',      'trent66@lfc.ru',            convert_to('$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'UTF8'), 'user')
+  ('lfcadmin',        'lfcadmin@lfc.ru',         convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'admin'),
+  ('klopp_fan',       'klopp@lfc.ru',             convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'user'),
+  ('ynwa_forever',    'ynwa@lfc.ru',              convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'user'),
+  ('redmen2024',      'redmen2024@mail.ru',        convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'user'),
+  ('kopite_proud',    'kopite@lfc.ru',             convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'user'),
+  ('liverpool_lad',   'livlad@gmail.com',          convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'user'),
+  ('anfield_rd',      'anfield@lfc.ru',            convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'moderator'),
+  ('gerrard_tribute', 'gerrard8@mail.ru',          convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'user'),
+  ('salah_king',      'salah11@lfc.ru',            convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'user'),
+  ('trent_goat',      'trent66@lfc.ru',            convert_to('$2a$10$CVn7GQ8E8BqTRNmBkI1ydekY7.UWuXWXvc5TXbLfnJEYdHQtZEoP6', 'UTF8'), 'user')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- НОВОСТИ (5 постов, текст 500–2500 символов)
 -- author_id берётся по username через подзапрос
 -- ============================================================
-INSERT INTO news (title, content, is_published, author_id, published_at) VALUES
+INSERT INTO news (title, content, status, author_id, published_at) VALUES
 
 (
   'Ливерпуль разгромил «Арсенал» в захватывающем матче Премьер-лиги',
@@ -38,7 +38,7 @@ INSERT INTO news (title, content, is_published, author_id, published_at) VALUES
 После игры главный тренер команды отметил слаженность действий полузащиты и высокую интенсивность прессинга. «Мы знали, что если будем работать коллективно, у нас будут моменты», — сказал он на пресс-конференции. Болельщики на «Энфилде» устроили стоячую овацию, и трибуны не смолкали ещё долго после финального свистка.
 
 «Ливерпуль» с этой победой укрепил позиции в верхней части таблицы и сохраняет серьёзные претензии на чемпионский титул.',
-  true, (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '1 day'
+  'published', (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '1 day'
 ),
 
 (
@@ -50,7 +50,7 @@ INSERT INTO news (title, content, is_published, author_id, published_at) VALUES
 Болельщики «Ливерпуля» давно считают Трента одним из лучших защитников в истории клуба. Его умение читать игру, врываться в атаку и создавать численное преимущество в финальной трети поля — отдельный инструмент в тактической системе «красных». Тренерский штаб регулярно разрабатывает специальные схемы с расчётом на его подключения.
 
 Это уже четвёртый раз в этом сезоне, когда Трент получает подобное индивидуальное признание. Всего за карьеру он собрал внушительную коллекцию командных и личных трофеев, выиграв с клубом чемпионат Англии, Лигу Чемпионов и Кубок Англии. Фанаты в социальных сетях взорвались волной поздравлений, хэштег #TrentAAOTW вышел в топ трендов Твиттера уже через час после объявления.',
-  true, (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '3 days'
+  'published', (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '3 days'
 ),
 
 (
@@ -64,7 +64,7 @@ INSERT INTO news (title, content, is_published, author_id, published_at) VALUES
 Спортивный директор клуба подчеркнул, что новое приобретение закрывает давно существующую позицию в составе. «Мы следили за ним больше двух лет. Это игрок с характером, техникой и желанием побеждать — именно то, что нужно нашей команде», — отметил он на пресс-конференции.
 
 Дебют нового игрока в составе «красных» ожидается уже на следующей неделе в матче Лиги Чемпионов.',
-  true, (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '5 days'
+  'published', (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '5 days'
 ),
 
 (
@@ -76,7 +76,7 @@ INSERT INTO news (title, content, is_published, author_id, published_at) VALUES
 Главная угроза со стороны «Реала» — темп контратак и индивидуальное мастерство нападающих. Тренерскому штабу «Ливерпуля» придётся найти баланс между агрессивным прессингом и надёжностью в обороне. Ключевым фактором станет первый гол: если «красные» забьют быстро, давление на гостей возрастёт многократно.
 
 Болельщики раскупили все билеты ещё за три дня до продажи финальной очереди. Ожидается, что фанаты создадут особую атмосферу с первых минут — флаги, баннеры и хоровое пение «You''ll Never Walk Alone» уже стали фирменным оружием «Энфилда» в европейских вечерах.',
-  true, (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '7 days'
+  'published', (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '7 days'
 ),
 
 (
@@ -88,7 +88,7 @@ INSERT INTO news (title, content, is_published, author_id, published_at) VALUES
 Директор академии выразил гордость достигнутыми результатами: «Наша задача — не только подготовить игроков для основной команды, но и воспитать настоящих профессионалов, которые разделяют ценности клуба. В этом сезоне ребята показали, что они понимают, что значит быть частью "Ливерпуля"».
 
 Клуб продолжает инвестировать в инфраструктуру академии: в этом году открылись два новых тренировочных поля с подогревом и современный медицинский центр. Программа скаутинга охватывает уже 23 страны, а в составе нескольких возрастных групп выступают представители разных континентов.',
-  true, (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '10 days'
+  'published', (SELECT id FROM users WHERE username = 'lfcadmin'), now() - interval '10 days'
 );
 
 -- ============================================================
