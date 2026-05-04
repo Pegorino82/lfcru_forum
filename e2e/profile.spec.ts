@@ -192,3 +192,50 @@ test('SC-03: владелец может загрузить аватар', async
   const avatarBlock = page.locator('#avatar-block');
   await expect(avatarBlock).toBeVisible();
 });
+
+// NEG-02 / SC-04: неподдерживаемый формат → 422, UI показывает ошибку
+test('NEG-02: неподдерживаемый формат аватара показывает ошибку', async ({ page }) => {
+  await login(page);
+  await page.goto(PROFILE_URL);
+
+  await expect(page.locator('[data-testid="avatar-upload"]')).toBeVisible();
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/avatar')),
+    page.locator('[data-testid="avatar-upload"] input[type=file]').setInputFiles({
+      name: 'file.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('not an image'),
+    }),
+  ]);
+
+  expect(response.status()).toBe(422);
+  await expect(page.locator('[data-testid="avatar-error"]')).toBeVisible();
+});
+
+// NEG-01: файл > 5 МБ → 413, UI показывает ошибку (мок ответа)
+test('NEG-01: файл больше 5 МБ показывает ошибку', async ({ page }) => {
+  await login(page);
+
+  await page.route('**/avatar', (route) => route.fulfill({
+    status: 413,
+    contentType: 'text/html',
+    body: '<div id="avatar-block"><p class="avatar-upload-error" data-testid="avatar-error">Файл слишком большой (максимум 5 МБ)</p></div>',
+  }));
+
+  await page.goto(PROFILE_URL);
+
+  await expect(page.locator('[data-testid="avatar-upload"]')).toBeVisible();
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/avatar')),
+    page.locator('[data-testid="avatar-upload"] input[type=file]').setInputFiles({
+      name: 'big.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('x'),
+    }),
+  ]);
+
+  expect(response.status()).toBe(413);
+  await expect(page.locator('[data-testid="avatar-error"]')).toBeVisible();
+});

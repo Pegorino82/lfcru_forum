@@ -111,7 +111,8 @@ func (h *Handler) UploadAvatar(c echo.Context) error {
 	}
 
 	if fileHeader.Size > maxAvatarBytes {
-		return c.String(http.StatusRequestEntityTooLarge, "Файл слишком большой (максимум 5 МБ)")
+		return c.HTML(http.StatusRequestEntityTooLarge,
+			`<div id="avatar-block"><p class="avatar-upload-error" data-testid="avatar-error">Файл слишком большой (максимум 5 МБ)</p></div>`)
 	}
 
 	src, err := fileHeader.Open()
@@ -132,7 +133,8 @@ func (h *Handler) UploadAvatar(c echo.Context) error {
 		case errors.Is(err, ErrForbidden):
 			return c.String(http.StatusForbidden, "Нет доступа")
 		case errors.Is(err, ErrUnsupportedFormat):
-			return c.String(http.StatusUnprocessableEntity, "Неподдерживаемый формат. Допустимы: JPEG, PNG, WebP")
+			return c.HTML(http.StatusUnprocessableEntity,
+				`<div id="avatar-block"><p class="avatar-upload-error" data-testid="avatar-error">Неподдерживаемый формат. Допустимы: JPEG, PNG, WebP</p></div>`)
 		default:
 			slog.Error("profile: save avatar", "username", username, "err", err)
 			return c.String(http.StatusInternalServerError, "Ошибка сохранения файла")

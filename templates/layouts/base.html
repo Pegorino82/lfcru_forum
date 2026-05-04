@@ -163,7 +163,7 @@
 
 // Allow HTMX to swap validation/conflict error responses from forms
 document.addEventListener('htmx:beforeSwap', function(evt) {
-    if (evt.detail.xhr.status === 422 || evt.detail.xhr.status === 409) {
+    if ([409, 413, 422].includes(evt.detail.xhr.status)) {
         evt.detail.shouldSwap = true;
         evt.detail.isError = false;
     }
