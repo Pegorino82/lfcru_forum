@@ -1,7 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
 import { E2E_USER_EMAIL, E2E_USER_PASSWORD } from './global-setup';
-import path from 'path';
-import fs from 'fs';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -173,19 +171,19 @@ test('SC-03: владелец может загрузить аватар', async
 
   await expect(page.locator('[data-testid="avatar-upload"]')).toBeVisible();
 
-  // Создаём минимальный PNG файл для загрузки
-  const pngPath = path.join('/tmp', 'e2e-avatar-test.png');
-  // 1x1 PNG (minimal valid PNG bytes)
-  const minimalPNG = Buffer.from(
-    '89504e470d0a1a0a0000000d49484452000000010000000108020000009001' +
-    '2e0000000c4944415478016360f8cf000000020001e221bc330000000049454e44ae426082',
-    'hex'
+  // 1×1 PNG (валидный, тот же что в articles/editor.spec.ts)
+  const validPNG = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+    'base64'
   );
-  fs.writeFileSync(pngPath, minimalPNG);
 
   const [response] = await Promise.all([
     page.waitForResponse((res) => res.url().includes('/avatar') && res.status() < 400),
-    page.locator('[data-testid="avatar-upload"] input[type=file]').setInputFiles(pngPath),
+    page.locator('[data-testid="avatar-upload"] input[type=file]').setInputFiles({
+      name: 'avatar.png',
+      mimeType: 'image/png',
+      buffer: validPNG,
+    }),
   ]);
 
   expect(response.status()).toBeLessThan(400);
@@ -193,7 +191,4 @@ test('SC-03: владелец может загрузить аватар', async
   // Аватар-блок обновился — либо img, либо инициалы
   const avatarBlock = page.locator('#avatar-block');
   await expect(avatarBlock).toBeVisible();
-
-  // Уборка
-  fs.unlinkSync(pngPath);
 });
