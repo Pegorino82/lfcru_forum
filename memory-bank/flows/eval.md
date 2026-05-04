@@ -116,24 +116,9 @@ EVID-XX: Eval [gate-name] — accept. YYYY-MM-DD. [форма: self-check / eval
 
 ### Draft → Design Ready
 
-Форма: **self-check агента** перед переводом `delivery_status`.
+Форма: **brief-loop + spec-loop (evaluator agents)**. Self-check не нужен — все критерии этого gate покрыты loops: REQ-*/NS-* → brief-loop, SC-*/CHK-*/EVID-* → spec-loop.
 
-```
-REQ coverage:
-- [ ] каждый REQ-* описывает конкретное поведение, а не намерение
-- [ ] каждый REQ-* однозначен: два независимых агента прочитают его одинаково
-- [ ] нет REQ-*, дублирующего другой
-
-SC coverage:
-- [ ] каждый REQ-* прослеживается к ≥ 1 SC-*
-- [ ] SC-* описывает наблюдаемый результат, а не внутреннюю реализацию
-- [ ] SC-* читается как: Given / When / Then (или эквивалент)
-
-Verify readiness:
-- [ ] каждый CHK-* имеет команду или ручную процедуру (не "проверить вручную" без инструкции)
-- [ ] каждый EVID-* имеет конкретный path contract (не "где-нибудь")
-- [ ] NS-* достаточно, чтобы агент не додумывал scope
-```
+После того как оба loop вернули `accept`, builder создаёт `evals/DR-eval.md` как gate-closing artifact — без повторной оценки. Файл содержит ссылки на результаты loops (`.review-results/FT-XXX/review-brief-NN.md`, `review-spec-NN.md`) и обновляет `evals/summary.md`.
 
 ### Design Ready → Plan Ready
 

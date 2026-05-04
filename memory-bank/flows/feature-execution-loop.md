@@ -86,6 +86,9 @@ flowchart TD
 
 ### 3. HITL — Design Ready gate
 
+- Для `short.md`: создать `evals/DR-eval.md` как gate-closing artifact (ссылки на `review-brief-NN.md` и `review-spec-NN.md`), обновить `evals/summary.md`
+- Для `large.md`: запустить evaluator agent (DR gate из `eval.md`) → если accept, evaluator создаёт `evals/DR-eval.md` и обновляет `evals/summary.md`
+
 **⛔ STOP.** Показать `feature.md` человеку. Ждать явного подтверждения перехода в Design Ready.
 
 - **State update:** `active-context.md` → stage: awaiting-dr-approval

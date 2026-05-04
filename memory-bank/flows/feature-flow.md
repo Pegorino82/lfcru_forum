@@ -94,7 +94,7 @@ flowchart LR
 > 4. Если `revise` — исправь `feature.md` и перезапусти (max 2 итерации, после — escalate к человеку)
 > 5. Если `accept` — evaluator записывает EVID-* в `feature.md`, создаёт `evals/DR-eval.md` по шаблону `templates/feature/evals/gate-eval.md` и обновляет `evals/summary.md`; показывай документ человеку
 >
-> Для `short.md` — self-check достаточен; результат фиксируется в `evals/DR-eval.md` самим агентом.
+> Для `short.md` — brief-loop + spec-loop (evaluator agents) достаточны; self-check не нужен. После accept обоих loops builder создаёт `evals/DR-eval.md` как gate-closing artifact со ссылками на результаты loops и обновляет `evals/summary.md`.
 
 - [ ] `feature.md` → `status: active`
 - [ ] секция `What` содержит ≥ 1 `REQ-*` и ≥ 1 `NS-*`
