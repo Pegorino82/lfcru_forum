@@ -21,6 +21,7 @@ import (
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
 	"github.com/Pegorino82/lfcru_forum/internal/match"
 	"github.com/Pegorino82/lfcru_forum/internal/news"
+	"github.com/Pegorino82/lfcru_forum/internal/profile"
 	"github.com/Pegorino82/lfcru_forum/internal/ratelimit"
 	"github.com/Pegorino82/lfcru_forum/internal/session"
 	"github.com/Pegorino82/lfcru_forum/internal/tmpl"
@@ -101,6 +102,7 @@ func main() {
 
 	// Статические файлы
 	e.Static("/storage/news", cfg.UploadsDir)
+	e.Static("/storage/avatars", cfg.AvatarsDir)
 	e.Static("/static", "static")
 
 	// Хэндлеры и маршруты
@@ -131,6 +133,10 @@ func main() {
 	// Auth-only routes
 	authGroup := e.Group("", auth.RequireAuth)
 	authGroup.POST("/forum/topics/:id/posts", forumHandler.CreatePost)
+
+	// Profile routes
+	profileSvc := profile.NewService(userRepo, topicRepo, commentRepo)
+	profile.NewHandler(profileSvc, cfg.AvatarsDir).RegisterRoutes(e)
 
 	// Admin routes
 	imagesRepo := admin.NewImagesRepo(pool)

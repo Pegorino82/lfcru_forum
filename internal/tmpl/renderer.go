@@ -2,6 +2,7 @@ package tmpl
 
 import (
 	"fmt"
+	"hash/fnv"
 	"html/template"
 	"io"
 	"io/fs"
@@ -15,6 +16,29 @@ import (
 var ruMonths = [12]string{
 	"января", "февраля", "марта", "апреля", "мая", "июня",
 	"июля", "августа", "сентября", "октября", "ноября", "декабря",
+}
+
+// avatarPalette — фиксированная палитра цветов для fallback-аватаров.
+// Порядок не меняется: изменение ломает SC-06 (стабильность цвета).
+var avatarPalette = [...]string{
+	"#e53935", "#d81b60", "#8e24aa", "#5e35b1",
+	"#3949ab", "#1e88e5", "#00897b", "#43a047",
+	"#f4511e", "#fb8c00",
+}
+
+func pluralRu(n int, form1, form2, form5 string) string {
+	n = n % 100
+	if n >= 11 && n <= 19 {
+		return form5
+	}
+	switch n % 10 {
+	case 1:
+		return form1
+	case 2, 3, 4:
+		return form2
+	default:
+		return form5
+	}
 }
 
 var funcMap = template.FuncMap{
@@ -45,6 +69,51 @@ var funcMap = template.FuncMap{
 	},
 	"add": func(a, b int) int { return a + b },
 	"sub": func(a, b int) int { return a - b },
+	// avatarInitials возвращает 1–2 буквы для fallback-аватара.
+	// "John Doe" → "JD"; "john" → "JO"; "x" → "X".
+	"avatarInitials": func(username string) string {
+		words := strings.Fields(username)
+		if len(words) >= 2 {
+			r1 := []rune(words[0])
+			r2 := []rune(words[1])
+			if len(r1) > 0 && len(r2) > 0 {
+				return strings.ToUpper(string(r1[0]) + string(r2[0]))
+			}
+		}
+		r := []rune(username)
+		if len(r) >= 2 {
+			return strings.ToUpper(string(r[:2]))
+		}
+		if len(r) == 1 {
+			return strings.ToUpper(string(r))
+		}
+		return "?"
+	},
+	// avatarColor детерминированно выбирает цвет из палитры по имени пользователя.
+	"avatarColor": func(username string) string {
+		h := fnv.New32a()
+		h.Write([]byte(username))
+		return avatarPalette[h.Sum32()%uint32(len(avatarPalette))]
+	},
+	// relativeTime возвращает относительное время на русском языке.
+	"relativeTime": func(t time.Time) string {
+		d := time.Since(t)
+		switch {
+		case d < time.Minute:
+			return "только что"
+		case d < time.Hour:
+			mins := int(d.Minutes())
+			return fmt.Sprintf("%d %s назад", mins, pluralRu(mins, "минуту", "минуты", "минут"))
+		case d < 24*time.Hour:
+			hours := int(d.Hours())
+			return fmt.Sprintf("%d %s назад", hours, pluralRu(hours, "час", "часа", "часов"))
+		case d < 48*time.Hour:
+			return "вчера"
+		default:
+			days := int(d.Hours() / 24)
+			return fmt.Sprintf("%d %s назад", days, pluralRu(days, "день", "дня", "дней"))
+		}
+	},
 	// paginate returns a compact slice of page numbers for navigation.
 	// -1 represents an ellipsis gap.
 	"paginate": func(current, total int) []int {

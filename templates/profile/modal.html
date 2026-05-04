@@ -1,0 +1,74 @@
+{{define "templates/profile/modal.html"}}
+<div
+  id="profile-modal-overlay"
+  style="display:flex;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.5);align-items:center;justify-content:center"
+  x-data="{}"
+  @click.self="$el.remove()"
+  @keydown.escape.window="$el.remove()"
+  data-testid="profile-modal-overlay"
+>
+  <div
+    class="profile-modal"
+    data-testid="profile-modal"
+    style="background:#fff;border-radius:8px;padding:2rem;max-width:360px;width:90%;position:relative;box-shadow:0 8px 32px rgba(0,0,0,0.18)"
+    role="dialog"
+    aria-label="Профиль {{.Profile.User.Username}}"
+    x-init="$el.focus()"
+    tabindex="-1"
+  >
+    <button
+      @click="$el.closest('#profile-modal-overlay').remove()"
+      style="position:absolute;top:0.75rem;right:0.75rem;background:none;border:none;font-size:1.25rem;cursor:pointer;color:#666;line-height:1"
+      aria-label="Закрыть"
+      data-testid="modal-close"
+    >✕</button>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center">
+      {{if .Profile.User.AvatarURL}}
+        <img
+          src="{{deref .Profile.User.AvatarURL}}"
+          alt="Аватар {{.Profile.User.Username}}"
+          style="width:72px;height:72px;border-radius:50%;object-fit:cover"
+          data-testid="modal-avatar-img"
+        >
+      {{else}}
+        <div
+          style="width:72px;height:72px;border-radius:50%;background:{{avatarColor .Profile.User.Username}};display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;color:#fff"
+          data-color="{{avatarColor .Profile.User.Username}}"
+          data-testid="modal-avatar-initials"
+        >{{avatarInitials .Profile.User.Username}}</div>
+      {{end}}
+
+      <div>
+        <div style="font-size:1.25rem;font-weight:700" data-testid="modal-username">{{.Profile.User.Username}}</div>
+        <div style="font-size:0.85rem;color:#888;margin-top:0.25rem">
+          На сайте с {{ruDate .Profile.User.CreatedAt}}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:2rem">
+        <div style="text-align:center">
+          <div style="font-size:1.25rem;font-weight:700;color:#c8102e" data-testid="modal-post-count">{{.Profile.PostCount}}</div>
+          <div style="font-size:0.8rem;color:#888">постов</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:1.25rem;font-weight:700;color:#c8102e" data-testid="modal-comment-count">{{.Profile.CommentCount}}</div>
+          <div style="font-size:0.8rem;color:#888">комментариев</div>
+        </div>
+      </div>
+
+      {{if .Profile.LastActivityAt}}
+        <div style="font-size:0.85rem;color:#888">
+          Последняя активность: {{relativeTime .Profile.LastActivityAt}}
+        </div>
+      {{end}}
+
+      <a
+        href="/profile/{{.Profile.User.Username}}"
+        style="display:inline-block;margin-top:0.5rem;padding:0.5rem 1.5rem;background:#c8102e;color:#fff;border-radius:4px;text-decoration:none;font-weight:600;font-size:0.9rem"
+        data-testid="modal-open-profile"
+      >Открыть профиль</a>
+    </div>
+  </div>
+</div>
+{{end}}

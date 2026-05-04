@@ -3,6 +3,7 @@ package comment
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -119,6 +120,33 @@ func (r *Repo) Create(ctx context.Context, c *Comment) (int64, error) {
 		return 0, err
 	}
 	return id, nil
+}
+
+// CountByUserID возвращает количество комментариев пользователя.
+func (r *Repo) CountByUserID(ctx context.Context, userID int64) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM news_comments WHERE author_id = $1
+	`, userID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// LastCommentByUserID возвращает время последнего комментария пользователя, или nil если комментариев нет.
+func (r *Repo) LastCommentByUserID(ctx context.Context, userID int64) (*time.Time, error) {
+	var t time.Time
+	err := r.pool.QueryRow(ctx, `
+		SELECT created_at FROM news_comments WHERE author_id = $1 ORDER BY created_at DESC LIMIT 1
+	`, userID).Scan(&t)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
 }
 
 func (r *Repo) insertComment(ctx context.Context, c *Comment) (int64, error) {

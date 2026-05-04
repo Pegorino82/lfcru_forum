@@ -1,0 +1,139 @@
+{{define "templates/profile/page.html"}}
+{{template "templates/layouts/base.html" .}}
+{{end}}
+
+{{define "content"}}
+<style>
+.profile-page { padding: 1rem 0; }
+.profile-header {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 2rem;
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+.profile-avatar {
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-initials {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-info { flex: 1; }
+.profile-username { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; }
+.profile-meta { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
+.profile-stats {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+.profile-stat { text-align: center; }
+.profile-stat-value { font-size: 1.5rem; font-weight: 700; color: #c8102e; }
+.profile-stat-label { font-size: 0.85rem; color: #666; }
+.avatar-upload {
+  margin-top: 1rem;
+}
+.avatar-upload label {
+  display: inline-block;
+  padding: 0.4rem 1rem;
+  background: #c8102e;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.avatar-upload input[type=file] { display: none; }
+.avatar-upload-error { color: #721c24; font-size: 0.875rem; margin-top: 0.5rem; }
+.profile-empty { color: #888; font-style: italic; }
+</style>
+
+<div class="profile-page" data-testid="profile-page">
+  <h1>Профиль: {{.Profile.User.Username}}</h1>
+
+  <div class="profile-header">
+    {{template "avatar-block" .}}
+
+    <div class="profile-info">
+      <div class="profile-username">{{.Profile.User.Username}}</div>
+      <div class="profile-meta">
+        На сайте с {{ruDate .Profile.User.CreatedAt}}
+        {{if .Profile.LastActivityAt}}
+          · Последняя активность {{relativeTime .Profile.LastActivityAt}}
+        {{end}}
+      </div>
+
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <div class="profile-stat-value">{{.Profile.PostCount}}</div>
+          <div class="profile-stat-label">постов</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value">{{.Profile.CommentCount}}</div>
+          <div class="profile-stat-label">комментариев</div>
+        </div>
+      </div>
+
+      {{if .IsOwner}}
+      <div class="avatar-upload" data-testid="avatar-upload">
+        <form
+          hx-post="/profile/{{.Profile.User.Username}}/avatar"
+          hx-target="#avatar-block"
+          hx-swap="outerHTML"
+          hx-encoding="multipart/form-data"
+          enctype="multipart/form-data"
+        >
+          <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
+          <label>
+            Загрузить аватар
+            <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp"
+                   onchange="this.closest('form').requestSubmit()">
+          </label>
+        </form>
+        <div id="avatar-upload-error" class="avatar-upload-error" style="display:none"></div>
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  {{if eq .Profile.PostCount 0}}
+    <p class="profile-empty" data-testid="no-posts">Пользователь ещё не написал ни одного поста.</p>
+  {{end}}
+  {{if eq .Profile.CommentCount 0}}
+    <p class="profile-empty" data-testid="no-comments">Пользователь ещё не оставил ни одного комментария.</p>
+  {{end}}
+</div>
+{{end}}
+
+{{define "avatar-block"}}
+<div id="avatar-block">
+  {{if .Profile.User.AvatarURL}}
+    <div class="profile-avatar">
+      <img src="{{deref .Profile.User.AvatarURL}}" alt="Аватар {{.Profile.User.Username}}" data-testid="avatar-img">
+    </div>
+  {{else}}
+    <div class="avatar-initials" style="background:{{avatarColor .Profile.User.Username}}" data-testid="avatar-initials">
+      {{avatarInitials .Profile.User.Username}}
+    </div>
+  {{end}}
+</div>
+{{end}}
