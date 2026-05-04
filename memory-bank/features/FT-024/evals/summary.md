@@ -3,7 +3,7 @@ title: "FT-024: Eval Summary"
 doc_kind: feature
 doc_function: eval-summary
 ft_id: FT-024
-status: active
+status: final
 audience: humans_and_agents
 ---
 
@@ -16,9 +16,9 @@ audience: humans_and_agents
 | Draft → Design Ready | evaluator agent | accept | 3 (2 eval + 1 self-check) | 2026-05-03 | EVID-03 | [DR-eval.md](DR-eval.md) |
 | Design Ready → Plan Ready | evaluator agent | accept | 3 (2 eval + 1 self-check) | 2026-05-03 | EVID-06 | [PR-eval.md](PR-eval.md) |
 | Plan Ready → Execution | human approval | — | — | — | — | — |
-| Execution → Done | CI + evaluator agent + AG-* | — | — | — | — | [Done-eval.md](Done-eval.md) |
+| Execution → Done | CI + evaluator agent | accept | 2 | 2026-05-04 | EVID-07, EVID-08 | [Done-eval.md](Done-eval.md) |
 
-> Заполнять по мере прохождения gates. При Done: обновить `status: final` в frontmatter.
+> При Done: обновить `status: final` в frontmatter.
 
 ## Notes
 
