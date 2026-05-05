@@ -27,7 +27,8 @@ func (r *Repo) ListByNewsID(ctx context.Context, newsID int64) ([]CommentView, e
 			c.parent_author_snapshot,
 			c.parent_content_snapshot,
 			c.content,
-			c.created_at
+			c.created_at,
+			u.avatar_url
 		FROM news_comments c
 		JOIN users u ON u.id = c.author_id
 		WHERE c.news_id = $1
@@ -46,6 +47,7 @@ func (r *Repo) ListByNewsID(ctx context.Context, newsID int64) ([]CommentView, e
 			&cv.ID, &cv.NewsID, &cv.AuthorID, &cv.AuthorUsername,
 			&cv.ParentID, &cv.ParentAuthor, &cv.ParentSnippet,
 			&cv.Content, &cv.CreatedAt,
+			&cv.AuthorAvatarURL,
 		); err != nil {
 			return nil, err
 		}

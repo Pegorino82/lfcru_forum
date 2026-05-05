@@ -5,6 +5,8 @@ const E2E_SECTION_ID = 9999;
 const E2E_TOPIC_ID = 9999;
 const E2E_ADMIN_ID = 9998;
 const E2E_ARTICLE_ID = 9998;
+const E2E_NEWS_ID = 9997;
+const E2E_COMMENT_ID = 9997;
 
 export default async function globalTeardown() {
   const client = new Client({
@@ -24,6 +26,8 @@ export default async function globalTeardown() {
     await client.query('DELETE FROM users WHERE id = $1', [E2E_USER_ID]);
     // E2E article images удаляются каскадно вместе со статьёй
     await client.query('DELETE FROM news WHERE id = $1', [E2E_ARTICLE_ID]);
+    // Комментарии удаляются каскадно вместе с новостью
+    await client.query('DELETE FROM news WHERE id = $1', [E2E_NEWS_ID]);
     await client.query('DELETE FROM users WHERE id = $1', [E2E_ADMIN_ID]);
   } finally {
     await client.end();

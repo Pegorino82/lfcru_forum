@@ -1,7 +1,27 @@
 {{define "post"}}
 <article class="post" id="post-{{.ID}}">
   <div class="post-author">
-    <span>{{.AuthorUsername}}</span>
+    <div style="display:flex;align-items:center;gap:0.5rem;">
+      {{if .AuthorAvatarURL}}
+      <a href="/profile/{{.AuthorUsername}}"
+         hx-get="/profile/{{.AuthorUsername}}/modal"
+         hx-target="#profile-modal-container"
+         hx-swap="innerHTML"
+         class="avatar-sm"
+         data-testid="post-avatar"
+         title="{{.AuthorUsername}}"><img src="{{deref .AuthorAvatarURL}}" alt="{{.AuthorUsername}}"></a>
+      {{else}}
+      <a href="/profile/{{.AuthorUsername}}"
+         hx-get="/profile/{{.AuthorUsername}}/modal"
+         hx-target="#profile-modal-container"
+         hx-swap="innerHTML"
+         class="avatar-sm"
+         style="background:{{avatarColor .AuthorUsername}}"
+         data-testid="post-avatar"
+         title="{{.AuthorUsername}}"><span data-testid="post-avatar-initials">{{avatarInitials .AuthorUsername}}</span></a>
+      {{end}}
+      <span>{{.AuthorUsername}}</span>
+    </div>
   </div>
   <time class="post-date" datetime="{{.CreatedAt.Format "2006-01-02T15:04:05Z07:00"}}">
     {{.CreatedAt.Format "02.01.2006 15:04"}}
