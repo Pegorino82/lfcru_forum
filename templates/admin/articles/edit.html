@@ -143,14 +143,6 @@
     </div>
     {{end}}
   </div>
-  <form hx-post="/admin/articles/{{.Article.ID}}/images"
-        hx-target="#images-list" hx-swap="beforeend"
-        hx-encoding="multipart/form-data"
-        style="margin-top:1rem;">
-    <input type="hidden" name="_csrf" value="{{.CSRFToken}}">
-    <input type="file" name="image" accept="image/jpeg,image/png,image/webp">
-    <button type="submit" class="btn btn-secondary" style="margin-left:0.5rem;">Загрузить</button>
-  </form>
 </section>
 {{end}}
 {{end}}

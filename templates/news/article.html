@@ -12,6 +12,9 @@
   .article-title { font-size: 1.75rem; margin-bottom: .5rem; }
   .article-meta { color: #666; font-size: .875rem; margin-bottom: 1.5rem; }
   .article-body { line-height: 1.7; }
+  .article-body figure { margin: 1rem 0; text-align: center; }
+  .article-body figure img { width: 100%; height: auto; display: block; border-radius: 4px; }
+  .article-body figcaption { font-size: 0.875rem; color: #666; margin-top: 0.4rem; }
 
   .comments { background: #fff; border-radius: 6px; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .comments-title { font-size: 1.25rem; margin-bottom: 1.5rem; border-bottom: 2px solid #c8102e; padding-bottom: .5rem; }
@@ -61,15 +64,6 @@
   </p>
   {{end}}
   <div class="article-body">{{.ContentHTML}}</div>
-  {{if .Images}}
-  <div class="article-images" style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:1rem;">
-    {{range .Images}}
-    <img src="/storage/news/{{.Filename}}"
-         alt=""
-         style="aspect-ratio:16/9;object-fit:cover;width:100%;border-radius:4px;">
-    {{end}}
-  </div>
-  {{end}}
 </article>
 
 {{if not .IsPreview}}
