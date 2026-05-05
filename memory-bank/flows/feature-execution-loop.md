@@ -64,23 +64,17 @@ flowchart TD
 
 ### 1. Brief Improve Loop
 
-```bash
-./scripts/improve-loop.sh \
-  memory-bank/flows/templates/prompts/brief-loop.md \
-  memory-bank/features/FT-XXX/feature.md
-```
+> **Агент:** запускать через **Agent tool** с инстанцированным промптом из `memory-bank/flows/templates/prompts/brief-loop.md`. **Не использовать** `improve-loop.sh` — скрипт вызывает `claude --print` изнутри сессии, что приводит к зависанию. `improve-loop.sh` предназначен только для ручного/CI запуска из терминала.
 
+- Инстанцировать промпт: заменить `{{ARTIFACT_PATH}}`, `{{FT_ID}}`, `{{DATE}}` — запустить через Agent tool
 - Итерации до `accept` (max 2, затем escalate)
 - **State update:** `stage-log.md` строка `brief-loop` → done/escalated
 
 ### 2. Spec Improve Loop
 
-```bash
-./scripts/improve-loop.sh \
-  memory-bank/flows/templates/prompts/spec-loop.md \
-  memory-bank/features/FT-XXX/feature.md
-```
+> **Агент:** аналогично §1 — через **Agent tool** с промптом из `memory-bank/flows/templates/prompts/spec-loop.md`. Не через скрипт.
 
+- Инстанцировать промпт: заменить `{{ARTIFACT_PATH}}`, `{{FT_ID}}`, `{{DATE}}` — запустить через Agent tool
 - Итерации до `accept` (max 2, затем escalate)
 - **State update:** `stage-log.md` строка `spec-loop` → done/escalated
 

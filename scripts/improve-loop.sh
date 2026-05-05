@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # improve-loop.sh — runner для brief/spec improve loop
 #
+# ⚠️  ТОЛЬКО для ручного/CI запуска из терминала.
+#     Изнутри агентской сессии Claude Code использовать Agent tool
+#     с промптом из memory-bank/flows/templates/prompts/ —
+#     запуск этого скрипта из сессии вызывает зависание (рекурсивный claude --print).
+#
 # Использование:
 #   ./scripts/improve-loop.sh <prompt-file> <artifact-path>
 #
