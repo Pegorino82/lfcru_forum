@@ -15,7 +15,6 @@ const Figure = Node.create({
 
 const Figcaption = Node.create({
   name: 'figcaption',
-  group: 'block',
   content: 'inline*',
   parseHTML() { return [{ tag: 'figcaption' }] },
   renderHTML() { return ['figcaption', 0] },
