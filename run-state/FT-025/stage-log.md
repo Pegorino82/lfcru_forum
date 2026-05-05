@@ -7,8 +7,8 @@
 | dr-approval  | done        | approved  | 2026-05-04 | — |
 | plan         | done        | accept    | 2026-05-05 | .review-results/FT-025/review-implementation-plan-02.md |
 | pr-approval  | done        | approved  | 2026-05-05 | — |
-| impl         | in-progress | —         | —          | — |
-| unit-tests   | pending     | —         | —          | — |
-| e2e-smoke    | pending     | —         | —          | — |
-| verification | pending     | —         | —          | — |
-| closure      | pending     | —         | —          | — |
+| impl         | done        | accept    | 2026-05-05 | 69f8a21 |
+| unit-tests   | done        | pass      | 2026-05-05 | go test ./... green |
+| e2e-smoke    | done        | pass      | 2026-05-05 | 22/22 green |
+| verification | done        | pass      | 2026-05-05 | CI green, PR merged |
+| closure      | done        | —         | 2026-05-05 | — |

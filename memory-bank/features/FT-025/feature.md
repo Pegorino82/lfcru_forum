@@ -6,8 +6,8 @@ purpose: "Отображение аватарок пользователей в 
 derived_from:
   - ../../domain/problem.md
   - ../../domain/frontend.md
-status: active
-delivery_status: in_progress
+status: final
+delivery_status: done
 audience: humans_and_agents
 must_not_define:
   - implementation_sequence

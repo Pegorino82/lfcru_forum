@@ -5,7 +5,7 @@ doc_function: derived
 purpose: "Execution-план реализации FT-025 — отображение аватарок в header, постах форума и комментариях к новостям."
 derived_from:
   - feature.md
-status: active
+status: final
 audience: humans_and_agents
 must_not_define:
   - ft_025_scope
