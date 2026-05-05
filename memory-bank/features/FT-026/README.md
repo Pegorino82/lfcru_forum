@@ -7,7 +7,7 @@ derived_from:
   - ../../domain/problem.md
   - ../FT-023/feature.md
 status: active
-delivery_status: in_progress
+delivery_status: done
 audience: humans_and_agents
 ---
 
@@ -102,5 +102,5 @@ Playwright: на странице `/admin/articles/new` и `/admin/articles/:id/
 |---|---|
 | Trello | <https://trello.com/c/nFKBN6Sj> |
 | PR | <https://github.com/Pegorino82/lfcru_forum/pull/17> |
-| Коммит фикса | TBD |
-| Regression-тесты | TBD |
+| Коммит фикса | d3f67db (merge) |
+| Regression-тесты | E2E CI pass — Pegorino82/lfcru_forum#17 |
