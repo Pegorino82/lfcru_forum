@@ -29,7 +29,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: lfcru
     volumes:
-      - ./.docker/postgres-data:/var/lib/postgresql/data
+      - ~/.local/share/lfcru/postgres-data:/var/lib/postgresql/data
       - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d lfcru"]
