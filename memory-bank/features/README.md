@@ -51,6 +51,7 @@ audience: humans_and_agents
 | [FT-023](FT-023/) | WYSIWYG-редактор статей | `done` |
 | [FT-024](FT-024/) | Профиль пользователя (quick view + страница + аватар) | `done` |
 | [FT-025](FT-025/) | Отображение аватарок пользователей | `planned` |
+| [FT-026](FT-026/) | fix: фиксы TipTap после FT-023 (изображения + UX) | `planned` |
 
 ## Naming
 
