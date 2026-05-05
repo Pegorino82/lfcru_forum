@@ -100,7 +100,7 @@ Playwright: на странице `/admin/articles/new` и `/admin/articles/:id/
 
 | Поле | Значение |
 |---|---|
-| Trello | https://trello.com/c/nFKBN6Sj |
-| PR | https://github.com/Pegorino82/lfcru_forum/pull/17 |
+| Trello | <https://trello.com/c/nFKBN6Sj> |
+| PR | <https://github.com/Pegorino82/lfcru_forum/pull/17> |
 | Коммит фикса | TBD |
 | Regression-тесты | TBD |
