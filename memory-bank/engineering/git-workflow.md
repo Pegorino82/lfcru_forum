@@ -48,11 +48,13 @@ audience: humans_and_agents
 **Создание** (выполняется на Bootstrap — сразу после обсуждения, до создания feature-файлов):
 
 ```bash
-# из корня основного репозитория
-git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug
-cd ../lfcru_forum-FT-XXX
+# из корня основного репозитория — всё одной цепочкой
+git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug && \
+cd ../lfcru_forum-FT-XXX && \
 gh pr create --repo Pegorino82/lfcru_forum --draft --title "[WIP][FT-XXX] Краткое описание" --body "..."
 ```
+
+`gh pr create` выполняется **внутри worktree**, где HEAD уже `feat/FT-XXX-slug` — `gh` определяет ветку автоматически. Запускать `gh pr create` из основного репозитория (`main`) нельзя: gh не сможет определить head branch.
 
 Draft PR создаётся сразу — до первого коммита с кодом.
 
@@ -79,6 +81,6 @@ git branch -d feat/FT-XXX-slug
 **Правила:**
 
 1. `git push` — только в `origin`. Никогда в `upstream`.
-2. `gh pr create` — всегда с явным флагом `--repo Pegorino82/lfcru_forum`. Без этого флага `gh` может использовать дефолтный репозиторий из контекста (который может быть чужим).
-3. Перед `gh pr create` обязательно выполнить `gh repo view` и убедиться, что контекст — `Pegorino82/lfcru_forum`.
-4. `gh pr`, `gh run`, `gh issue` без `--repo` — допустимы только после проверки контекста через `gh repo view`.
+2. `gh pr create` — всегда с явным флагом `--repo Pegorino82/lfcru_forum` и только из worktree-директории (где HEAD = feature-ветка).
+3. `gh repo view` в worktree-директории ненадёжен — может вернуть чужой репозиторий. Не использовать как проверку перед `gh pr create`. Флаг `--repo Pegorino82/lfcru_forum` достаточен.
+4. `gh pr`, `gh run`, `gh issue` без `--repo` — допустимы только из основного репозитория (`main`).

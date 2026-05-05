@@ -26,7 +26,7 @@
   .comment-quote a:hover { text-decoration: underline; }
   .quote-deleted { color: #999; font-style: italic; }
 
-  .comment-header { display: flex; gap: 1rem; align-items: baseline; margin-bottom: .25rem; }
+  .comment-header { display: flex; gap: 0.5rem; align-items: center; margin-bottom: .25rem; }
   .comment-author { color: #c8102e; }
   .comment-time { color: #999; font-size: .8rem; }
   .comment-body { line-height: 1.6; white-space: pre-wrap; }
@@ -124,6 +124,24 @@
     {{end}}
 
     <div class="comment-header">
+      {{if .AuthorAvatarURL}}
+      <a href="/profile/{{.AuthorUsername}}"
+         hx-get="/profile/{{.AuthorUsername}}/modal"
+         hx-target="#profile-modal-container"
+         hx-swap="innerHTML"
+         class="avatar-sm"
+         data-testid="comment-avatar"
+         title="{{.AuthorUsername}}"><img src="{{deref .AuthorAvatarURL}}" alt="{{.AuthorUsername}}"></a>
+      {{else}}
+      <a href="/profile/{{.AuthorUsername}}"
+         hx-get="/profile/{{.AuthorUsername}}/modal"
+         hx-target="#profile-modal-container"
+         hx-swap="innerHTML"
+         class="avatar-sm"
+         style="background:{{avatarColor .AuthorUsername}}"
+         data-testid="comment-avatar"
+         title="{{.AuthorUsername}}"><span data-testid="comment-avatar-initials">{{avatarInitials .AuthorUsername}}</span></a>
+      {{end}}
       <a href="/profile/{{.AuthorUsername}}"
          hx-get="/profile/{{.AuthorUsername}}/modal"
          hx-target="#profile-modal-container"

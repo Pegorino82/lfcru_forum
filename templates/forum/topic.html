@@ -259,11 +259,31 @@ a.post-quote:hover {
   {{range .Posts}}
   <div class="post" id="post-{{.ID}}">
     <div class="post-author">
-      <a href="/profile/{{.AuthorUsername}}"
-         hx-get="/profile/{{.AuthorUsername}}/modal"
-         hx-target="#profile-modal-container"
-         hx-swap="innerHTML"
-         class="profile-link">{{.AuthorUsername}}</a>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        {{if .AuthorAvatarURL}}
+        <a href="/profile/{{.AuthorUsername}}"
+           hx-get="/profile/{{.AuthorUsername}}/modal"
+           hx-target="#profile-modal-container"
+           hx-swap="innerHTML"
+           class="avatar-sm"
+           data-testid="post-avatar"
+           title="{{.AuthorUsername}}"><img src="{{deref .AuthorAvatarURL}}" alt="{{.AuthorUsername}}"></a>
+        {{else}}
+        <a href="/profile/{{.AuthorUsername}}"
+           hx-get="/profile/{{.AuthorUsername}}/modal"
+           hx-target="#profile-modal-container"
+           hx-swap="innerHTML"
+           class="avatar-sm"
+           style="background:{{avatarColor .AuthorUsername}}"
+           data-testid="post-avatar"
+           title="{{.AuthorUsername}}"><span data-testid="post-avatar-initials">{{avatarInitials .AuthorUsername}}</span></a>
+        {{end}}
+        <a href="/profile/{{.AuthorUsername}}"
+           hx-get="/profile/{{.AuthorUsername}}/modal"
+           hx-target="#profile-modal-container"
+           hx-swap="innerHTML"
+           class="profile-link">{{.AuthorUsername}}</a>
+      </div>
       {{if $.CanReply}}
       <button type="button" class="reply-btn"
               @click="replyTo = (replyTo === {{.ID}}) ? null : {{.ID}}">Ответить</button>

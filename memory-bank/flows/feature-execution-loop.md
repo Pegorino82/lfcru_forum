@@ -86,6 +86,9 @@ flowchart TD
 
 ### 3. HITL — Design Ready gate
 
+- Для `short.md`: создать `evals/DR-eval.md` как gate-closing artifact (ссылки на `review-brief-NN.md` и `review-spec-NN.md`), обновить `evals/summary.md`
+- Для `large.md`: запустить evaluator agent (DR gate из `eval.md`) → если accept, evaluator создаёт `evals/DR-eval.md` и обновляет `evals/summary.md`
+
 **⛔ STOP.** Показать `feature.md` человеку. Ждать явного подтверждения перехода в Design Ready.
 
 - **State update:** `active-context.md` → stage: awaiting-dr-approval
@@ -106,7 +109,7 @@ flowchart TD
 
 Выполнить `STEP-*` из `implementation-plan.md` по порядку.
 
-- **State update:** после каждого `CP-*` обновить `active-context.md` → completed steps
+- **State update:** после каждого выполненного `STEP-*` обновить `active-context.md`: шаг → Completed, следующий → Current
 
 ### 7. Local Verify
 
@@ -150,7 +153,10 @@ npx playwright test
 ### 11. Closure
 
 - Simplify review (см. `testing-policy.md`)
+- Убедиться, что `evals/Done-eval.md` существует и закоммичен (создаётся evaluator agent на gate Done)
+- Убедиться, что `evals/summary.md` → `status: final`
 - PR перевести из draft в ready for review
+- Обновить `active-context.md` → Stage: closure, Status: awaiting-human
 - **State update:** `stage-log.md` строка `closure` → done
 
 ### 12. HITL — Ждать merge
@@ -159,6 +165,7 @@ npx playwright test
 - Удалить worktree
 - Обновить `feature.md` → `delivery_status: done`
 - Обновить `implementation-plan.md` → `status: archived`
+- Обновить `active-context.md` → Stage: closed, Status: done; добавить closure в Completed
 
 ## Resume Protocol
 

@@ -110,7 +110,8 @@ func (r *Repo) GetTopic(ctx context.Context, id int64) (*Topic, error) {
 func (r *Repo) ListPostsByTopic(ctx context.Context, topicID int64) ([]PostView, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT p.id, p.topic_id, p.author_id, COALESCE(u.username, '[удалён]') AS author_username,
-		       p.parent_id, p.parent_author_snapshot, p.parent_content_snapshot, p.content, p.created_at
+		       p.parent_id, p.parent_author_snapshot, p.parent_content_snapshot, p.content, p.created_at,
+		       u.avatar_url
 		FROM forum_posts p
 		LEFT JOIN users u ON u.id = p.author_id
 		WHERE p.topic_id = $1
@@ -126,7 +127,8 @@ func (r *Repo) ListPostsByTopic(ctx context.Context, topicID int64) ([]PostView,
 	for rows.Next() {
 		var p PostView
 		if err := rows.Scan(&p.ID, &p.TopicID, &p.AuthorID, &p.AuthorUsername,
-			&p.ParentID, &p.ParentAuthorSnapshot, &p.ParentContentSnapshot, &p.Content, &p.CreatedAt); err != nil {
+			&p.ParentID, &p.ParentAuthorSnapshot, &p.ParentContentSnapshot, &p.Content, &p.CreatedAt,
+			&p.AuthorAvatarURL); err != nil {
 			return nil, err
 		}
 		result = append(result, p)
@@ -285,7 +287,8 @@ func (r *Repo) CreatePost(ctx context.Context, p *Post) (int64, error) {
 func (r *Repo) ListPostsAfter(ctx context.Context, topicID, afterID int64) ([]PostView, error) {
 	rows, err := r.pool.Query(ctx, `
 		SELECT p.id, p.topic_id, p.author_id, COALESCE(u.username, '[удалён]') AS author_username,
-		       p.parent_id, p.parent_author_snapshot, p.parent_content_snapshot, p.content, p.created_at
+		       p.parent_id, p.parent_author_snapshot, p.parent_content_snapshot, p.content, p.created_at,
+		       u.avatar_url
 		FROM forum_posts p
 		LEFT JOIN users u ON u.id = p.author_id
 		WHERE p.topic_id = $1 AND p.id > $2
@@ -301,7 +304,8 @@ func (r *Repo) ListPostsAfter(ctx context.Context, topicID, afterID int64) ([]Po
 	for rows.Next() {
 		var p PostView
 		if err := rows.Scan(&p.ID, &p.TopicID, &p.AuthorID, &p.AuthorUsername,
-			&p.ParentID, &p.ParentAuthorSnapshot, &p.ParentContentSnapshot, &p.Content, &p.CreatedAt); err != nil {
+			&p.ParentID, &p.ParentAuthorSnapshot, &p.ParentContentSnapshot, &p.Content, &p.CreatedAt,
+			&p.AuthorAvatarURL); err != nil {
 			return nil, err
 		}
 		result = append(result, p)

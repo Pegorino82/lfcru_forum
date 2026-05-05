@@ -4,9 +4,12 @@ import bcrypt from 'bcrypt';
 const E2E_USER_ID = 9999;
 const E2E_SECTION_ID = 9999;
 const E2E_TOPIC_ID = 9999;
+const E2E_POST_ID = 9999;
 
 export const E2E_ADMIN_ID = 9998;
 export const E2E_ARTICLE_ID = 9998;
+export const E2E_NEWS_ID = 9997;
+export const E2E_COMMENT_ID = 9997;
 
 export const E2E_USER_EMAIL = 'e2e@test.local';
 export const E2E_USER_PASSWORD = 'e2e_pass123';
@@ -55,6 +58,15 @@ export default async function globalSetup() {
       [E2E_TOPIC_ID, E2E_SECTION_ID, E2E_USER_ID],
     );
 
+    // Пост в теме (для avatar-display E2E)
+    await client.query(
+      `INSERT INTO forum_posts (id, topic_id, author_id, content)
+       OVERRIDING SYSTEM VALUE
+       VALUES ($1, $2, $3, 'E2E avatar display test post')
+       ON CONFLICT DO NOTHING`,
+      [E2E_POST_ID, E2E_TOPIC_ID, E2E_USER_ID],
+    );
+
     // Администратор для E2E-тестов редактора
     const adminPassHash = await bcrypt.hash(E2E_ADMIN_PASSWORD, 4);
     const adminPassHashBuf = Buffer.from(adminPassHash);
@@ -74,6 +86,24 @@ export default async function globalSetup() {
        VALUES ($1, 'E2E Test Article', '<p>E2E test article body</p>', 'draft', $2)
        ON CONFLICT DO NOTHING`,
       [E2E_ARTICLE_ID, E2E_ADMIN_ID],
+    );
+
+    // Опубликованная новость для E2E avatar-display (комментарии)
+    await client.query(
+      `INSERT INTO news (id, title, content, status, author_id)
+       OVERRIDING SYSTEM VALUE
+       VALUES ($1, 'E2E Avatar News', '<p>E2E avatar news body</p>', 'published', $2)
+       ON CONFLICT DO NOTHING`,
+      [E2E_NEWS_ID, E2E_ADMIN_ID],
+    );
+
+    // Комментарий к новости (автор — e2e_user)
+    await client.query(
+      `INSERT INTO news_comments (id, news_id, author_id, content)
+       OVERRIDING SYSTEM VALUE
+       VALUES ($1, $2, $3, 'E2E avatar display test comment')
+       ON CONFLICT DO NOTHING`,
+      [E2E_COMMENT_ID, E2E_NEWS_ID, E2E_USER_ID],
     );
   } finally {
     await client.end();

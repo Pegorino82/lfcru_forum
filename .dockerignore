@@ -1,0 +1,17 @@
+.docker/
+.git/
+.github/
+.idea/
+.obsidian/
+node_modules/
+e2e/
+vendor/
+storage/
+memory-bank/
+run-state/
+.review-results/
+*.md
+.env
+.env.local
+.gitignore
+.dockerignore

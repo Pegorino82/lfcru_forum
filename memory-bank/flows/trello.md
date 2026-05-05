@@ -37,6 +37,14 @@ https://trello.com/c/{shortLink}/...
 | `TRELLO_API_KEY` | Trello REST API key |
 | `TRELLO_TOKEN` | Trello user token |
 
+`TRELLO_API_KEY` и `TRELLO_TOKEN` не экспортируются в шелл автоматически. Каждый вызов Trello API должен начинаться с загрузки `.envrc`:
+
+```bash
+source .envrc && curl -s "https://api.trello.com/1/..."
+```
+
+`.envrc` в корне проекта делает `set -a` и подгружает `.env.local` — все переменные становятся доступны в текущей команде.
+
 ### Чтение карточки
 
 ```

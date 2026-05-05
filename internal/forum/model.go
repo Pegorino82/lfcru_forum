@@ -56,6 +56,7 @@ type PostView struct {
 	TopicID                int64
 	AuthorID               int64
 	AuthorUsername         string
+	AuthorAvatarURL        *string
 	ParentID               *int64
 	ParentAuthorSnapshot   *string
 	ParentContentSnapshot  *string
