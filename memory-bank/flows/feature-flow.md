@@ -75,7 +75,12 @@ flowchart LR
 
 - [ ] если задача зафиксирована в task tracker → карточка переведена в статус "обсуждается" (PLANNING) до любых файловых операций
 - [ ] определён номер фичи (следующий FT-XXX из `memory-bank/features/`)
-- [ ] создан git worktree: `git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug`
+- [ ] создан git worktree и симлинки на env-файлы (из корня основного репо):
+  ```bash
+  git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug && \
+  ln -sf "$(pwd)/.env" ../lfcru_forum-FT-XXX/.env && \
+  ln -sf "$(pwd)/.env.local" ../lfcru_forum-FT-XXX/.env.local 2>/dev/null; true
+  ```
 - [ ] если задача зафиксирована в task tracker → карточка переведена в IN PROGRESS сразу после создания worktree
 - [ ] создан draft PR до первого коммита; все последующие commits/push/CI привязаны к нему
 - [ ] вся дальнейшая работа ведётся **исключительно** внутри worktree-папки `../lfcru_forum-FT-XXX`; прямая работа в `main` запрещена

@@ -50,9 +50,13 @@ audience: humans_and_agents
 ```bash
 # из корня основного репозитория — всё одной цепочкой
 git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug && \
+ln -sf "$(pwd)/.env" ../lfcru_forum-FT-XXX/.env && \
+ln -sf "$(pwd)/.env.local" ../lfcru_forum-FT-XXX/.env.local 2>/dev/null; \
 cd ../lfcru_forum-FT-XXX && \
 gh pr create --repo Pegorino82/lfcru_forum --draft --title "[WIP][FT-XXX] Краткое описание" --body "..."
 ```
+
+Симлинки на `.env` / `.env.local` создаются сразу — оба файла в `.gitignore`, случайно не закоммитятся. Если `.env.local` отсутствует, `2>/dev/null` подавляет ошибку.
 
 `gh pr create` выполняется **внутри worktree**, где HEAD уже `feat/FT-XXX-slug` — `gh` определяет ветку автоматически. Запускать `gh pr create` из основного репозитория (`main`) нельзя: gh не сможет определить head branch.
 
