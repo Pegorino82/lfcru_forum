@@ -41,13 +41,16 @@ PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELL
 
 ---
 
-После оценки масштаба определи номер фичи (следующий FT-XXX из `memory-bank/features/`).
+После оценки масштаба определи номер фичи (следующий FT-XXX из `memory-bank/features/`) и **префикс ветки по label карточки** (`git-workflow.md`):
+- Label `feature` (или отсутствует) → `feat/FT-XXX-slug`
+- Label `bug fix` → `fix/FT-XXX-slug`
 
 ⛔ HARD STOP — ПЕРЕД СОЗДАНИЕМ ЛЮБЫХ ФАЙЛОВ. Выполни в точном порядке **без запроса подтверждения** — все шаги ниже являются автопилотом по `autonomy-boundaries.md`:
 
 **Шаг 1 — Ветка и worktree (из корня основного репозитория):**
 ```bash
-git worktree add ../lfcru_forum-FT-XXX -b feat/FT-XXX-slug
+# feat/ для фичи, fix/ для багфикса — по label карточки
+git worktree add ../lfcru_forum-FT-XXX -b <prefix>/FT-XXX-slug
 ```
 
 **Шаг 2 — Trello: PLANNING → IN PROGRESS (сразу после создания worktree):**
@@ -59,7 +62,7 @@ PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELL
 ```bash
 gh pr create --repo Pegorino82/lfcru_forum --draft \
   --title "[WIP][FT-XXX] Краткое описание" \
-  --body "Closes #issue — feat/FT-XXX-slug"
+  --body "Closes #issue — <prefix>/FT-XXX-slug"
 ```
 
 **Шаг 4 — Вся дальнейшая работа исключительно внутри `../lfcru_forum-FT-XXX`.**

@@ -62,7 +62,7 @@ START=$(cat /tmp/mb-review-start); END=$(date +%s); echo "$(( (END - START) / 60
 
 ## Сохранение результата
 
-Результат сохраняется в `.review-results/memory-bank/memory-bank-review-YYYY-MM-DD.md`.
+Результат сохраняется в `.review-results/memory-bank/memory-bank-review-YYYY-MM-DD(-N).md`.
 
 Файл начинается с meta-блока:
 
