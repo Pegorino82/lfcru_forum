@@ -57,7 +57,6 @@ PUT https://api.trello.com/1/cards/{shortLink}?key={TRELLO_API_KEY}&token={TRELL
 
 **Шаг 3 — Draft PR (сразу после worktree, до первого коммита):**
 ```bash
-gh repo view  # убедиться что контекст — Pegorino82/lfcru_forum
 gh pr create --repo Pegorino82/lfcru_forum --draft \
   --title "[WIP][FT-XXX] Краткое описание" \
   --body "Closes #issue — feat/FT-XXX-slug"
@@ -141,7 +140,7 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
   | Стадия | Что делать | Обновление run-state |
   |--------|-----------|----------------------|
   | `analysis` | Воспроизвести баг, найти root cause, заполнить `## Root Cause` в README | stage-log: analysis → done; active-context → Current: fix |
-  | `fix` | Сделать минимальный коммит, заполнить `## Fix` в README | stage-log: fix → done; active-context → Current: tests |
+  | `fix` | Сделать коммит, заполнить `## Fix` в README; получить хеш (`git log --oneline -1`), вписать в README и HANDOFF.md, сделать `docs:`-коммит | stage-log: fix → done; active-context → Current: tests |
   | `tests` | Добавить regression test или задокументировать CHK-1, заполнить `## Regression` | stage-log: tests → done; active-context → Current: verification |
   | `verification` | Вручную проверить что баг не воспроизводится, заполнить EVID-1 | stage-log: verification → done; active-context → Current: closure |
   | `closure` | `gh pr ready`, обновить `## PR` в README, убедиться CI green | stage-log: closure → done; active-context → Status: awaiting-human |
@@ -157,23 +156,21 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 1c. Инициализируй state-pack — скопируй шаблоны в worktree, заменив `FT-XXX` на реальный ID:
     - `run-state/FT-XXX/active-context.md`
     - `run-state/FT-XXX/stage-log.md`
+1d. Создай папку `memory-bank/features/FT-XXX/evals/` и скопируй в неё шаблоны:
+    - `memory-bank/flows/templates/feature/evals/strategy.md` → `memory-bank/features/FT-XXX/evals/strategy.md`
+    - `memory-bank/flows/templates/feature/evals/summary.md` → `memory-bank/features/FT-XXX/evals/summary.md`
+    Заполни `strategy.md`: формы для каждого gate согласно типу фичи (`short.md` или `large.md`).
 2. Выбери шаблон feature.md по критериям из `memory-bank/flows/feature-flow.md` § «Выбор шаблона»: `short.md` если фичу можно описать минимальным набором (1 SC-*, 1 CHK-*, 1 EVID-*, без ASM-*/DEC-*/CTR-*/FM-*, без контрактных изменений); иначе `large.md`. Зафикси выбор явно.
 3. Создай `memory-bank/features/FT-XXX/feature.md` по выбранному шаблону в статусе draft
 4. Наполни feature.md до gate-ready (≥1 REQ-*, NS-*, SC-*, CHK-*, EVID-*; каждый REQ-* прослеживается к SC-*)
-5. Запусти **Brief Improve Loop** (автопилот, подтверждение не требуется):
-   ```bash
-   ./scripts/improve-loop.sh \
-     memory-bank/flows/templates/prompts/brief-loop.md \
-     memory-bank/features/FT-XXX/feature.md
-   ```
+5. Запусти **Brief Improve Loop** через **Agent tool** (автопилот, подтверждение не требуется):
+   - Инстанцируй промпт `memory-bank/flows/templates/prompts/brief-loop.md` (заменить `{{ARTIFACT_PATH}}`, `{{FT_ID}}`, `{{DATE}}`)
+   - Запусти субагент через Agent tool с содержимым промпта
    - Итерации до `accept` (max 2, затем escalate к человеку)
    - Обнови `run-state/FT-XXX/stage-log.md` → строка `brief-loop`: done/escalated
-6. Запусти **Spec Improve Loop** (автопилот, подтверждение не требуется):
-   ```bash
-   ./scripts/improve-loop.sh \
-     memory-bank/flows/templates/prompts/spec-loop.md \
-     memory-bank/features/FT-XXX/feature.md
-   ```
+6. Запусти **Spec Improve Loop** через **Agent tool** (автопилот, подтверждение не требуется):
+   - Инстанцируй промпт `memory-bank/flows/templates/prompts/spec-loop.md` (заменить `{{ARTIFACT_PATH}}`, `{{FT_ID}}`, `{{DATE}}`)
+   - Запусти субагент через Agent tool с содержимым промпта
    - Итерации до `accept` (max 2, затем escalate к человеку)
    - Обнови `run-state/FT-XXX/stage-log.md` → строка `spec-loop`: done/escalated
 7. ⛔ HARD STOP — покажи `feature.md` человеку и дождись явного "ок" перед переводом в Design Ready
@@ -196,6 +193,7 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 - Зафикси все изменения: `git add . && git commit -m "feat(FT-XXX): <краткое описание>"`
 - Запуш ветку: `git push`
 - Обнови `run-state/FT-XXX/stage-log.md` → строка `impl`: done
+- Получи хеш коммита: `git log --oneline -1` — впиши в `HANDOFF.md` и `memory-bank/features/FT-XXX/README.md`. Сделай отдельный `docs:`-коммит
 - Запусти unit-тесты локально командой из `memory-bank/ops/development.md` § «Go-тесты» — должны быть зелёными
 - Обнови `run-state/FT-XXX/stage-log.md` → строка `unit-tests`: pass/fail
 - Убедись что CI зелёный: `rtk gh pr checks` — все jobs (Lint, Go Tests, E2E) должны пройти. ⛔ Запускай ТОЛЬКО после `git push` — иначе CI проверяет устаревший код

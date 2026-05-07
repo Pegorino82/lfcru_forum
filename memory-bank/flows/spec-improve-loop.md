@@ -26,7 +26,7 @@ audience: humans_and_agents
 
 ```mermaid
 flowchart TD
-    A([Start: Brief loop — accept]) --> B[Запустить improve-loop.sh\nс prompt: spec-loop.md]
+    A([Start: Brief loop — accept]) --> B[Запустить evaluator agent\nчерез Agent tool: spec-loop.md]
     B --> C{Outcome?}
     C -->|accept| D[Зафиксировать EVID-* в feature.md]
     D --> E([Exit: feature.md Design Ready\nготов к HITL gate])
@@ -76,12 +76,17 @@ flowchart TD
 
 ## Runner Contract
 
-Запуск:
+**В сессии агента** — запускать через **Agent tool**:
+1. Инстанцировать промпт `memory-bank/flows/templates/prompts/spec-loop.md` (заменить `{{ARTIFACT_PATH}}`, `{{FT_ID}}`, `{{DATE}}`)
+2. Запустить субагент через Agent tool с содержимым промпта
+
+**Ручной / CI запуск (вне сессии агента)**:
 ```bash
 ./scripts/improve-loop.sh \
   memory-bank/flows/templates/prompts/spec-loop.md \
   memory-bank/features/FT-XXX/feature.md
 ```
+> ⚠️ `improve-loop.sh` вызывает `claude --print` изнутри процесса — **не использовать из активной сессии агента**, это приводит к зависанию.
 
 ### Артефакты, которые runner обновляет или возвращает
 
@@ -102,4 +107,5 @@ EVID-XX: Spec loop — accept. YYYY-MM-DD. improve-loop.sh / evaluator agent
 
 Spec improve loop — финальный шаг перед gate **Draft → Design Ready**.
 После `accept` spec loop `feature.md` готов к показу человеку (HITL gate DR).
-Оба цикла вместе заменяют первый вызов evaluator agent из `eval.md` — evaluator agent для DR gate больше не нужен отдельно: его роль выполняет `improve-loop.sh`.
+Для `short.md` — оба цикла вместе являются достаточным gate-closing условием для DR gate; builder создаёт `evals/DR-eval.md` самостоятельно.
+Для `large.md` — после accept обоих циклов дополнительно запускается evaluator agent (`review-feature-md.md`) через Agent tool: loops проверяют секции изолированно, evaluator читает весь документ и ловит кросс-секционные разрывы. Подробнее — в `eval.md` § «Draft → Design Ready».

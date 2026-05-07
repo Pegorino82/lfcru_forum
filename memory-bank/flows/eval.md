@@ -63,6 +63,7 @@ Evaluator agent — агент, читающий артефакт в новом 
 **Когда вызывать:**
 
 - `short.md` → self-check агента достаточен для всех gates.
+- `large.md`, gate Draft → DR → evaluator agent обязателен (после brief-loop + spec-loop): loops проверяют секции изолированно; evaluator читает весь документ и ловит кросс-секционные разрывы (How реализует What? Verify покрывает все REQ-*?). Промпт: `templates/prompts/review-feature-md.md`.
 - `large.md`, gate DR → PR → evaluator agent обязателен.
 - `large.md`, gate Execution → Done → evaluator agent обязателен.
 - `large.md`, gate DR → PR для малых планов (≤ 3 STEP-*) → self-check допустим.
@@ -116,9 +117,15 @@ EVID-XX: Eval [gate-name] — accept. YYYY-MM-DD. [форма: self-check / eval
 
 ### Draft → Design Ready
 
-Форма: **brief-loop + spec-loop (evaluator agents)**. Self-check не нужен — все критерии этого gate покрыты loops: REQ-*/NS-* → brief-loop, SC-*/CHK-*/EVID-* → spec-loop.
+Форма зависит от типа шаблона:
 
-После того как оба loop вернули `accept`, builder создаёт `evals/DR-eval.md` как gate-closing artifact — без повторной оценки. Файл содержит ссылки на результаты loops (`.review-results/FT-XXX/review-brief-NN.md`, `review-spec-NN.md`) и обновляет `evals/summary.md`.
+**`short.md`:** brief-loop + spec-loop (evaluator agents) достаточны. Self-check не нужен — все критерии покрыты loops: REQ-*/NS-* → brief-loop, SC-*/CHK-*/EVID-* → spec-loop. После accept обоих loops builder создаёт `evals/DR-eval.md` как gate-closing artifact — без повторной оценки. Файл содержит ссылки на результаты loops (`.review-results/FT-XXX/review-brief-NN.md`, `review-spec-NN.md`) и обновляет `evals/summary.md`.
+
+**`large.md`:** brief-loop + spec-loop + **evaluator agent** (через Agent tool). После accept обоих loops запустить evaluator agent:
+1. Инстанцировать `templates/prompts/review-feature-md.md` (заменить `{{FT_ID}}`, `{{FEATURE_PATH}}`, `{{DATE}}`), сохранить в `memory-bank/features/FT-XXX/prompts/review-feature-md.md`
+2. Запустить субагент через Agent tool с содержимым этого файла
+3. Если `revise` — исправить `feature.md` и перезапустить (max 2 итерации, после — escalate)
+4. Если `accept` — evaluator записывает EVID-* в `feature.md`, создаёт `evals/DR-eval.md` по шаблону `templates/feature/evals/gate-eval.md` и обновляет `evals/summary.md`
 
 ### Design Ready → Plan Ready
 
