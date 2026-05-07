@@ -76,14 +76,20 @@ Flow:
 
 **Worktree:** баг-фикс ведётся в git worktree на ветке `fix/FT-XXX-slug` с draft PR от начала работы — аналогично фиче (см. [git-workflow.md](../engineering/git-workflow.md)).
 
-**FT-пакет:** облегчённый. Создаётся `FT-XXX/README.md` без `feature.md` и `implementation-plan.md`. README содержит:
+**FT-пакет:** облегчённый. Создаётся без `feature.md` и `implementation-plan.md`. Файлы пакета:
 
-- описание бага и условия воспроизведения
-- корневую причину (после анализа)
-- ссылку на коммит с фиксом
-- добавленный regression-тест
+- `memory-bank/features/FT-XXX/README.md` — структурированный артефакт: Bug / Repro / Root Cause / Fix / Regression
+- `run-state/FT-XXX/active-context.md` — текущая стадия и чекпоинты (тип: bugfix)
+- `run-state/FT-XXX/stage-log.md` — 5 стадий: analysis → fix → tests → verification → closure
 
 Если в ходе анализа выясняется, что баг требует design choices или меняет контракт — поднимается до workflow «Средняя или большая фича» с полным feature package.
+
+**Resume Protocol (Bug Fix):**
+
+1. Прочитай `HANDOFF.md` → найди FT_ID и текущий stage
+2. Прочитай `run-state/FT-XXX/active-context.md` → восстанови контекст
+3. Прочитай `run-state/FT-XXX/stage-log.md` → первая строка со статусом `pending`
+4. Продолжи с этой стадии
 
 ### 4. Рефакторинг
 

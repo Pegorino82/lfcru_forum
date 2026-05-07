@@ -1,4 +1,4 @@
-Изучи карточку в [trello](https://trello.com/c/Oa76ZjDv) через Trello API — автопилот, подтверждение не требуется.
+Изучи карточку в [trello](https://trello.com/c/DGPB8PeC) через Trello API — автопилот, подтверждение не требуется.
 
 ⛔ НЕМЕДЛЕННО — до чтения файлов и до любого обсуждения — переведи карточку TODO → PLANNING — без запроса подтверждения (автопилот по `autonomy-boundaries.md`):
 ```
@@ -70,7 +70,84 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 
 **Routing по label карточки:**
 
-- Label `bug fix` → **облегчённый FT-пакет**: только `README.md` (без feature.md и implementation-plan.md). README содержит: описание бага, условия воспроизведения, корневую причину, ссылку на коммит, regression-тест. Дальнейшие шаги Bootstrap Feature Package не выполняются.
+- Label `bug fix` → **облегчённый FT-пакет**. Создай следующие файлы (внутри worktree), затем выполни execution loop (ниже). Bootstrap Feature Package (feature.md, implementation-plan.md, improve loops, DR/PR gates) не выполняется.
+
+  **BF-1. `memory-bank/features/FT-XXX/README.md`** — структурированный артефакт:
+  ```markdown
+  # FT-XXX: <Bug Title>
+
+  **Type:** bugfix
+  **Trello:** <ссылка на карточку>
+  **PR:** <ссылка на PR — заполнить после создания>
+
+  ## Bug
+  <!-- Что сломано. Одно предложение. -->
+
+  ## Repro
+  <!-- Минимальные шаги воспроизведения -->
+
+  ## Root Cause
+  <!-- file:line + объяснение почему. Заполнить после анализа. -->
+
+  ## Fix
+  <!-- Что изменено. Коммит: <hash> — заполнить после фикса. -->
+
+  ## Regression
+  <!-- CHK-1: как проверить что не вернётся -->
+  <!-- EVID-1: ссылка на CI run или скриншот — заполнить после верификации. -->
+  ```
+
+  **BF-2. `run-state/FT-XXX/active-context.md`** — инициализировать:
+  ```markdown
+  # Active Context: FT-XXX
+
+  **Updated:** YYYY-MM-DD
+  **Type:** bugfix
+  **Status:** in_progress
+
+  ## Completed
+  <!-- пусто -->
+
+  ## Current
+  **analysis** — in_progress
+  - [ ] Воспроизвести баг
+  - [ ] Найти root cause (file:line)
+  - [ ] Заполнить ## Root Cause в README.md
+
+  ## Blocked / Pending
+  —
+
+  ## Key Decisions
+  —
+  ```
+
+  **BF-3. `run-state/FT-XXX/stage-log.md`** — инициализировать:
+  ```markdown
+  # Stage Log: FT-XXX
+
+  | Stage        | Status  | Outcome | Date | Ref |
+  |-------------|---------|---------|------|-----|
+  | analysis    | pending | —       | —    | —   |
+  | fix         | pending | —       | —    | —   |
+  | tests       | pending | —       | —    | —   |
+  | verification| pending | —       | —    | —   |
+  | closure     | pending | —       | —    | —   |
+  ```
+
+  **BF-4. Обнови `memory-bank/features/README.md`** — добавь строку FT-XXX (статус `in_progress`).
+
+  **BF-5. Bug Fix Execution Loop** — выполни стадии по порядку, обновляя run-state после каждой:
+
+  | Стадия | Что делать | Обновление run-state |
+  |--------|-----------|----------------------|
+  | `analysis` | Воспроизвести баг, найти root cause, заполнить `## Root Cause` в README | stage-log: analysis → done; active-context → Current: fix |
+  | `fix` | Сделать минимальный коммит, заполнить `## Fix` в README | stage-log: fix → done; active-context → Current: tests |
+  | `tests` | Добавить regression test или задокументировать CHK-1, заполнить `## Regression` | stage-log: tests → done; active-context → Current: verification |
+  | `verification` | Вручную проверить что баг не воспроизводится, заполнить EVID-1 | stage-log: verification → done; active-context → Current: closure |
+  | `closure` | `gh pr ready`, обновить `## PR` в README, убедиться CI green | stage-log: closure → done; active-context → Status: awaiting-human |
+
+  После merge: `feature.md` отсутствует → только обнови `memory-bank/features/README.md` статус на `done`. Удали worktree.
+
 - Label `feature` (или отсутствует) → **полный feature package**: выполняй шаги ниже.
 
 Создай Bootstrap Feature Package (внутри worktree):
@@ -136,6 +213,6 @@ gh pr create --repo Pegorino82/lfcru_forum --draft \
 
 **Resume Protocol** — при возобновлении прерванной работы:
 1. Прочитай `HANDOFF.md` → найди FT_ID и текущий stage
-2. Прочитай `run-state/FT-XXX/active-context.md` → восстанови контекст
-3. Прочитай `run-state/FT-XXX/stage-log.md` → определи следующий незавершённый этап
-4. Продолжи с первого `pending` этапа
+2. Прочитай `run-state/FT-XXX/active-context.md` → восстанови контекст (поле `Type:` покажет `bugfix` или feature)
+3. Прочитай `run-state/FT-XXX/stage-log.md` → определи следующий незавершённый этап (первая строка со статусом `pending`)
+4. Продолжи с этого этапа согласно соответствующему loop (Bug Fix Execution Loop или Feature Execution Loop)
