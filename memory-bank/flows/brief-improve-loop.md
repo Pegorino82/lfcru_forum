@@ -25,7 +25,7 @@ audience: humans_and_agents
 
 ```mermaid
 flowchart TD
-    A([Start: feature.md draft]) --> B[Запустить improve-loop.sh\nс prompt: brief-loop.md]
+    A([Start: feature.md draft]) --> B[Запустить evaluator agent\nчерез Agent tool: brief-loop.md]
     B --> C{Outcome?}
     C -->|accept| D[Зафиксировать EVID-* в feature.md]
     D --> E([Exit: Brief готов к Spec loop])
@@ -66,12 +66,17 @@ flowchart TD
 
 ## Runner Contract
 
-Запуск:
+**В сессии агента** — запускать через **Agent tool**:
+1. Инстанцировать промпт `memory-bank/flows/templates/prompts/brief-loop.md` (заменить `{{ARTIFACT_PATH}}`, `{{FT_ID}}`, `{{DATE}}`)
+2. Запустить субагент через Agent tool с содержимым промпта
+
+**Ручной / CI запуск (вне сессии агента)**:
 ```bash
 ./scripts/improve-loop.sh \
   memory-bank/flows/templates/prompts/brief-loop.md \
   memory-bank/features/FT-XXX/feature.md
 ```
+> ⚠️ `improve-loop.sh` вызывает `claude --print` изнутри процесса — **не использовать из активной сессии агента**, это приводит к зависанию.
 
 ### Артефакты, которые runner обновляет или возвращает
 

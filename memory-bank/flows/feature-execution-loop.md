@@ -36,10 +36,10 @@ audience: humans_and_agents
 
 ```mermaid
 flowchart TD
-    A([Start: feature.md draft]) --> B[1. Brief Improve Loop\nimprove-loop.sh brief-loop.md]
+    A([Start: feature.md draft]) --> B[1. Brief Improve Loop\nAgent tool: brief-loop.md]
     B --> B2{accept?}
     B2 -->|нет / escalate| ERR([Escalate к человеку])
-    B2 -->|да| C[2. Spec Improve Loop\nimprove-loop.sh spec-loop.md]
+    B2 -->|да| C[2. Spec Improve Loop\nAgent tool: spec-loop.md]
     C --> C2{accept?}
     C2 -->|нет / escalate| ERR
     C2 -->|да| HITL1[3. HITL: показать feature.md\nждать подтверждения DR]
@@ -176,9 +176,12 @@ npx playwright test
 
 ### 11. Closure
 
+> **Session Protocol** (`workflows.md` § «В конце сеанса») выполняется **дополнительно** к шагам ниже — оба протокола действуют, не заменяют друг друга. Session Protocol покрывает: unit-тесты, simplify review, feat-коммит, docs:-коммит с хешем, HANDOFF.md.
+
 - Simplify review (см. `testing-policy.md`)
 - Убедиться, что `evals/Done-eval.md` существует и закоммичен (создаётся evaluator agent на gate Done)
 - Убедиться, что `evals/summary.md` → `status: final`
+- Сделать feat-коммит; получить хеш (`git log --oneline -1`); вписать хеш в `HANDOFF.md` и `README.md` FT-пакета; сделать отдельный `docs:`-коммит
 - PR перевести из draft в ready for review
 - Обновить `active-context.md` → Stage: closure, Status: awaiting-human
 - **State update:** `stage-log.md` строка `closure` → done

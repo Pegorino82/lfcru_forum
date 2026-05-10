@@ -11,6 +11,12 @@ canonical_for:
   - base_development_cycle
   - workflow_type_selection
   - autonomy_gradient
+  - session_protocol
+must_not_define:
+  - feature_flow_gate_predicates
+  - feature_execution_loop_stages
+  - bugfix_execution_loop_stages
+  - trello_planning_timing
 status: active
 audience: humans_and_agents
 ---
@@ -66,6 +72,8 @@ Flow:
 
 `issue/task -> spec -> feature package -> implementation plan -> execution -> review -> handoff`
 
+Execution loop (state-pack, stages, resume protocol): [`feature-execution-loop.md`](feature-execution-loop.md).
+
 ### 3. Баг-фикс
 
 Источники могут быть любыми: error tracker, support, QA, прямой report от пользователя, инцидентный анализ.
@@ -76,14 +84,11 @@ Flow:
 
 **Worktree:** баг-фикс ведётся в git worktree на ветке `fix/FT-XXX-slug` с draft PR от начала работы — аналогично фиче (см. [git-workflow.md](../engineering/git-workflow.md)).
 
-**FT-пакет:** облегчённый. Создаётся `FT-XXX/README.md` без `feature.md` и `implementation-plan.md`. README содержит:
-
-- описание бага и условия воспроизведения
-- корневую причину (после анализа)
-- ссылку на коммит с фиксом
-- добавленный regression-тест
+**FT-пакет:** облегчённый. Создаётся без `feature.md` и `implementation-plan.md`.
 
 Если в ходе анализа выясняется, что баг требует design choices или меняет контракт — поднимается до workflow «Средняя или большая фича» с полным feature package.
+
+Execution loop (state-pack, stages, resume protocol): [`bugfix-execution-loop.md`](bugfix-execution-loop.md).
 
 ### 4. Рефакторинг
 

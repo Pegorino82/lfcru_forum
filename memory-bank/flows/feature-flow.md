@@ -18,6 +18,11 @@ canonical_for:
   - feature_traceability_rules
   - feature_decomposition_principle
   - feature_grounding_gate
+must_not_define:
+  - session_protocol
+  - task_routing_rules
+  - trello_planning_timing
+  - feature_execution_loop_stages
 status: active
 audience: humans_and_agents
 ---
@@ -73,7 +78,7 @@ flowchart LR
 
 ### Bootstrap Feature Package
 
-- [ ] если задача зафиксирована в task tracker → карточка переведена в статус "обсуждается" (PLANNING) до любых файловых операций
+- [ ] если задача зафиксирована в task tracker → карточка переведена в статус PLANNING **немедленно при получении задачи** — до чтения файлов, до любых вопросов и до обсуждения (canonical: `trello.md`)
 - [ ] определён номер фичи (следующий FT-XXX из `memory-bank/features/`)
 - [ ] создан git worktree и симлинки на env-файлы (из корня основного репо):
   ```bash
