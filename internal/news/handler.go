@@ -18,13 +18,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const pageSize = 20
+const pageSize = 9
 
 // ListData is the template data for the news list page.
 type ListData struct {
 	User       *user.User
 	CSRFToken  string
-	Items      []News
+	Items      []HomeNewsItem
 	Page       int
 	TotalPages int
 	HasPrev    bool

@@ -8,7 +8,7 @@
   padding: 1rem 0;
 }
 .forum-index h1 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   margin-bottom: 1.5rem;
   border-bottom: 2px solid #c8102e;
   padding-bottom: 0.5rem;
@@ -17,16 +17,18 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 .section-card {
   background: #fff;
-  border: 1px solid #ddd;
+  border: 1px solid #eee;
   border-radius: 6px;
-  padding: 1.25rem;
-  margin-bottom: 1rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   justify-content: space-between;
-  align-items: start;
+  align-items: center;
 }
 .section-card:hover {
   border-color: #c8102e;
@@ -37,28 +39,29 @@
 }
 .section-card h3 {
   font-size: 1.125rem;
-  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+  margin: 0 0 0.35rem 0;
 }
-.section-card a {
-  color: #0066cc;
+.section-card h3 a {
+  color: #1a1a2e;
   text-decoration: none;
 }
-.section-card a:hover {
+.section-card h3 a:hover {
+  color: #c8102e;
   text-decoration: underline;
 }
 .section-description {
-  color: #666;
+  color: #555;
   font-size: 0.9375rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
   line-height: 1.5;
 }
 .topic-count {
-  color: #999;
-  font-size: 0.875rem;
-}
-.section-actions {
-  white-space: nowrap;
-  margin-left: 1rem;
+  font-size: 0.8rem;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 .empty-state {
   text-align: center;
@@ -82,15 +85,6 @@
 .btn:hover {
   background: #a80822;
 }
-.btn-primary {
-  background: #c8102e;
-}
-.btn-secondary {
-  background: #666;
-}
-.btn-secondary:hover {
-  background: #555;
-}
 .manage-actions {
   margin-top: 2rem;
   padding-top: 1.5rem;
@@ -110,7 +104,7 @@
           {{if .Description}}
           <p class="section-description">{{.Description}}</p>
           {{end}}
-          <div class="topic-count">Тем: {{.TopicCount}}</div>
+          <div class="topic-count">💬 Тем: {{.TopicCount}}</div>
         </div>
       </li>
       {{end}}
@@ -121,7 +115,7 @@
 
   {{if .CanManage}}
   <div class="manage-actions">
-    <a href="/forum/sections/new" class="btn btn-primary">Создать раздел</a>
+    <a href="/forum/sections/new" class="btn">Создать раздел</a>
   </div>
   {{end}}
 </div>
