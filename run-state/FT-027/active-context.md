@@ -1,8 +1,8 @@
 # Active Context: FT-027
 
-**Updated:** 2026-05-07
-**Stage:** impl
-**Status:** in-progress
+**Updated:** 2026-05-10
+**Stage:** closure
+**Status:** done
 
 ## Completed
 
@@ -11,10 +11,13 @@
 - spec-loop: accept (2026-05-07)
 - dr-approval: approved (2026-05-07)
 - plan: impl-plan-loop 2 итерации, accept post-fix (2026-05-07)
+- pr-approval: approved (2026-05-10)
+- impl: STEP-01..07 done (2026-05-10)
+- PR #18 merged → c0d0d4e (2026-05-10)
 
 ## Current
 
-Выполнение STEP-01..07
+Фича завершена.
 
 ## Blocked / Pending
 

@@ -7,8 +7,8 @@
 | dr-approval | done     | approved | 2026-05-07 | — |
 | plan        | done     | —        | 2026-05-10 | — |
 | pr-approval | done     | approved | 2026-05-10 | — |
-| impl        | active   | —        | 2026-05-10 | — |
-| unit-tests  | pending  | —        | —          | — |
-| e2e-smoke   | pending  | —        | —          | — |
-| verification| pending  | —        | —          | — |
-| closure     | pending  | —        | —          | — |
+| impl        | done     | pass     | 2026-05-10 | aae14a9 |
+| unit-tests  | done     | pass     | 2026-05-10 | — |
+| e2e-smoke   | done     | pass     | 2026-05-10 | 36/36 green |
+| verification| done     | pass     | 2026-05-10 | CI green |
+| closure     | done     | merged   | 2026-05-10 | PR #18 → c0d0d4e |
