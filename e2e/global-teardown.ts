@@ -7,6 +7,8 @@ const E2E_ADMIN_ID = 9998;
 const E2E_ARTICLE_ID = 9998;
 const E2E_NEWS_ID = 9997;
 const E2E_COMMENT_ID = 9997;
+const E2E_TEAM_SECTION_ID = 9990;
+const E2E_TEAM_TOPIC_ID = 9990;
 
 export default async function globalTeardown() {
   const client = new Client({
@@ -23,6 +25,9 @@ export default async function globalTeardown() {
     // Посты удаляются каскадно вместе с темой
     await client.query('DELETE FROM forum_topics WHERE id = $1', [E2E_TOPIC_ID]);
     await client.query('DELETE FROM forum_sections WHERE id = $1', [E2E_SECTION_ID]);
+    // FT-028: Team section cleanup
+    await client.query('DELETE FROM forum_topics WHERE id = $1', [E2E_TEAM_TOPIC_ID]);
+    await client.query('DELETE FROM forum_sections WHERE id = $1', [E2E_TEAM_SECTION_ID]);
     // Комментарии удаляются каскадно вместе с новостями (до удаления пользователя)
     await client.query('DELETE FROM news WHERE id = $1', [E2E_NEWS_ID]);
     await client.query('DELETE FROM users WHERE id = $1', [E2E_USER_ID]);

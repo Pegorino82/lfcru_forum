@@ -488,6 +488,183 @@ func TestClient_StandingsTTL_Weekend(t *testing.T) {
 	}
 }
 
+// squadResponse builds a minimal team API response with the given players.
+func squadResponse(players ...map[string]any) map[string]any {
+	return map[string]any{"squad": players}
+}
+
+func squadPlayer(id int, name, position, dob, nationality string) map[string]any {
+	return map[string]any{
+		"id":          id,
+		"name":        name,
+		"position":    position,
+		"dateOfBirth": dob,
+		"nationality": nationality,
+	}
+}
+
+func TestClient_Squad_HappyPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Auth-Token") != "test-key" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(squadResponse(
+			squadPlayer(1795, "Alisson", "Goalkeeper", "1992-10-02", "Brazil"),
+			squadPlayer(3337, "Mohamed Salah", "Offence", "1992-06-15", "Egypt"),
+		))
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	players, err := c.Squad(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(players) != 2 {
+		t.Fatalf("expected 2 players, got %d", len(players))
+	}
+	if players[0].Name != "Alisson" {
+		t.Errorf("player[0].Name: got %q, want %q", players[0].Name, "Alisson")
+	}
+	if players[0].Position != "Goalkeeper" {
+		t.Errorf("player[0].Position: got %q, want %q", players[0].Position, "Goalkeeper")
+	}
+	if players[1].Name != "Mohamed Salah" {
+		t.Errorf("player[1].Name: got %q, want %q", players[1].Name, "Mohamed Salah")
+	}
+}
+
+func TestClient_Squad_EmptyAPIKey(t *testing.T) {
+	c := NewClient("", time.Hour)
+	players, err := c.Squad(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if players != nil {
+		t.Errorf("expected nil for empty API key, got %v", players)
+	}
+}
+
+func TestClient_Squad_APIError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	players, err := c.Squad(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if players != nil {
+		t.Errorf("expected nil on API error with empty cache, got %v", players)
+	}
+}
+
+func TestClient_Squad_EmptySquad(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(squadResponse())
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	players, err := c.Squad(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if players != nil {
+		t.Errorf("expected nil for empty squad, got %v", players)
+	}
+}
+
+func TestClient_Squad_SkipsEmptyNames(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(squadResponse(
+			squadPlayer(1, "Alisson", "Goalkeeper", "1992-10-02", "Brazil"),
+			squadPlayer(2, "", "Midfield", "2000-01-01", "England"),
+		))
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	players, err := c.Squad(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(players) != 1 {
+		t.Fatalf("expected 1 player (empty name skipped), got %d", len(players))
+	}
+	if players[0].Name != "Alisson" {
+		t.Errorf("expected Alisson, got %q", players[0].Name)
+	}
+}
+
+func TestClient_Squad_CacheHit(t *testing.T) {
+	callCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(squadResponse(
+			squadPlayer(1, "Alisson", "Goalkeeper", "1992-10-02", "Brazil"),
+		))
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", time.Hour, srv.URL)
+	ctx := context.Background()
+
+	if _, err := c.Squad(ctx); err != nil {
+		t.Fatalf("first call: %v", err)
+	}
+	if _, err := c.Squad(ctx); err != nil {
+		t.Fatalf("second call: %v", err)
+	}
+	if callCount != 1 {
+		t.Errorf("expected exactly 1 API call, got %d", callCount)
+	}
+}
+
+func TestClient_Squad_APIError_ReturnsStaleCached(t *testing.T) {
+	callCount := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(squadResponse(
+				squadPlayer(1, "Alisson", "Goalkeeper", "1992-10-02", "Brazil"),
+			))
+			return
+		}
+		http.Error(w, "internal error", http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+
+	c := newTestClient("test-key", 0, srv.URL) // TTL=0 forces re-fetch every time
+	ctx := context.Background()
+
+	// First call — succeeds, populates cache.
+	players, err := c.Squad(ctx)
+	if err != nil {
+		t.Fatalf("first call: %v", err)
+	}
+	if len(players) != 1 {
+		t.Fatalf("expected 1 player, got %d", len(players))
+	}
+
+	// Second call — API fails, returns stale cache.
+	players, err = c.Squad(ctx)
+	if err != nil {
+		t.Fatalf("second call: %v", err)
+	}
+	if len(players) != 1 || players[0].Name != "Alisson" {
+		t.Errorf("expected stale cached data, got %v", players)
+	}
+}
+
 func TestClient_Standings_InvalidatedOnNewLastMatch(t *testing.T) {
 	oldMatchDate := time.Date(2026, 4, 20, 14, 0, 0, 0, time.UTC)
 	newMatchDate := time.Date(2026, 4, 27, 14, 0, 0, 0, time.UTC)

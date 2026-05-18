@@ -2,14 +2,19 @@ package forum
 
 import (
 	"context"
+	"strings"
 	"testing"
+
+	"github.com/Pegorino82/lfcru_forum/internal/football"
 )
 
 // Mock репозиторий для юнит-тестов
 type mockRepo struct {
-	createSectionFunc func(context.Context, *Section) (int64, error)
-	createTopicFunc   func(context.Context, *Topic) (int64, error)
-	createPostFunc    func(context.Context, *Post) (int64, error)
+	createSectionFunc      func(context.Context, *Section) (int64, error)
+	createTopicFunc        func(context.Context, *Topic) (int64, error)
+	createPostFunc         func(context.Context, *Post) (int64, error)
+	findSectionByTitleFunc func(context.Context, string) (*Section, error)
+	topicExistsByTitleFunc func(context.Context, int64, string) (bool, error)
 }
 
 func (m *mockRepo) CreateSection(ctx context.Context, s *Section) (int64, error) {
@@ -31,6 +36,20 @@ func (m *mockRepo) CreatePost(ctx context.Context, p *Post) (int64, error) {
 		return m.createPostFunc(ctx, p)
 	}
 	return 1, nil
+}
+
+func (m *mockRepo) FindSectionByTitle(ctx context.Context, title string) (*Section, error) {
+	if m.findSectionByTitleFunc != nil {
+		return m.findSectionByTitleFunc(ctx, title)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) TopicExistsByTitle(ctx context.Context, sectionID int64, title string) (bool, error) {
+	if m.topicExistsByTitleFunc != nil {
+		return m.topicExistsByTitleFunc(ctx, sectionID, title)
+	}
+	return false, nil
 }
 
 func (m *mockRepo) UpdateSection(_ context.Context, _ int64, _, _ string) error { return nil }
@@ -235,5 +254,210 @@ func TestCreatePost_RepoReturnsErrReplyToReply(t *testing.T) {
 	_, err := svc.CreatePost(context.Background(), 100, 200, &parentID, "reply")
 	if err != ErrReplyToReply {
 		t.Errorf("expected ErrReplyToReply, got %v", err)
+	}
+}
+
+// --- GenerateTeamTopics tests ---
+
+func testPlayers() []football.Player {
+	return []football.Player{
+		{ID: 1, Name: "Mohamed Salah", Position: "Offence", DateOfBirth: "1992-06-15", Nationality: "Egypt"},
+		{ID: 2, Name: "Virgil van Dijk", Position: "Defence", DateOfBirth: "1991-07-08", Nationality: "Netherlands"},
+	}
+}
+
+func TestGenerateTeamTopics_EmptyPlayers(t *testing.T) {
+	svc := NewService(&mockRepo{})
+	err := svc.GenerateTeamTopics(context.Background(), nil, 1)
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+}
+
+func TestGenerateTeamTopics_CreatesSectionAndTopics(t *testing.T) {
+	var createdTopics []string
+	var createdPosts []string
+
+	mock := &mockRepo{
+		findSectionByTitleFunc: func(_ context.Context, title string) (*Section, error) {
+			if title != "Команда" {
+				t.Errorf("expected section title 'Команда', got %q", title)
+			}
+			return nil, nil // section not found
+		},
+		createSectionFunc: func(_ context.Context, s *Section) (int64, error) {
+			if s.Title != "Команда" {
+				t.Errorf("expected section title 'Команда', got %q", s.Title)
+			}
+			return 10, nil
+		},
+		topicExistsByTitleFunc: func(_ context.Context, sectionID int64, title string) (bool, error) {
+			if sectionID != 10 {
+				t.Errorf("expected sectionID 10, got %d", sectionID)
+			}
+			return false, nil
+		},
+		createTopicFunc: func(_ context.Context, topic *Topic) (int64, error) {
+			createdTopics = append(createdTopics, topic.Title)
+			if topic.SectionID != 10 {
+				t.Errorf("expected sectionID 10, got %d", topic.SectionID)
+			}
+			if topic.AuthorID != 1 {
+				t.Errorf("expected authorID 1, got %d", topic.AuthorID)
+			}
+			return int64(100 + len(createdTopics)), nil
+		},
+		createPostFunc: func(_ context.Context, p *Post) (int64, error) {
+			createdPosts = append(createdPosts, p.Content)
+			if p.AuthorID != 1 {
+				t.Errorf("expected authorID 1, got %d", p.AuthorID)
+			}
+			return 1, nil
+		},
+	}
+
+	svc := NewService(mock)
+	err := svc.GenerateTeamTopics(context.Background(), testPlayers(), 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(createdTopics) != 2 {
+		t.Fatalf("expected 2 topics, got %d", len(createdTopics))
+	}
+	if createdTopics[0] != "Mohamed Salah" {
+		t.Errorf("expected topic 'Mohamed Salah', got %q", createdTopics[0])
+	}
+	if createdTopics[1] != "Virgil van Dijk" {
+		t.Errorf("expected topic 'Virgil van Dijk', got %q", createdTopics[1])
+	}
+
+	if len(createdPosts) != 2 {
+		t.Fatalf("expected 2 posts, got %d", len(createdPosts))
+	}
+	if !strings.Contains(createdPosts[0], "Нападающий") {
+		t.Errorf("expected post to contain 'Нападающий', got %q", createdPosts[0])
+	}
+}
+
+func TestGenerateTeamTopics_ExistingSectionReused(t *testing.T) {
+	sectionCreated := false
+
+	mock := &mockRepo{
+		findSectionByTitleFunc: func(_ context.Context, _ string) (*Section, error) {
+			return &Section{ID: 42, Title: "Команда"}, nil
+		},
+		createSectionFunc: func(_ context.Context, _ *Section) (int64, error) {
+			sectionCreated = true
+			return 0, nil
+		},
+		topicExistsByTitleFunc: func(_ context.Context, sectionID int64, _ string) (bool, error) {
+			if sectionID != 42 {
+				t.Errorf("expected sectionID 42, got %d", sectionID)
+			}
+			return false, nil
+		},
+		createTopicFunc: func(_ context.Context, topic *Topic) (int64, error) {
+			if topic.SectionID != 42 {
+				t.Errorf("expected sectionID 42, got %d", topic.SectionID)
+			}
+			return 100, nil
+		},
+	}
+
+	svc := NewService(mock)
+	err := svc.GenerateTeamTopics(context.Background(), testPlayers(), 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if sectionCreated {
+		t.Error("should not create section when it already exists")
+	}
+}
+
+func TestGenerateTeamTopics_IdempotentSkipsExisting(t *testing.T) {
+	var createdTopics int
+
+	mock := &mockRepo{
+		findSectionByTitleFunc: func(_ context.Context, _ string) (*Section, error) {
+			return &Section{ID: 10, Title: "Команда"}, nil
+		},
+		topicExistsByTitleFunc: func(_ context.Context, _ int64, title string) (bool, error) {
+			// Salah already exists, van Dijk doesn't
+			return title == "Mohamed Salah", nil
+		},
+		createTopicFunc: func(_ context.Context, topic *Topic) (int64, error) {
+			createdTopics++
+			if topic.Title == "Mohamed Salah" {
+				t.Error("should not create topic for Salah — already exists")
+			}
+			return 100, nil
+		},
+	}
+
+	svc := NewService(mock)
+	err := svc.GenerateTeamTopics(context.Background(), testPlayers(), 1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if createdTopics != 1 {
+		t.Errorf("expected 1 topic created, got %d", createdTopics)
+	}
+}
+
+// --- formatPlayerCard / translatePosition tests ---
+
+func TestFormatPlayerCard(t *testing.T) {
+	p := football.Player{
+		Name:        "Mohamed Salah",
+		Position:    "Offence",
+		DateOfBirth: "1992-06-15",
+		Nationality: "Egypt",
+	}
+	card := formatPlayerCard(p)
+
+	expected := []string{
+		"Имя: Mohamed Salah",
+		"Позиция: Нападающий",
+		"Дата рождения: 1992-06-15",
+		"Национальность: Egypt",
+		"Номер: —",
+	}
+	for _, s := range expected {
+		if !strings.Contains(card, s) {
+			t.Errorf("card missing %q:\n%s", s, card)
+		}
+	}
+}
+
+func TestFormatPlayerCard_EmptyFields(t *testing.T) {
+	p := football.Player{Name: "Test Player"}
+	card := formatPlayerCard(p)
+
+	if !strings.Contains(card, "Дата рождения: —") {
+		t.Errorf("expected dash for empty dob:\n%s", card)
+	}
+	if !strings.Contains(card, "Национальность: —") {
+		t.Errorf("expected dash for empty nationality:\n%s", card)
+	}
+}
+
+func TestTranslatePosition(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"Goalkeeper", "Вратарь"},
+		{"DEFENCE", "Защитник"},
+		{"Midfield", "Полузащитник"},
+		{"Offence", "Нападающий"},
+		{"Unknown", "Unknown"},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		got := translatePosition(tt.input)
+		if got != tt.want {
+			t.Errorf("translatePosition(%q) = %q, want %q", tt.input, got, tt.want)
+		}
 	}
 }

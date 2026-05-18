@@ -11,6 +11,11 @@ export const E2E_ARTICLE_ID = 9998;
 export const E2E_NEWS_ID = 9997;
 export const E2E_COMMENT_ID = 9997;
 
+// FT-028: Team section test data
+export const E2E_TEAM_SECTION_ID = 9990;
+export const E2E_TEAM_TOPIC_ID = 9990;
+export const E2E_TEAM_POST_ID = 9990;
+
 export const E2E_USER_EMAIL = 'e2e@test.local';
 export const E2E_USER_PASSWORD = 'e2e_pass123';
 export const E2E_ADMIN_EMAIL = 'e2e_admin@test.local';
@@ -104,6 +109,35 @@ export default async function globalSetup() {
        VALUES ($1, $2, $3, 'E2E avatar display test comment')
        ON CONFLICT DO NOTHING`,
       [E2E_COMMENT_ID, E2E_NEWS_ID, E2E_USER_ID],
+    );
+    // FT-028: Секция «Команда» + тема-игрок + пост-карточка
+    await client.query(
+      `INSERT INTO forum_sections (id, title, description, sort_order)
+       OVERRIDING SYSTEM VALUE
+       VALUES ($1, 'Команда', 'Игроки ФК Ливерпуль — обсуждение, статистика, карточки.', 100)
+       ON CONFLICT DO NOTHING`,
+      [E2E_TEAM_SECTION_ID],
+    );
+
+    await client.query(
+      `INSERT INTO forum_topics (id, section_id, title, author_id)
+       OVERRIDING SYSTEM VALUE
+       VALUES ($1, $2, 'Mohamed Salah', $3)
+       ON CONFLICT DO NOTHING`,
+      [E2E_TEAM_TOPIC_ID, E2E_TEAM_SECTION_ID, E2E_ADMIN_ID],
+    );
+
+    await client.query(
+      `INSERT INTO forum_posts (id, topic_id, author_id, content)
+       OVERRIDING SYSTEM VALUE
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT DO NOTHING`,
+      [
+        E2E_TEAM_POST_ID,
+        E2E_TEAM_TOPIC_ID,
+        E2E_ADMIN_ID,
+        'Имя: Mohamed Salah\nПозиция: Нападающий\nДата рождения: 1992-06-15\nНациональность: Egypt\nНомер: —',
+      ],
     );
   } finally {
     await client.end();
