@@ -16,8 +16,8 @@ audience: humans_and_agents
 
 Каталог feature package хранит canonical `feature.md`, а optional derived/external routes добавляются только после появления соответствующих документов. Сначала читай `feature.md`, затем расширяй routing по мере появления execution и decision artifacts.
 
-**Trello:** https://trello.com/c/2GL0QWDJ
-**PR:** https://github.com/Pegorino82/lfcru_forum/pull/19
+**Trello:** <https://trello.com/c/2GL0QWDJ>
+**PR:** <https://github.com/Pegorino82/lfcru_forum/pull/19>
 **PRD:** [PRD-001](../../prd/PRD-001-forum-content-sections.md)
 
 ## Аннотированный индекс
