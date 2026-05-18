@@ -7,7 +7,7 @@ derived_from:
   - ../../domain/problem.md
   - ../../prd/PRD-001-forum-content-sections.md
 status: active
-delivery_status: in_progress
+delivery_status: done
 audience: humans_and_agents
 must_not_define:
   - implementation_sequence

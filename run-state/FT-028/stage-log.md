@@ -11,5 +11,5 @@
 | impl         | done        | —         | 2026-05-18 | b9105f3 |
 | unit-tests   | done        | green     | 2026-05-18 | 14 new tests (Squad 7 + GenerateTeamTopics 7) |
 | e2e-smoke    | done        | written   | 2026-05-18 | e2e/forum/team-section.spec.ts (4 tests) |
-| verification | pending     | —         | —          | — |
-| closure      | pending     | —         | —          | — |
+| verification | done        | merged    | 2026-05-18 | PR #19 merged |
+| closure      | done        | —         | 2026-05-18 | — |
