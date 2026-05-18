@@ -54,6 +54,15 @@ type StandingsEntry struct {
 	Points         int
 }
 
+// Player holds basic squad member information from football-data.org.
+type Player struct {
+	ID          int
+	Name        string
+	Position    string
+	DateOfBirth string
+	Nationality string
+}
+
 // Client fetches Liverpool FC matches from football-data.org
 // and caches the results.
 type Client struct {
@@ -73,6 +82,9 @@ type Client struct {
 
 	cachedStandings    []StandingsEntry
 	standingsFetchedAt time.Time
+
+	cachedSquad    []Player
+	squadFetchedAt time.Time
 }
 
 // NewClient creates a Client with the given API key and cache TTL.
@@ -418,4 +430,89 @@ func (c *Client) fetchStandings(ctx context.Context) ([]StandingsEntry, error) {
 	}
 
 	return nil, nil
+}
+
+// squadAPIResponse is the relevant subset of the football-data.org /v4/teams/{id} response.
+type squadAPIResponse struct {
+	Squad []struct {
+		ID          int    `json:"id"`
+		Name        string `json:"name"`
+		Position    string `json:"position"`
+		DateOfBirth string `json:"dateOfBirth"`
+		Nationality string `json:"nationality"`
+	} `json:"squad"`
+}
+
+// Squad returns the current Liverpool FC squad.
+// Results are cached for the configured TTL (typically 24h).
+// Returns nil if the API key is absent, the API is unavailable, or no data is returned.
+func (c *Client) Squad(ctx context.Context) ([]Player, error) {
+	if c.apiKey == "" {
+		return nil, nil
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.cachedSquad != nil && time.Since(c.squadFetchedAt) < c.ttl {
+		return c.cachedSquad, nil
+	}
+
+	players, err := c.fetchSquad(ctx)
+	if err != nil {
+		return c.cachedSquad, nil
+	}
+
+	c.cachedSquad = players
+	c.squadFetchedAt = time.Now()
+	return c.cachedSquad, nil
+}
+
+func (c *Client) fetchSquad(ctx context.Context) ([]Player, error) {
+	url := fmt.Sprintf("%s/teams/%d", c.baseURL, liverpoolTeamID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("X-Auth-Token", c.apiKey)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("football-data.org: status %d", resp.StatusCode)
+	}
+
+	var data squadAPIResponse
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	if len(data.Squad) == 0 {
+		return nil, nil
+	}
+
+	players := make([]Player, 0, len(data.Squad))
+	for _, p := range data.Squad {
+		if p.Name == "" {
+			continue
+		}
+		players = append(players, Player{
+			ID:          p.ID,
+			Name:        p.Name,
+			Position:    p.Position,
+			DateOfBirth: p.DateOfBirth,
+			Nationality: p.Nationality,
+		})
+	}
+
+	if len(players) == 0 {
+		return nil, nil
+	}
+
+	return players, nil
 }

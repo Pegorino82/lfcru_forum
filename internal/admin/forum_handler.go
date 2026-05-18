@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/Pegorino82/lfcru_forum/internal/auth"
+	"github.com/Pegorino82/lfcru_forum/internal/football"
 	"github.com/Pegorino82/lfcru_forum/internal/forum"
 	appMiddleware "github.com/Pegorino82/lfcru_forum/internal/middleware"
 	"github.com/Pegorino82/lfcru_forum/internal/user"
@@ -24,16 +25,23 @@ type ForumSvc interface {
 	GetTopic(ctx context.Context, id int64) (*forum.Topic, error)
 	CreateTopic(ctx context.Context, sectionID, authorID int64, title string) (int64, error)
 	UpdateTopic(ctx context.Context, id int64, title string) error
+	GenerateTeamTopics(ctx context.Context, players []football.Player, adminUserID int64) error
+}
+
+// SquadFetcher fetches the current squad from the football API.
+type SquadFetcher interface {
+	Squad(ctx context.Context) ([]football.Player, error)
 }
 
 // ForumHandler handles admin forum management routes.
 type ForumHandler struct {
-	svc ForumSvc
+	svc          ForumSvc
+	squadFetcher SquadFetcher
 }
 
 // NewForumHandler creates a new ForumHandler.
-func NewForumHandler(svc ForumSvc) *ForumHandler {
-	return &ForumHandler{svc: svc}
+func NewForumHandler(svc ForumSvc, squadFetcher SquadFetcher) *ForumHandler {
+	return &ForumHandler{svc: svc, squadFetcher: squadFetcher}
 }
 
 type sectionsListData struct {
@@ -300,4 +308,26 @@ func (h *ForumHandler) UpdateTopic(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Внутренняя ошибка сервера")
 	}
 	return c.Redirect(http.StatusSeeOther, "/admin/forum/sections/"+strconv.FormatInt(topic.SectionID, 10)+"/topics")
+}
+
+// GenerateTeam handles POST /admin/forum/generate-team.
+func (h *ForumHandler) GenerateTeam(c echo.Context) error {
+	ctx := c.Request().Context()
+	u := auth.UserFromContext(c)
+
+	players, err := h.squadFetcher.Squad(ctx)
+	if err != nil {
+		slog.Error("admin: fetch squad", "error", err)
+		return c.String(http.StatusInternalServerError, "Ошибка при получении данных о составе")
+	}
+	if players == nil {
+		return c.String(http.StatusServiceUnavailable, "Данные о составе временно недоступны")
+	}
+
+	if err := h.svc.GenerateTeamTopics(ctx, players, u.ID); err != nil {
+		slog.Error("admin: generate team topics", "error", err)
+		return c.String(http.StatusInternalServerError, "Ошибка при генерации тем")
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/admin/forum/sections")
 }

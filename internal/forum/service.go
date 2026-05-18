@@ -2,8 +2,12 @@ package forum
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/Pegorino82/lfcru_forum/internal/football"
 )
 
 type RepoInterface interface {
@@ -18,6 +22,8 @@ type RepoInterface interface {
 	GetTopic(context.Context, int64) (*Topic, error)
 	ListPostsByTopic(context.Context, int64) ([]PostView, error)
 	ListPostsAfter(ctx context.Context, topicID, afterID int64) ([]PostView, error)
+	FindSectionByTitle(ctx context.Context, title string) (*Section, error)
+	TopicExistsByTitle(ctx context.Context, sectionID int64, title string) (bool, error)
 }
 
 type Service struct {
@@ -158,6 +164,109 @@ func (s *Service) UpdateTopic(ctx context.Context, id int64, title string) error
 // ListPostsAfter возвращает до 50 постов темы с id > afterID (для SSE catch-up).
 func (s *Service) ListPostsAfter(ctx context.Context, topicID, afterID int64) ([]PostView, error) {
 	return s.repo.ListPostsAfter(ctx, topicID, afterID)
+}
+
+// GenerateTeamTopics создаёт раздел «Команда» и темы по игрокам из football-data.org.
+// Idempotent: пропускает уже существующие раздел и темы.
+func (s *Service) GenerateTeamTopics(ctx context.Context, players []football.Player, adminUserID int64) error {
+	if len(players) == 0 {
+		return nil
+	}
+
+	// Найти или создать раздел «Команда».
+	const sectionTitle = "Команда"
+	section, err := s.repo.FindSectionByTitle(ctx, sectionTitle)
+	if err != nil {
+		return fmt.Errorf("find section: %w", err)
+	}
+
+	var sectionID int64
+	if section != nil {
+		sectionID = section.ID
+	} else {
+		sectionID, err = s.repo.CreateSection(ctx, &Section{
+			Title:       sectionTitle,
+			Description: "Игроки ФК Ливерпуль — обсуждение, статистика, карточки.",
+			SortOrder:   100,
+		})
+		if err != nil {
+			return fmt.Errorf("create section: %w", err)
+		}
+		slog.Info("created section", "title", sectionTitle, "id", sectionID)
+	}
+
+	// Создать тему + первый пост для каждого игрока.
+	var created, skipped int
+	for _, p := range players {
+		topicTitle := p.Name
+
+		exists, err := s.repo.TopicExistsByTitle(ctx, sectionID, topicTitle)
+		if err != nil {
+			return fmt.Errorf("check topic %q: %w", topicTitle, err)
+		}
+		if exists {
+			skipped++
+			continue
+		}
+
+		topicID, err := s.repo.CreateTopic(ctx, &Topic{
+			SectionID: sectionID,
+			AuthorID:  adminUserID,
+			Title:     topicTitle,
+		})
+		if err != nil {
+			return fmt.Errorf("create topic %q: %w", topicTitle, err)
+		}
+
+		content := formatPlayerCard(p)
+		_, err = s.repo.CreatePost(ctx, &Post{
+			TopicID:  topicID,
+			AuthorID: adminUserID,
+			Content:  content,
+		})
+		if err != nil {
+			return fmt.Errorf("create post for %q: %w", topicTitle, err)
+		}
+
+		created++
+	}
+
+	slog.Info("generate team topics done", "created", created, "skipped", skipped)
+	return nil
+}
+
+// formatPlayerCard формирует текст карточки игрока для первого поста.
+func formatPlayerCard(p football.Player) string {
+	position := translatePosition(p.Position)
+
+	dob := p.DateOfBirth
+	if dob == "" {
+		dob = "—"
+	}
+
+	nationality := p.Nationality
+	if nationality == "" {
+		nationality = "—"
+	}
+
+	return fmt.Sprintf("Имя: %s\nПозиция: %s\nДата рождения: %s\nНациональность: %s\nНомер: —",
+		p.Name, position, dob, nationality)
+}
+
+// translatePosition переводит позицию из API в русский.
+func translatePosition(pos string) string {
+	switch strings.ToUpper(pos) {
+	case "GOALKEEPER":
+		return "Вратарь"
+	case "DEFENCE":
+		return "Защитник"
+	case "MIDFIELD":
+		return "Полузащитник"
+	case "OFFENCE":
+		return "Нападающий"
+	default:
+		return pos
+	}
 }
 
 // CreatePost создаёт пост после валидации.

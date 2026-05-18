@@ -139,6 +139,35 @@ func (r *Repo) ListPostsByTopic(ctx context.Context, topicID int64) ([]PostView,
 	return result, rows.Err()
 }
 
+// FindSectionByTitle возвращает раздел по названию, или (nil, nil) если не найден.
+func (r *Repo) FindSectionByTitle(ctx context.Context, title string) (*Section, error) {
+	var s Section
+	err := r.pool.QueryRow(ctx, `
+		SELECT id, title, description, sort_order, topic_count, created_at
+		FROM forum_sections
+		WHERE title = $1
+	`, title).Scan(&s.ID, &s.Title, &s.Description, &s.SortOrder, &s.TopicCount, &s.CreatedAt)
+
+	if err == pgx.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+// TopicExistsByTitle проверяет, существует ли тема с данным названием в разделе.
+func (r *Repo) TopicExistsByTitle(ctx context.Context, sectionID int64, title string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM forum_topics WHERE section_id = $1 AND title = $2
+		)
+	`, sectionID, title).Scan(&exists)
+	return exists, err
+}
+
 // CreateSection создаёт раздел и возвращает его ID.
 func (r *Repo) CreateSection(ctx context.Context, s *Section) (int64, error) {
 	var id int64

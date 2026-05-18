@@ -143,7 +143,7 @@ func main() {
 	imgSvc := admin.NewImageService(cfg.UploadsDir)
 	imagesHandler := admin.NewImagesHandler(imagesRepo, imgSvc)
 	articlesAdminHandler := admin.NewArticlesHandler(newsRepo, imagesRepo)
-	forumAdminHandler := admin.NewForumHandler(forumSvc)
+	forumAdminHandler := admin.NewForumHandler(forumSvc, footballClient)
 	userSvc := user.NewService(userRepo)
 	usersAdminHandler := admin.NewUsersHandler(userSvc)
 
@@ -172,6 +172,7 @@ func main() {
 	adminGroup.POST("/admin/forum/sections/:id/topics", forumAdminHandler.CreateTopic)
 	adminGroup.GET("/admin/forum/topics/:id/edit", forumAdminHandler.EditTopic)
 	adminGroup.POST("/admin/forum/topics/:id", forumAdminHandler.UpdateTopic)
+	adminGroup.POST("/admin/forum/generate-team", forumAdminHandler.GenerateTeam)
 
 	// Admin user routes
 	adminGroup.GET("/admin/users", usersAdminHandler.List)

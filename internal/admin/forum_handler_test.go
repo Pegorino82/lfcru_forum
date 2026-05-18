@@ -52,7 +52,7 @@ func newForumAdminServer(t *testing.T, pool *pgxpool.Pool) *echo.Echo {
 
 	forumRepo := forum.NewRepo(pool)
 	forumSvc := forum.NewService(forumRepo)
-	forumAdminHandler := admin.NewForumHandler(forumSvc)
+	forumAdminHandler := admin.NewForumHandler(forumSvc, nil)
 
 	e := echo.New()
 	e.HideBanner = true
